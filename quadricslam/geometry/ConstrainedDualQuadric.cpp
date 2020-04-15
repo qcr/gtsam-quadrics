@@ -9,7 +9,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file ConstrainedDualQuadric.h
+ * @file ConstrainedDualQuadric.cpp
  * @date Apr 14, 2020
  * @author Lachlan Nicholson
  * @brief a constrained dual quadric 

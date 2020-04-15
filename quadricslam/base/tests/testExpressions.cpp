@@ -1,3 +1,20 @@
+/* ----------------------------------------------------------------------------
+
+ * QuadricSLAM Copyright 2020, ARC Centre of Excellence for Robotic Vision, Queensland University of Technology (QUT)
+ * Brisbane, QLD 4000
+ * All Rights Reserved
+ * Authors: Lachlan Nicholson, et al. (see THANKS for the full author list)
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file testExpressions.cpp
+ * @date Apr 14, 2020
+ * @author Lachlan Nicholson
+ * @brief an example of how to use gtsam expressions
+ */
+
 // The two new headers that allow using our Automatic Differentiation Expression framework
 #include <gtsam/slam/expressions.h>
 #include <gtsam/nonlinear/ExpressionFactorGraph.h>

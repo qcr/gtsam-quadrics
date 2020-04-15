@@ -9,7 +9,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file AlignedBox2.h
+ * @file AlignedBox2.cpp
  * @date Apr 14, 2020
  * @author Lachlan Nicholson
  * @brief an axis aligned 2D bounding box
