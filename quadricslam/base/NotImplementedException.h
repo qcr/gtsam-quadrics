@@ -9,7 +9,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file DualEllipsoid.h
+ * @file NotImplementedException.h
  * @date Apr 14, 2020
  * @author Lachlan Nicholson
  * @brief a simple exception for not implemented functionality
