@@ -26,19 +26,10 @@ include_directories(BEFORE "${PROJECT_SOURCE_DIR}")
 
 # set source files
 set(SOURCE_FILES
-	./quadricslam/main.cpp
 	./quadricslam/base/TestClass.cpp
 	./quadricslam/geometry/DualEllipsoid.cpp
 	./quadricslam/geometry/AlignedBox2.cpp
 )
-
-# # compile .exe files
-add_executable(main ${SOURCE_FILES})
-
-# # link with gtsam (or recieve undefined refrences)
-target_link_libraries(main gtsam)
-
-
 
 ###################################################################################
 ## Build static library from common sources
@@ -49,6 +40,17 @@ target_link_libraries(${CONVENIENCE_LIB_NAME} gtsam)
 
 # Install library
 # install(TARGETS ${CONVENIENCE_LIB_NAME} LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
+
+###################################################################################
+## Build executables and link to our shared library. NOTE: can't have two mains in source_files
+# compile .exe files
+add_executable(main ./quadricslam/main.cpp)
+add_executable(runsystem ./quadricslam/base/System.cpp)
+
+# link with gtsam (or recieve undefined refrences)
+target_link_libraries(main gtsam;${CONVENIENCE_LIB_NAME})
+target_link_libraries(runsystem gtsam;${CONVENIENCE_LIB_NAME})
+
 
 ###################################################################################
 # Build tests (CMake tracks the dependecy to link with GTSAM through our project's static library)
