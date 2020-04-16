@@ -41,7 +41,7 @@ namespace gtsam {
       ConstrainedDualQuadric();
 
       /**
-       * Constructor from 3x3 Matrix,
+       * Constructor from 4x4 Matrix,
        * Here we ensure the quadric is ellipsoidal
        * and constrain manually if it is not. 
        * @param dQ
