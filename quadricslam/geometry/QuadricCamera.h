@@ -67,11 +67,16 @@ namespace gtsam {
       QuadricCamera(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K) : Base(pose, K) {};
       
       /**
+       * Calculate the 3x4 projection matrix 
+       */
+      Matrix34 transformToImage() const;
+      
+      /**
        * Project a quadric at the stored 3D pose and calibration
        * @param quadric the 3D quadric surface to be projected
        * @return the projected dual conic 
        */
-      DualConic project(const ConstrainedDualQuadric& quadric);
+      DualConic project(const ConstrainedDualQuadric& quadric) const;
 
   };
     
