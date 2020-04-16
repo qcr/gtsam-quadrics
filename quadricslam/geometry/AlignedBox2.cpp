@@ -45,7 +45,7 @@ void AlignedBox2::print(const std::string& s) const {
 
 /* ************************************************************************* */
 bool AlignedBox2::equals(const AlignedBox2& other, double tol) const {
-  throw NotImplementedException();  
+  return tlbr_.isApprox(other.tlbr_, tol);
 }
 
 } // namespace gtsam
