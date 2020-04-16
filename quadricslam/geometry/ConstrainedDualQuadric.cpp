@@ -56,7 +56,7 @@ Matrix44 ConstrainedDualQuadric::matrix() const {
 
 /* ************************************************************************* */
 // TODO: vectorize, use AlignedBox3
-Vector6 ConstrainedDualQuadric::bounds3() const {
+Vector6 ConstrainedDualQuadric::bounds() const {
   Matrix44 dE = this->matrix();
   double x_min = (dE(0,3) + std::sqrt(dE(0,3) * dE(0,3) - (dE(0,0) * dE(3,3)))) / dE(3,3);
   double y_min = (dE(1,3) + std::sqrt(dE(1,3) * dE(1,3) - (dE(1,1) * dE(3,3)))) / dE(3,3);
@@ -66,7 +66,6 @@ Vector6 ConstrainedDualQuadric::bounds3() const {
   double z_max = (dE(2,3) - std::sqrt(dE(2,3) * dE(2,3) - (dE(2,2) * dE(3,3)))) / dE(3,3);
   return (Vector6() << x_min, y_min, z_min, x_max, y_max, z_max).finished();
 }
-
 
 /* ************************************************************************* */
 ConstrainedDualQuadric ConstrainedDualQuadric::retract(const Vector9& v) const {

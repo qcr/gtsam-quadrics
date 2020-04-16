@@ -80,7 +80,7 @@ namespace gtsam {
        * Calculates the AlignedBox3 bounds of the ellipsoid
        * @return 3D axis aligned bounding box
        */ 
-      Vector6 bounds3() const;
+      Vector6 bounds() const;
 
       /// @}
       /// @name Manifold group traits
