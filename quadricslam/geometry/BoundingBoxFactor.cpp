@@ -35,6 +35,7 @@ Vector BoundingBoxFactor::evaluateError(const Pose3 &pose, const ConstrainedDual
     DualConic dC = camera.project(quadric);
     AlignedBox2 predictedBounds = dC.bounds();
     Vector4 error = measured_.vector() - predictedBounds.vector();
+    return error;
 
   } catch(QuadricProjectionException& e) {
     

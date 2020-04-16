@@ -54,6 +54,7 @@ namespace gtsam {
           Base(model, poseKey, quadricKey), measured_(measured), 
           calibration_(calibration), imageDimensions_(imageDimensions) {};
 
+      /// @}
 
       Vector evaluateError(const Pose3 &pose, const ConstrainedDualQuadric &quadric,
 			  boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const;
