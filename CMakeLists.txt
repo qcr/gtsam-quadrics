@@ -29,6 +29,7 @@ set(SOURCE_FILES
 	./quadricslam/base/TestClass.cpp
 	./quadricslam/geometry/ConstrainedDualQuadric.cpp
 	./quadricslam/geometry/AlignedBox2.cpp
+	./quadricslam/geometry/QuadricCamera.cpp
 	./quadricslam/geometry/DualConic.cpp
 )
 
