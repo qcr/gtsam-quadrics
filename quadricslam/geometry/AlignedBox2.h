@@ -36,7 +36,7 @@ namespace gtsam {
       /// @name Constructors and named constructors
       /// @{
       /** default constructor */
-      AlignedBox2() {};
+      AlignedBox2() : tlbr_(0,0,0,0) {};
       
       /**
        * Constructor from parts

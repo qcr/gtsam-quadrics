@@ -9,51 +9,44 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testDualConic.cpp
+ * @file testAlignedBox2.cpp
  * @date Apr 16, 2020
  * @author Lachlan Nicholson
- * @brief test cases for DualConic
+ * @brief test cases for AlignedBox2
  */
-
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <quadricslam/geometry/DualConic.h>
+#include <quadricslam/geometry/AlignedBox2.h>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/Rot3.h>
 
 using namespace std;
 using namespace gtsam;
 
-static const Matrix33 matrix1((Matrix33() << 1.0, 0.0, 0.0, 
-                                            0.0, 1.0, 0.0,
-                                            0.0, 0.0, -1.0).finished());
+static const Vector4 vector1(0,0,0,0);
+static const Vector4 vector2(2.0,3.0,4.0,5.0);
+static const AlignedBox2 b(0.0,1.3,2.0,3.5);
 
-static const Matrix33 matrix2((Matrix33() << 1,2,3,4,5,6,7,8,9).finished());
-static const DualConic conic((Matrix33() << 3,4,5,6,7,8,9,10,11).finished());
+TEST(AlignedBox2, constructors) {
+  AlignedBox2 box1;
+  AlignedBox2 box2(2.0,3.0,4.0,5.0);
+  AlignedBox2 box3(vector2);
 
-
-TEST(DualConic, constructors) {
-  DualConic conic1;
-  DualConic conic2((Matrix33() << 1,2,3,4,5,6,7,8,9).finished());
-
-  EXPECT(assert_equal(matrix1, conic1.matrix()));
-  EXPECT(assert_equal(matrix2, conic2.matrix()));
+  EXPECT(assert_equal(box1.vector(), vector1));
+  EXPECT(assert_equal(box2.vector(), vector2));
+  EXPECT(assert_equal(box3.vector(), vector2));
 }
 
-TEST(DualConic, Equals) {
-  DualConic conic1((Matrix33() << 3,4,5,6,7,8,9,10,11).finished());
-  DualConic conic2((Matrix33() << 3,4,12,6,7,8,9,10,11).finished());
-
-  EXPECT(conic1.equals(conic));
-  EXPECT(!conic1.equals(conic2));
+TEST(AlignedBox2, equals) {
+  CHECK(b.equals(b));
+  AlignedBox2 q(0.0,0.0,0.0,0.0);
+  CHECK(!b.equals(q));
 }
-
-
-
 
 /* ************************************************************************* */
 int main() {

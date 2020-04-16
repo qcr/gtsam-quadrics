@@ -9,16 +9,15 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testDualConic.cpp
+ * @file testQuadricCamera.cpp
  * @date Apr 16, 2020
  * @author Lachlan Nicholson
- * @brief test cases for DualConic
+ * @brief test cases for QuadricCamera
  */
-
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <quadricslam/geometry/DualConic.h>
+#include <quadricslam/geometry/QuadricCamera.h>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/Vector.h>
@@ -28,31 +27,23 @@
 using namespace std;
 using namespace gtsam;
 
-static const Matrix33 matrix1((Matrix33() << 1.0, 0.0, 0.0, 
-                                            0.0, 1.0, 0.0,
-                                            0.0, 0.0, -1.0).finished());
+static const Matrix33 matrix1 = (Matrix33() << 2.181975e+06, 1.843200e+06, 7.680000e+03,
+                                              1.843200e+06, 1.106775e+06, 5.760000e+03,
+                                              7.680000e+03, 5.760000e+03, 2.400000e+01).finished();
 
-static const Matrix33 matrix2((Matrix33() << 1,2,3,4,5,6,7,8,9).finished());
-static const DualConic conic((Matrix33() << 3,4,5,6,7,8,9,10,11).finished());
-
-
-TEST(DualConic, constructors) {
-  DualConic conic1;
-  DualConic conic2((Matrix33() << 1,2,3,4,5,6,7,8,9).finished());
-
-  EXPECT(assert_equal(matrix1, conic1.matrix()));
-  EXPECT(assert_equal(matrix2, conic2.matrix()));
+TEST(QuadricCamera, constructors) {
+  QuadricCamera camera1;
 }
 
-TEST(DualConic, Equals) {
-  DualConic conic1((Matrix33() << 3,4,5,6,7,8,9,10,11).finished());
-  DualConic conic2((Matrix33() << 3,4,12,6,7,8,9,10,11).finished());
-
-  EXPECT(conic1.equals(conic));
-  EXPECT(!conic1.equals(conic2));
+TEST(QuadricCamera, ProjectQuadric) {
+  Pose3 cameraPose(Rot3(), Point3(0,0,-5));
+  boost::shared_ptr<Cal3_S2> K(new Cal3_S2(525.0,525.0,0.0,320.0,240.0));
+  QuadricCamera camera1(cameraPose, K);
+  Matrix34 P = camera1.transformToImage();
+  ConstrainedDualQuadric Q;
+  DualConic C = camera1.project(Q);
+  EXPECT(assert_equal(matrix1, C.matrix()))
 }
-
-
 
 
 /* ************************************************************************* */
