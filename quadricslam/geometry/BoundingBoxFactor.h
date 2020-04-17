@@ -23,6 +23,7 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/nonlinear/Expression.h>
 
 namespace gtsam {
 
@@ -41,9 +42,6 @@ namespace gtsam {
 
     public:
 
-      /// @name Constructors and named constructors
-      /// @{  
-
       /** default constructor */
       BoundingBoxFactor() {};
 
@@ -54,11 +52,27 @@ namespace gtsam {
           Base(model, poseKey, quadricKey), measured_(measured), 
           calibration_(calibration), imageDimensions_(imageDimensions) {};
 
-      /// @}
-
-      Vector evaluateError(const Pose3 &pose, const ConstrainedDualQuadric &quadric,
+      /**
+       * evaluate the error between a quadric and 3D pose
+       * @param pose the 3D camera position
+       * @param quadric the quadric
+       * @param H1 the derivative of the error wrt pose (4x6)
+       * @param H2 the derivative of the error wrt quadric (4x9)
+       */
+      Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric,
 			  boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const;
 
+      /**
+       * returns an expression for the prediction wrt pose and quadric
+       */
+      Expression<AlignedBox2> expression(const Expression<Pose3>& pose, const Expression<ConstrainedDualQuadric>& quadric) const;
+
   };
+
+  template <>
+  struct traits<boost::shared_ptr<Cal3_S2>> {
+    enum { dimension = 5};
+  };
+
 
 } // namespace gtsam

@@ -65,6 +65,11 @@ namespace gtsam {
 
       /** constructor with pose and calibration */
       QuadricCamera(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K) : Base(pose, K) {};
+
+      /** named static constructor for Expressions 
+       * as found in PinholeCamera.h
+      */
+      static QuadricCamera Create(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K, OptionalJacobian<6,6> H1, OptionalJacobian<6,5> H2);
       
       /**
        * Calculate the 3x4 projection matrix 
@@ -76,8 +81,14 @@ namespace gtsam {
        * @param quadric the 3D quadric surface to be projected
        * @return the projected dual conic 
        */
-      DualConic project(const ConstrainedDualQuadric& quadric) const;
+      DualConic project(const ConstrainedDualQuadric& quadric, OptionalJacobian<5,6> dC_dCamera = boost::none, OptionalJacobian<5,9> dC_dQ = boost::none) const;
 
   };
-    
+
+  // add traits<A>::dimension for Expressions
+  template<>
+  struct traits<QuadricCamera> {
+    enum { dimension = 6};
+  };  
+
 } // namespace gtsam

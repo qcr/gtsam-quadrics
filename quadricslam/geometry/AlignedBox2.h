@@ -69,5 +69,10 @@ namespace gtsam {
       bool equals(const AlignedBox2& other, double tol = 1e-9) const;
       /// @}
   };
-    
+
+  template <>
+  struct traits<AlignedBox2> {
+    enum { dimension = 4 };
+  };
+
 } // namespace gtsam

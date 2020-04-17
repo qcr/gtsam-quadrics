@@ -21,6 +21,12 @@
 namespace gtsam {
 
 /* ************************************************************************* */
+QuadricCamera QuadricCamera::Create(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K, OptionalJacobian<6,6> H1, OptionalJacobian<6,5> H2) {
+  return QuadricCamera(pose, K);
+}
+
+
+/* ************************************************************************* */
 Matrix34 QuadricCamera::transformToImage() const {
   Matrix3 image_T_camera = calibration().K();
   Matrix4 camera_T_world = pose().matrix().inverse();
@@ -29,7 +35,7 @@ Matrix34 QuadricCamera::transformToImage() const {
 }
 
 /* ************************************************************************* */
-DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric) const {
+DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, OptionalJacobian<5,6> dC_dCamera, OptionalJacobian<5,9> dC_dQ) const {
   Matrix34 image_T_world = transformToImage(); 
   Matrix4 dQ = quadric.matrix();
   Matrix4 dQn = dQ/dQ(3,3);

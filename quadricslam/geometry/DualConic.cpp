@@ -42,7 +42,7 @@ Matrix33 DualConic::matrix() const {
 /* ************************************************************************* */
 // TODO: assert conic is closed (eccentricity)
 // assert bounds are real-valued
-AlignedBox2 DualConic::bounds() const {
+AlignedBox2 DualConic::bounds(OptionalJacobian<4,5> H) const {
   double xmin = (dC_(0,2) + std::sqrt(dC_(0,2)*dC_(0,2)-dC_(2,2)*dC_(0,0))) / dC_(2,2);
   double xmax = (dC_(0,2) - std::sqrt(dC_(0,2)*dC_(0,2)-dC_(2,2)*dC_(0,0))) / dC_(2,2);
   double ymin = (dC_(1,2) + std::sqrt(dC_(1,2)*dC_(1,2)-dC_(2,2)*dC_(1,1))) / dC_(2,2);

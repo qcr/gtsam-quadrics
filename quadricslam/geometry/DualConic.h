@@ -46,7 +46,7 @@ namespace gtsam {
       Matrix33 matrix() const;
 
       /** return 2D bounds on image plane */
-      AlignedBox2 bounds() const;
+      AlignedBox2 bounds(OptionalJacobian<4,5> H = boost::none) const;
 
 
       /// @}
@@ -64,5 +64,10 @@ namespace gtsam {
       bool equals(const DualConic& other, double tol = 1e-9) const;
       /// @}
   };
+
+  template<>
+  struct traits<DualConic> {
+    enum { dimension = 5};
+  };  
     
 } // namespace gtsam

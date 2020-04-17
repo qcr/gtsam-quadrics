@@ -49,10 +49,12 @@ target_link_libraries(${CONVENIENCE_LIB_NAME} gtsam)
 # compile .exe files
 add_executable(main ./quadricslam/main.cpp)
 add_executable(runsystem ./quadricslam/base/System.cpp)
+add_executable(expressions ./quadricslam/base/tests/testExpressions.cpp)
 
 # link with gtsam (or recieve undefined refrences)
 target_link_libraries(main gtsam;${CONVENIENCE_LIB_NAME})
 target_link_libraries(runsystem gtsam;${CONVENIENCE_LIB_NAME})
+target_link_libraries(expressions gtsam;${CONVENIENCE_LIB_NAME})
 
 
 ###################################################################################
