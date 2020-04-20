@@ -101,6 +101,64 @@ Foo constructFoo(Vector3 x, Vector3 y, OptionalJacobian<6,3> H1, OptionalJacobia
 }
 
 
+
+// check this is correct 
+Matrix kronecker(const Matrix m1, const Matrix m2) {
+    Matrix m3(m1.rows()*m2.rows(), m1.cols()*m2.cols());
+    for (int j = 0; j < m1.cols(); j++) {
+        for (int i = 0; i < m1.rows(); i++) {
+            m3.block(i*m2.rows(), j*m2.cols(), m2.rows(), m2.cols()) =  m1(i,j)*m2;
+        }
+    }
+    return m3;
+}
+
+// if I can do this, I can use this for all matrix math in code
+// https://atmos.washington.edu/~dennis/MatrixCalculus.pdf
+// https://en.wikipedia.org/wiki/Kronecker_product
+// https://www.math.uwaterloo.ca/~hwolkowi/matrixcookbook.pdf
+// https://people.maths.ox.ac.uk/gilesm/files/NA-08-01.pdf
+// Some Theorems on Matrix Differentiation with Special Reference to Kronecker Matrix Products (H. Neudecker, 1969)
+Matrix34 dot(Matrix34 A, Matrix44 B, OptionalJacobian<12,12> H1, OptionalJacobian<12,16> H2) {
+    if (H1) {
+        *H1 = kronecker(B.transpose(), Matrix::Identity(4,4));
+    } if (H2) {
+        *H2 = kronecker(Matrix::Identity(4,4), A);
+    }
+    return A*B;
+}
+
+void wrap_dot(void) {
+    // Expression<Matrix34> A(Matrix34::Ones());
+    // Expression<Matrix44> B('X',1);
+    // Values values;
+    // values.insert(symbol('X',1), Pose3(Rot3(), Point3(2,3,4)).matrix());
+
+    // method 2: use dot func
+    // Note: this would require me to calc H1,H2 inside dot
+    // Expression<Matrix34> C(&dot, A, B);
+
+    // method 1: just do A*B with the expressions
+    // auto C = A*B;
+
+    // method 3: hope they have optional jacobians in matrix multiplaction 
+    // as this is what tf / pytorch will do automatically
+    Matrix34 A = (Matrix34() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0).finished();
+    Matrix44 B = (Matrix44::Ones() * 2.0);
+    Eigen::Matrix<double, 12, 12> dC_dA;
+    Eigen::Matrix<double, 12, 16> dC_dB;
+    Matrix34 C = dot(A,B, dC_dA, dC_dB);
+
+    cout << "A: \n" << A << endl;
+    cout << "B: \n" << B << endl;
+    cout << "C: \n" << C << endl;
+    cout << "dC_dA: \n" << dC_dA << endl;
+    cout << "dC_dA: \n" << dC_dA << endl;
+    cout << "dC_dB: \n" << dC_dB << endl;
+
+    
+}
+
 void wrap_class(void) {
     // Expression<Pose3> p('p', 1);
     // Expression<Vector3> r('r', 1);
@@ -209,6 +267,9 @@ void without_jacobians(void) {
 
 
 int main(void) {
+
+    cout << "\nTEST: warp_dot\n";
+    wrap_dot();
 
     cout << "\nTEST: wrap_class\n";
     wrap_class();
