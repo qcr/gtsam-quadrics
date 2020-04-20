@@ -68,7 +68,17 @@ Expression<AlignedBox2> BoundingBoxFactor::expression(const Expression<Pose3>& p
   // 3. calculate bounds (C)
 
 
-  
+  // current jacobians that need to be calculated:
+  // QuadricCamera::Create (6,6) [eye], (6,5) [eye?]
+  // QuadricCamera::project (5,6), (5,9)
+  // DualConic::bounds (4,5) 
+
+  // - alternatively could use a static ::project(pose,quad,calib)
+  // P = projection(pose, calib)
+  // C = P*Q*P.T
+  // box = bounds(C)
+
+  // can I find somewhere that they calculate projection matrix?
 
   Expression<boost::shared_ptr<Cal3_S2>> calibration(calibration_); // constant calibration
   Expression<QuadricCamera> camera(&QuadricCamera::Create, pose, calibration); 

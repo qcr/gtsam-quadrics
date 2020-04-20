@@ -21,16 +21,32 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-QuadricCamera QuadricCamera::Create(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K, OptionalJacobian<6,6> H1, OptionalJacobian<6,5> H2) {
+QuadricCamera QuadricCamera::Create(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K, OptionalJacobian<6,6> dCamera_dPose, OptionalJacobian<6,5> dCamera_dCalibration) {
+  if (dCamera_dPose) {
+    *dCamera_dPose = Matrix66::Identity();
+  } if (dCamera_dCalibration) {
+    *dCamera_dCalibration = Matrix65::Zero();
+  }
   return QuadricCamera(pose, K);
 }
 
 
 /* ************************************************************************* */
-Matrix34 QuadricCamera::transformToImage() const {
+// Note: will compute inverse camPose with jacobian regardless of OptionalJacobian
+Matrix34 QuadricCamera::transformToImage(OptionalJacobian<12,6> dP_dCamera) const {
+  
   Matrix3 image_T_camera = calibration().K();
-  Matrix4 camera_T_world = pose().matrix().inverse();
+
+  // can also use pose.rotation() and pose.translation() which comes with 3,6 jacobians
+  // ^ how can we use this to get full 14,6 jacobian for matricision?
+  Matrix6 dPoseInv_dPose = Matrix6::Zero();
+  Matrix4 camera_T_world = pose().inverse(&dPoseInv_dPose).matrix();
+  
   Matrix34 image_T_world = image_T_camera * (camera_T_world).block(0,0,3,4);
+  
+  if (dP_dCamera) {
+    *dP_dCamera = Matrix33::Identity() * 
+  }
   return image_T_world;
 }
 

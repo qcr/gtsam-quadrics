@@ -69,12 +69,12 @@ namespace gtsam {
       /** named static constructor for Expressions 
        * as found in PinholeCamera.h
       */
-      static QuadricCamera Create(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K, OptionalJacobian<6,6> H1, OptionalJacobian<6,5> H2);
+      static QuadricCamera Create(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K, OptionalJacobian<6,6> dCamera_dPose, OptionalJacobian<6,5> dCamera_dCalibration);
       
       /**
        * Calculate the 3x4 projection matrix 
        */
-      Matrix34 transformToImage() const;
+      Matrix34 transformToImage(OptionalJacobian<12,6> dP_dCamera = boost::none) const;
       
       /**
        * Project a quadric at the stored 3D pose and calibration
