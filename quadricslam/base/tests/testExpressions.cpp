@@ -173,7 +173,7 @@ void wrap_dot(void) {
     // cout << "C2: \n" << C2;
 
     Matrix34 Ca = A.operator*(B);
-    Matrix34 Cb = A.applyOnTheRight(B);
+    // Matrix34 Cb = A.applyOnTheRight(B);
 
 
     // D x(5);

@@ -39,9 +39,14 @@ Matrix33 DualConic::matrix() const {
   return dC_;
 }
 
+void DualConic::normalize() {
+  dC_ = dC_/dC_(2,2);
+}
+
 /* ************************************************************************* */
 // TODO: assert conic is closed (eccentricity)
 // assert bounds are real-valued
+// normalize conic
 AlignedBox2 DualConic::bounds(OptionalJacobian<4,5> H) const {
   double xmin = (dC_(0,2) + std::sqrt(dC_(0,2)*dC_(0,2)-dC_(2,2)*dC_(0,0))) / dC_(2,2);
   double xmax = (dC_(0,2) - std::sqrt(dC_(0,2)*dC_(0,2)-dC_(2,2)*dC_(0,0))) / dC_(2,2);

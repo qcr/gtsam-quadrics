@@ -79,12 +79,19 @@ Expression<AlignedBox2> BoundingBoxFactor::expression(const Expression<Pose3>& p
   // box = bounds(C)
 
   // can I find somewhere that they calculate projection matrix?
-
   Expression<boost::shared_ptr<Cal3_S2>> calibration(calibration_); // constant calibration
   Expression<QuadricCamera> camera(&QuadricCamera::Create, pose, calibration); 
   Expression<DualConic> dualConic(camera, &QuadricCamera::project, quadric);
   Expression<AlignedBox2> predictedBounds(dualConic, &DualConic::bounds);
   return predictedBounds;
+
+
+
+  // Expression<boost::shared_ptr<Cal3_S2>> calibration(calibration_); // constant calibration
+  // Expression<DualConic> dualConic(QuadricCamera::project, quadric, pose, calibration); 
+  // dc_dpose 5x6, dc_dquadric 5x9
+  // Expression<AlignedBox2> predictedBounds(dualConic, &DualConic::bounds);
+  // return predictedBounds;
 
 
 }

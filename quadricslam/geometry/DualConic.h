@@ -45,6 +45,9 @@ namespace gtsam {
       /** return 3x3 conic matrix */
       Matrix33 matrix() const;
 
+      /** normalize, inline, the conic */
+      void normalize();
+
       /** return 2D bounds on image plane */
       AlignedBox2 bounds(OptionalJacobian<4,5> H = boost::none) const;
 

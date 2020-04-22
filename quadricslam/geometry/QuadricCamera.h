@@ -83,6 +83,10 @@ namespace gtsam {
        */
       DualConic project(const ConstrainedDualQuadric& quadric, OptionalJacobian<5,6> dC_dCamera = boost::none, OptionalJacobian<5,9> dC_dQ = boost::none) const;
 
+      /** static projection function */
+      DualConic project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
+        OptionalJacobian<5,9> dc_dq, OptionalJacobian<5,6> dc_dx, OptionalJacobian<5,5> dc_dk);
+
   };
 
   // add traits<A>::dimension for Expressions
