@@ -119,7 +119,10 @@ Matrix kronecker(const Matrix m1, const Matrix m2) {
 // https://www.math.uwaterloo.ca/~hwolkowi/matrixcookbook.pdf
 // https://people.maths.ox.ac.uk/gilesm/files/NA-08-01.pdf
 // Some Theorems on Matrix Differentiation with Special Reference to Kronecker Matrix Products (H. Neudecker, 1969)
-Matrix34 dot(Matrix34 A, Matrix44 B, OptionalJacobian<12,12> H1, OptionalJacobian<12,16> H2) {
+// A tutorial on SE(3) transformation parameterizations and on-manifold optimization Jose-Luis Blanco (p.35)
+// - https://jinyongjeong.github.io/Download/SE3/jlblanco2010geometry3d_techrep.pdf
+// http://www.ee.ic.ac.uk/hp/staff/dmb/matrix/special.html#VecTranspose
+Matrix34 somefunc(const Matrix34 A, const Matrix44 B, OptionalJacobian<12,12> H1, OptionalJacobian<12,16> H2) {
     if (H1) {
         *H1 = kronecker(B.transpose(), Matrix::Identity(4,4));
     } if (H2) {
@@ -128,33 +131,72 @@ Matrix34 dot(Matrix34 A, Matrix44 B, OptionalJacobian<12,12> H1, OptionalJacobia
     return A*B;
 }
 
+
+
+class D {
+    public:
+        double n_;
+
+        D() {};
+
+        D(double n) {
+            n_ = n;
+        }
+
+        D operator*(const D& a) const {
+            return D(n_*a.n_);
+        }
+};
+
+
+
+
+
 void wrap_dot(void) {
-    // Expression<Matrix34> A(Matrix34::Ones());
-    // Expression<Matrix44> B('X',1);
-    // Values values;
-    // values.insert(symbol('X',1), Pose3(Rot3(), Point3(2,3,4)).matrix());
+    Matrix34 A = (Matrix34() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0).finished();
+    Matrix44 B = (Matrix44::Ones() * 2.0);
+    Expression<Matrix34> A_('A',1);
+    Expression<Matrix44> B_('B',1);
+    Values values;
+    values.insert(symbol('A',1), A);
+    values.insert(symbol('B',1), B);
 
     // method 2: use dot func
     // Note: this would require me to calc H1,H2 inside dot
-    // Expression<Matrix34> C(&dot, A, B);
+    Expression<Matrix34> C_(&somefunc, A_, B_);
+    Matrix34 C1 = C_.value(values);
+    cout << "C1: \n" << C1;
+
+    // Matrix34 (Matrix34::*operator*)(Matrix44) = &Matrix34::operator*;
+    // Expression<Matrix34> C_2(A_, (&Matrix34::operator*)(Matrix44), B_);
+    // Matrix34 C2 = C_2.value(values);
+    // cout << "C2: \n" << C2;
+
+    Matrix34 Ca = A.operator*(B);
+    Matrix34 Cb = A.applyOnTheRight(B);
+
+
+    // D x(5);
+    // D y(2.0);
+    // D z = x*y;
+    // D w = x.operator*(y);
+    // cout << z.n_ << " " << w.n_ << endl;
+
 
     // method 1: just do A*B with the expressions
     // auto C = A*B;
 
     // method 3: hope they have optional jacobians in matrix multiplaction 
     // as this is what tf / pytorch will do automatically
-    Matrix34 A = (Matrix34() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0).finished();
-    Matrix44 B = (Matrix44::Ones() * 2.0);
-    Eigen::Matrix<double, 12, 12> dC_dA;
-    Eigen::Matrix<double, 12, 16> dC_dB;
-    Matrix34 C = dot(A,B, dC_dA, dC_dB);
 
-    cout << "A: \n" << A << endl;
-    cout << "B: \n" << B << endl;
-    cout << "C: \n" << C << endl;
-    cout << "dC_dA: \n" << dC_dA << endl;
-    cout << "dC_dA: \n" << dC_dA << endl;
-    cout << "dC_dB: \n" << dC_dB << endl;
+    // Eigen::Matrix<double, 12, 12> dC_dA;
+    // Eigen::Matrix<double, 12, 16> dC_dB;
+    // Matrix34 C = dot(A,B, dC_dA, dC_dB);
+    // cout << "A: \n" << A << endl;
+    // cout << "B: \n" << B << endl;
+    // cout << "C: \n" << C << endl;
+    // cout << "dC_dA: \n" << dC_dA << endl;
+    // cout << "dC_dB: \n" << dC_dB << endl;
 
     
 }
@@ -267,6 +309,23 @@ void without_jacobians(void) {
 
 
 int main(void) {
+
+    // Pose3 p1(Rot3(), Point3(1,2,3));
+    // Pose3 p2(Rot3(), Point3(4,5,6));
+
+    // Expression<Pose3> p1_(p1);
+    // Expression<Pose3> p2_(p2);
+
+    // Expression<Pose3> p3_(p1_*p2_);
+    // Pose3 p3 = p1*p2;
+
+    // Matrix3 m1 = (Matrix3() << 1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0).finished();
+    // Matrix3 m2 = (Matrix3() << 5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0).finished();
+    // Matrix3 m3 = m1*m2;
+    // Expression<Matrix3> m1_(m1);
+    // Expression<Matrix3> m2_(m2);
+    // Expression<Matrix3> m3_(m1_*m2_);
+
 
     cout << "\nTEST: warp_dot\n";
     wrap_dot();

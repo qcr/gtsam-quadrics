@@ -1,12 +1,12 @@
-function [C, dC_dx, dC_dq] = calculateError(x, q, K, measurement, calculateDerivatives)
-[X, dX_dx] = buildPose(x, calculateDerivatives);
-[Q, dQ_dq] = buildQuadric(q, calculateDerivatives);
-[P, dP_dX] = calculateProjection(X, K, calculateDerivatives);
-[C, dC_dQ, dC_dP] = calculateConic(Q, P, calculateDerivatives);
-[b, db_dC] = getBounds(C, calculateDerivatives);
+function [C, dC_dx, dC_dq] = calculateError(x, q, K, measurement, derive)
+[X, dX_dx] = buildPose(x, derive)
+[Q, dQ_dq] = buildQuadric(q, derive)
+[P, dP_dX] = calculateProjection(X, K, derive)
+[C, dC_dQ, dC_dP] = calculateConic(Q, P, derive)
+[b, db_dC] = getBounds(C, derive)
 e = b-measurement; 
 
-if calculateDerivatives
+if derive
     dC_dx = dC_dP * dP_dX * dX_dx;
     dC_dq = dC_dQ * dQ_dq;
 else
@@ -15,7 +15,7 @@ else
 end
 end
 
-function [b, db_dC] = getBounds(C, calculateDerivatives)
+function [b, db_dC] = getBounds(C, derive)
 xmin = (C(1,3) + sqrt(C(1,3).^2 - (C(1,1) * C(3,3)))) / C(3,3);
 xmax = (C(1,3) - sqrt(C(1,3).^2 - (C(1,1) * C(3,3)))) / C(3,3);
 ymin = (C(2,3) + sqrt(C(2,3).^2 - (C(2,2) * C(3,3)))) / C(3,3);
@@ -23,7 +23,7 @@ ymax = (C(2,3) - sqrt(C(2,3).^2 - (C(2,2) * C(3,3)))) / C(3,3);
 b = [xmin, ymin, xmax, ymax];
 
 % recursively calculate jacobian
-if calculateDerivatives
+if derive
     C_ = sym('C_',[3,3]);
     [b_, ~] = getBounds(C_, false);
     db_dC_ = jacobian(b_, C_(:));
@@ -34,10 +34,10 @@ end
 end
 
 % normalize Q?
-function [C, dC_dQ, dC_dP] = calculateConic(Q, P, calculateDerivatives)
+function [C, dC_dQ, dC_dP] = calculateConic(Q, P, derive)
 C = P * Q * P.';
 
-if calculateDerivatives
+if derive
     dC_dP = kron(eye(3), P*Q) * TvecMat(3,4) + kron(P*Q, eye(3));
     dC_dQ = kron(P,P);
 else
@@ -46,10 +46,10 @@ else
 end
 end
 
-function [P, dP_dX] = calculateProjection(X, K, calculateDerivatives)
+function [P, dP_dX] = calculateProjection(X, K, derive)
 P = K * eye(3,4) * inv(X);
 
-if calculateDerivatives
+if derive
     dXi_dX = -1.0 * kron(inv(X).', inv(X));
     dP_dXi = kron(eye(4), K*eye(3,4));
     dP_dX = dP_dXi * dXi_dX;
@@ -58,12 +58,12 @@ else
 end
 end
 
-function [Q, dQ_dq] = buildQuadric(q, calculateDerivatives)
-[Z, dZ_dx] = buildPose(q(1:6), calculateDerivatives);
+function [Q, dQ_dq] = buildQuadric(q, derive)
+[Z, dZ_dx] = buildPose(q(1:6), derive);
 Qc = diag([q(7:9).^2, -1.0]);
 Q = Z * Qc * Z.';
 
-if calculateDerivatives
+if derive
     dZ_dq = zeros(16,9);
     dZ_dq(1:16,1:6) = dZ_dx;
     dQc_dq = zeros(16,9); 
@@ -78,12 +78,12 @@ else
 end
 end
 
-function [X, dX_dx] = buildPose(x, calculateDerivatives)
-[R, dR_dr] = buildRotation(x(1:3), calculateDerivatives);
+function [X, dX_dx] = buildPose(x, derive)
+[R, dR_dr] = buildRotation(x(1:3), derive);
 t = x(4:6);
 X = [R,t.'; 0,0,0,1];
 
-if calculateDerivatives
+if derive
     dX_dx = zeros(16,6);
     dX_dx(1:3,1:3) = dR_dr(1:3,1:3);
     dX_dx(5:7,1:3) = dR_dr(4:6,1:3);
@@ -96,7 +96,7 @@ else
 end
 end
 
-function [R, dR_dr] = buildRotation(r, calculateDerivatives)
+function [R, dR_dr] = buildRotation(r, derive)
 x = r(1); y = r(2); z = r(3);
 x2 = x.^2; y2 = y.^2; z2 = z.^2;
 xy = x*y; xz = x*z; yz = y*z;
@@ -106,10 +106,11 @@ R = [(4 + x2 - y2 - z2) * f, (xy - 2 * z) * f2, (xz + 2 * y) * f2;
      (xz - 2 * y) * f2, (yz + 2 * x) * f2, (4 - x2 - y2 + z2) * f];
  
 % recursively calculate jacobian
-if calculateDerivatives
+if derive
     r_ = sym('r_',[1,3]);
     [R_, ~] = buildRotation(r_, false);
-    dR_dr = double(subs(jacobian(R_(:), r_), r_, r));
+    dR_dr_ = jacobian(R_(:), r_);
+    dR_dr = double(subs(dR_dr_, r_, r));
 %     d = (x2 + y2 + z2 + 4).^2;
 %     dR_dr = [(4*x*(y2+z2)), (2 * (y * (-x2 + z2 + 4) - 4*x*z + y.^3)), (-2*x2*z + 8*x*y + 2*z*(y2 + z2 + 4)),
 %             (2 * (y * (-x2 + z2 + 4) + 4*x*z + y.^3)), -(4*x*(y2 + 4)),-(4* (x2 + x*y*z - y2 - z2 - 4)),

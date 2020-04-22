@@ -46,6 +46,8 @@ int main() {
   Key poseKey(Symbol('x', 1));
   Key quadricKey(Symbol('q', 1));
   boost::shared_ptr<noiseModel::Diagonal> model = noiseModel::Diagonal::Sigmas(Vector4(0.2,0.2,0.2,0.2));
+
+  // set camera pose and quadric
   Pose3 cameraPose(Rot3(), Point3(0,0,-3));
   ConstrainedDualQuadric quadric;
 
@@ -55,8 +57,17 @@ int main() {
 
   // calculate prediction by hand
   QuadricCamera camera(cameraPose, calibration);
+  Matrix P = camera.transformToImage();
+  Matrix dC1 = P * quadric.matrix() * P.transpose();
   DualConic dC = camera.project(quadric);
   AlignedBox2 predictedBounds = dC.bounds();
+
+  // print by hand
+  cout << "quadric matrix\n" << quadric.matrix() << endl;
+  cout << "pose matrix\n" << cameraPose.matrix() << endl;
+  cout << "P matrix\n" << P << endl;
+  cout << "C1 matrix\n" << dC1 << endl;
+  cout << "conic matrix\n" << dC.matrix() << endl;
   predictedBounds.print("By hand");
 
   // check expression has same result
