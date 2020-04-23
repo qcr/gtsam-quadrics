@@ -14,39 +14,27 @@
  * @author Lachlan Nicholson
  * @brief some helper functions for calculating jacobians 
  */
+#pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/geometry/Pose3.h>
 
 
 namespace gtsam {
 namespace internal {
 
-Matrix kron(const Matrix m1, const Matrix m2) {
-  Matrix m3(m1.rows()*m2.rows(), m1.cols()*m2.cols());
 
-  for (int j = 0; j < m1.cols(); j++) {
-    for (int i = 0; i < m1.rows(); i++) {
-      m3.block(i*m2.rows(), j*m2.cols(), m2.rows(), m2.cols()) =  m1(i,j)*m2;
-    }
-  }
-  return m3;
-}
+Eigen::VectorXd flatten(Matrix X);
+Matrix44 matrix(const Pose3& pose, OptionalJacobian<16,6> H);
+Matrix kron(const Matrix m1, const Matrix m2);
+Matrix TVEC(const int m, const int n);
 
+static auto I44 = Matrix::Identity(4,4);
+static auto I34 = Matrix::Identity(3,4);
+static auto I33 = Matrix::Identity(3,3);
 
-// http://www.ee.ic.ac.uk/hp/staff/dmb/matrix/special.html#VecTranspose
-static Matrix TVEC(const int m, const int n) {
-  Matrix T(m*n, m*n);
-  for (int j = 0; j < m*n; j++) {
-    for (int i = 0; i < m*n; i++) {
-      if ( (j+1) == ( 1 + (m*((i+1)-1)) - ((m*n-1)*floor(((i+1)-1)/n)))) {
-        T(i,j) = 1;
-      } else {
-        T(i,j) = 0;
-      }
-    }
-  }
-  return T;
-}
+static auto T34 = TVEC(3,4);
+static auto T44 = TVEC(4,4);
 
 
 } // namespace internal
