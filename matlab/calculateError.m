@@ -1,17 +1,31 @@
-function [C, dC_dx, dC_dq] = calculateError(x, q, K, measurement, derive)
-[X, dX_dx] = buildPose(x, derive)
-[Q, dQ_dq] = buildQuadric(q, derive)
-[P, dP_dX] = calculateProjection(X, K, derive)
-[C, dC_dQ, dC_dP] = calculateConic(Q, P, derive)
-[b, db_dC] = getBounds(C, derive)
+function [b, db_dx, db_dq] = calculateError(x, q, K, measurement, derive)
+% derive = false
+[X, dX_dx] = buildPose(x, derive);
+[Q, dQ_dq] = buildQuadric(q, derive);
+[P, dP_dX] = calculateProjection(X, K, derive);
+[C, dC_dQ, dC_dP] = calculateConic(Q, P, derive);
+[b, db_dC] = getBounds(C, derive);
 e = b-measurement; 
+
+
+% x_ = sym('x', [1,6]);
+% [X_, ~] = buildPose(x_, false);
+% dX_dx = double(subs(jacobian(X_(:),x_), x_, x))
+% 
+% q_ = sym('q', [1,9]);
+% [Q_, ~] = buildQuadric(q_, false);
+% dQ_dq = double(subs(jacobian(Q_(:), q_), q_, q))
 
 if derive
     dC_dx = dC_dP * dP_dX * dX_dx;
     dC_dq = dC_dQ * dQ_dq;
+    db_dx = db_dC * dC_dx;
+    db_dq = db_dC * dC_dq;
 else
     dC_dx = zeros(9,6);
     dC_dq = zeros(9,9);
+    db_dx = zeros(4,6);
+    db_dq = zeros(4,9);
 end
 end
 

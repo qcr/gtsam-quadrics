@@ -27,6 +27,7 @@ include_directories(BEFORE "${PROJECT_SOURCE_DIR}")
 # set source files
 set(SOURCE_FILES
 	./quadricslam/base/TestClass.cpp
+	./quadricslam/base/Jacobians.cpp
 	./quadricslam/geometry/ConstrainedDualQuadric.cpp
 	./quadricslam/geometry/AlignedBox2.cpp
 	./quadricslam/geometry/BoundingBoxFactor.cpp
