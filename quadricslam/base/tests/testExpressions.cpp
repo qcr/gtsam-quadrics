@@ -310,6 +310,17 @@ void without_jacobians(void) {
 
 int main(void) {
 
+    Matrix33 x = (Matrix33() << 1.0,2.0,3.0).finished();
+    cout << "x\n" << x << endl;
+
+
+    // Pose3 pose(Rot3::rodriguez(3.14,2.0,1.0), Point3(1,2,3));
+    // Matrix H;
+    // Vector6 x = Pose3::ChartAtOrigin::Local(pose, H);
+    // cout << "x " << x.transpose() << endl;
+    // cout << "H\n" << H << endl;
+
+
     // Pose3 p1(Rot3(), Point3(1,2,3));
     // Pose3 p2(Rot3(), Point3(4,5,6));
 

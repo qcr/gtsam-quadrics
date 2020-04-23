@@ -51,6 +51,9 @@ namespace gtsam {
       /** return 2D bounds on image plane */
       AlignedBox2 bounds(OptionalJacobian<4,5> H = boost::none) const;
 
+      /** dc/dC */
+      static Eigen::Matrix<double, 5,9> dc_dC(void);
+
 
       /// @}
       /// @name Testable group traits

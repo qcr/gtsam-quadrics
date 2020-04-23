@@ -32,7 +32,7 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
   try {
 
     QuadricCamera camera(pose, calibration_);
-    DualConic dC = camera.project(quadric);
+    DualConic dC = camera.project2(quadric);
     AlignedBox2 predictedBounds = dC.bounds();
     Vector4 error = measured_.vector() - predictedBounds.vector();
     return error;
@@ -79,19 +79,21 @@ Expression<AlignedBox2> BoundingBoxFactor::expression(const Expression<Pose3>& p
   // box = bounds(C)
 
   // can I find somewhere that they calculate projection matrix?
-  Expression<boost::shared_ptr<Cal3_S2>> calibration(calibration_); // constant calibration
-  Expression<QuadricCamera> camera(&QuadricCamera::Create, pose, calibration); 
-  Expression<DualConic> dualConic(camera, &QuadricCamera::project, quadric);
-  Expression<AlignedBox2> predictedBounds(dualConic, &DualConic::bounds);
-  return predictedBounds;
-
-
-
   // Expression<boost::shared_ptr<Cal3_S2>> calibration(calibration_); // constant calibration
-  // Expression<DualConic> dualConic(QuadricCamera::project, quadric, pose, calibration); 
-  // dc_dpose 5x6, dc_dquadric 5x9
+  // Expression<QuadricCamera> camera(&QuadricCamera::Create, pose, calibration); 
+  // Expression<DualConic> dualConic(camera, &QuadricCamera::project, quadric);
   // Expression<AlignedBox2> predictedBounds(dualConic, &DualConic::bounds);
   // return predictedBounds;
+
+  // auto func = static_cast<DualConic(*)(const ConstrainedDualQuadric&, const Pose3&, const boost::shared_ptr<Cal3_S2>&, 
+  // OptionalJacobian<5,9>, OptionalJacobian<5,6>, OptionalJacobian<5,5>)>(&QuadricCamera::project)
+
+  // DualConic (QuadricCamera::*static_project)(const ConstrainedDualQuadric&, const Pose3&, const boost::shared_ptr<Cal3_S2>&, OptionalJacobian<5,9>, OptionalJacobian<5,6>, OptionalJacobian<5,5>) = &QuadricCamera::project;
+
+  Expression<boost::shared_ptr<Cal3_S2>> calibration(calibration_); // constant calibration
+  Expression<DualConic> dualConic(&QuadricCamera::project, quadric, pose, calibration); 
+  Expression<AlignedBox2> predictedBounds(dualConic, &DualConic::bounds);
+  return predictedBounds;
 
 
 }

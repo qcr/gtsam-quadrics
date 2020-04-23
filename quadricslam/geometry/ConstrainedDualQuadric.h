@@ -81,7 +81,7 @@ namespace gtsam {
        * see Nicholson et. al 2019 QuadricSLAM for full details
        * @return 4x4 constrained quadric
        */
-      Matrix44 matrix() const;
+      Matrix44 matrix(OptionalJacobian<16,9> H = boost::none) const;
 
       /**
        * Calculates the AlignedBox3 bounds of the ellipsoid
@@ -93,6 +93,17 @@ namespace gtsam {
       /// @name Manifold group traits
       /// @{
       enum { dimension = 9 };
+
+      /**
+       * The Retract at origin
+       */
+      static ConstrainedDualQuadric Retract(const Vector9& v);
+
+      /**
+       * The Local at origin
+       */
+      static Vector9 LocalCoordinates(const ConstrainedDualQuadric& q);
+
 
       /**
        * The retract function
