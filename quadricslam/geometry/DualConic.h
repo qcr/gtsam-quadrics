@@ -53,6 +53,7 @@ namespace gtsam {
 
       /** dc/dC */
       static Eigen::Matrix<double, 5,9> dc_dC(void);
+      static Eigen::Matrix<double, 9,5> dC_dc(void);
 
 
       /// @}

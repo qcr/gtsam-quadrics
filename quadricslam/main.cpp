@@ -60,16 +60,16 @@ int main() {
   std::vector<Matrix> gradients;
   Eigen::Matrix<double, 4,6> db_dx;
   Eigen::Matrix<double, 4,9> db_dq;
-  gradients.push_back(db_dx);
   gradients.push_back(db_dq);
+  gradients.push_back(db_dx);
 
   // // request expression and jacobians
   Expression<AlignedBox2> bbfExpression = bbf.expression(cameraPose_, quadric_);
   AlignedBox2 result = bbfExpression.value(values, gradients);
 
   // // extract gradients
-  db_dx = gradients[0];
-  db_dq = gradients[1];
+  db_dq = gradients[0];
+  db_dx = gradients[1];
 
   result.print("bounds");
   cout << "db_dx\n" << db_dx << endl;

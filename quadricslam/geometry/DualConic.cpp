@@ -53,10 +53,9 @@ AlignedBox2 DualConic::bounds(OptionalJacobian<4,5> H) const {
   double xmax = (dC_(0,2) - std::sqrt(dC_(0,2)*dC_(0,2)-dC_(2,2)*dC_(0,0))) / dC_(2,2);
   double ymin = (dC_(1,2) + std::sqrt(dC_(1,2)*dC_(1,2)-dC_(2,2)*dC_(1,1))) / dC_(2,2);
   double ymax = (dC_(1,2) - std::sqrt(dC_(1,2)*dC_(1,2)-dC_(2,2)*dC_(1,1))) / dC_(2,2);
-  cout << "bounds dC_\n" << dC_ << endl;
 
   if (H) {
-    Eigen::Matrix<double, 9,5> dC_dc = this->dc_dC().transpose();
+    Eigen::Matrix<double, 9,5> dC_dc = this->dC_dc();
 
     // calculate db_dC:
     double x = 1.0 / std::sqrt( dC_(0,2)*dC_(0,2) - dC_(0,0)*dC_(2,2) );
@@ -73,13 +72,38 @@ AlignedBox2 DualConic::bounds(OptionalJacobian<4,5> H) const {
     double db4_dC33 = -1/(dC_(2,2) * dC_(2,2)) * (dC_(1,2) + x) + dC_(1,1) / (2.0*dC_(2,2)*x);
 
 
-    Eigen::Matrix<double, 4,9> db_dC;
-              // c11, c21,  c31,    c12, c22,         c32,        c13,      c23,      c33
-    db_dC << db1_dC11,  0, db1_dC31,  0,     0,         0,     db1_dC31,      0,     db1_dC33,
-                 0,     0,     0,     0, db2_dC22,  db2_dC32,      0,     db2_dC32,  db2_dC33,
-            -db1_dC11,  0, -db1_dC31, 0,     0,         0,     -db1_dC31,     0,     db3_dC33,
-                  0,    0,     0,     0, -db2_dC22, -db2_dC32,     0,     -db2_dC32, db4_dC33;
+    Eigen::Matrix<double, 4,9> db_dC = Matrix::Zero(4,9);
+    // OPTION1: db_dC31 == db_dC13
+    //            c11, c21,  c31,    c12, c22,         c32,        c13,      c23,      c33
+    // db_dC << db1_dC11,  0, db1_dC31,  0,     0,         0,     db1_dC31,      0,     db1_dC33,
+    //              0,     0,     0,     0, db2_dC22,  db2_dC32,      0,     db2_dC32,  db2_dC33,
+    //         -db1_dC11,  0, -db1_dC31, 0,     0,         0,     -db1_dC31,     0,     db3_dC33,
+    //               0,    0,     0,     0, -db2_dC22, -db2_dC32,     0,     -db2_dC32, db4_dC33;
 
+    // OPTION2: db_dC31 != db_dC13
+    //           c11, c21,c31,c12, c22,    c32,    c13,      c23,      c33
+    // db_dC << db1_dC11,  0, 0, 0,     0,     0,  db1_dC31,      0,     db1_dC33,
+    //              0,     0, 0, 0, db2_dC22,  0,      0,     db2_dC32,  db2_dC33,
+    //         -db1_dC11,  0, 0, 0,     0,     0,  -db1_dC31,     0,     db3_dC33,
+    //               0,    0, 0, 0, -db2_dC22, 0,      0,     -db2_dC32, db4_dC33;
+
+    double f = std::sqrt(dC_(0,2)*dC_(0,2)-dC_(0,0)*dC_(2,2));
+    double g = std::sqrt(dC_(1,2)*dC_(1,2)-dC_(1,1)*dC_(2,2));
+    db_dC(0,0) = 1.0/f*(-1.0/2.0);
+    db_dC(0,6) = (dC_(0,2)*1.0/f+1.0)/dC_(2,2);
+    db_dC(0,8) = -1.0/(dC_(2,2)*dC_(2,2))*(dC_(0,2)+f)-(dC_(0,0)*1.0/f*(1.0/2.0))/dC_(2,2);
+    db_dC(1,4) = 1.0/g*(-1.0/2.0);
+    db_dC(1,7) = (dC_(1,2)*1.0/g+1.0)/dC_(2,2);
+    db_dC(1,8) = -1.0/(dC_(2,2)*dC_(2,2))*(dC_(1,2)+g)-(dC_(1,1)*1.0/g*(1.0/2.0))/dC_(2,2);
+    db_dC(2,0) = 1.0/f*(1.0/2.0);
+    db_dC(2,6) = -(dC_(0,2)*1.0/f-1.0)/dC_(2,2);
+    db_dC(2,8) = -1.0/(dC_(2,2)*dC_(2,2))*(dC_(0,2)-f)+(dC_(0,0)*1.0/f*(1.0/2.0))/dC_(2,2);
+    db_dC(3,4) = 1.0/g*(1.0/2.0);
+    db_dC(3,7) = -(dC_(1,2)*1.0/g-1.0)/dC_(2,2);
+    db_dC(3,8) = -1.0/(dC_(2,2)*dC_(2,2))*(dC_(1,2)-g)+(dC_(1,1)*1.0/g*(1.0/2.0))/dC_(2,2);
+
+    cout << "DEBUG db_dC\n" << db_dC << endl << endl;
+    cout << "DEBUG db_dc\n" << db_dC * dC_dc << endl << endl;
     *H = db_dC * dC_dc;
   }
 
@@ -89,11 +113,30 @@ AlignedBox2 DualConic::bounds(OptionalJacobian<4,5> H) const {
 Eigen::Matrix<double, 5,9> DualConic::dc_dC(void) {
   static Eigen::Matrix<double, 5,9> dc_dC;
   dc_dC << 1,0,0,0,0,0,0,0,0,
-             0,1,0,1,0,0,0,0,0,
-             0,0,0,0,1,0,0,0,0,
-             0,0,1,0,0,0,1,0,0,
-             0,0,0,0,0,1,0,1,0;
+           0,0,0,1,0,0,0,0,0,
+           0,0,0,0,1,0,0,0,0,
+           0,0,0,0,0,0,1,0,0,
+           0,0,0,0,0,0,0,1,0;
+  // dc_dC << 1,  0,  0,  0,  0,  0,  0,  0,  0,  
+  //          0, 0.5, 0, 0.5,  0,  0,  0,  0,  0,  
+  //          0,  0,  0,  0,  1,  0,  0,  0,  0,  
+  //          0,  0, 0.5, 0,  0,  0, 0.5, 0,  0,  
+  //          0,  0,  0,  0,  0, 0.5, 0, 0.5, 0;
   return dc_dC;
+}
+
+Eigen::Matrix<double, 9,5> DualConic::dC_dc(void) {
+  static Eigen::Matrix<double, 9,5> dC_dc;
+  dC_dc << 1,0,0,0,0,
+           0,1,0,0,0,
+           0,0,0,1,0,
+           0,1,0,0,0,
+           0,0,1,0,0,
+           0,0,0,0,1,
+           0,0,0,1,0,
+           0,0,0,0,1,
+           0,0,0,0,0;
+  return dC_dc;
 }
 
 

@@ -82,25 +82,31 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
 
   if (dc_dq || dc_dx) {
     Eigen::Matrix<double, 5,9> dc_dC = DualConic::dc_dC();
-    cout << "DEBUG dc_dC\n" << dc_dC << endl;
+    cout << "DEBUG dc_dC\n" << dc_dC << endl << endl;
 
     if (dc_dq) {
       Eigen::Matrix<double, 9,16> dC_dQ = kron(P, P);
       Eigen::Matrix<double, 16,9> dQ_dq; quadric.matrix(dQ_dq); // NOTE: this recalculates quadric.matrix
 
-      cout << "DEBUG dC_dQ\n" << dC_dQ << endl;
-      cout << "DEBUG dQ_dq\n" << dQ_dq << endl;
+      cout << "DEBUG dC_dQ\n" << dC_dQ << endl << endl;
+      cout << "DEBUG dQ_dq\n" << dQ_dq << endl << endl;
+      cout << "DEBUG dC_dq\n" << dC_dQ * dQ_dq << endl << endl;
       *dc_dq = dc_dC * dC_dQ * dQ_dq;
     } if (dc_dx) {
-      Eigen::Matrix<double, 9,16> dC_dP = kron(I33, P*Q) * TVEC(3,4) + kron(P*Q.transpose(), I33);
-      Eigen::Matrix<double, 16,16> dP_dXi = kron(I44, K*I34);
+      Eigen::Matrix<double, 9,12> dC_dP = kron(I33, P*Q) * TVEC(3,4) + kron(P*Q.transpose(), I33);
+      Eigen::Matrix<double, 12,16> dP_dXi = kron(I44, K*I34);
       Eigen::Matrix<double, 16,16> dXi_dX = -kron(Xi.transpose(), Xi);
       Eigen::Matrix<double, 16,6> dX_dx; internal::matrix(pose, dX_dx);
 
-      cout << "DEBUG dC_dP\n" << dC_dP << endl;
-      cout << "DEBUG dP_dXi\n" << dP_dXi << endl;
-      cout << "DEBUG dXi_dX\n" << dXi_dX << endl;
-      cout << "DEBUG dX_dx\n" << dX_dx << endl;
+      cout << "DEBUG dC_dP\n" << dC_dP << endl << endl;
+      cout << "DEBUG dP_dX\n" << dP_dXi*dXi_dX << endl << endl;
+      cout << "DEBUG dP_dXi\n" << dP_dXi << endl << endl;
+      cout << "DEBUG dXi_dX\n" << dXi_dX << endl << endl;
+      cout << "DEBUG dX_dx\n" << dX_dx << endl << endl;
+
+
+
+      cout << "DEBUG dC_dx\n" << dC_dP * dP_dXi * dXi_dX * dX_dx << endl << endl;
       *dc_dx = dc_dC * dC_dP * dP_dXi * dXi_dX * dX_dx;
     }
   } if (dc_dk) {
