@@ -20,6 +20,9 @@
 
 #include <quadricslam/geometry/QuadricCamera.h>
 #include <quadricslam/base/NotImplementedException.h>
+#include <gtsam/base/numericalDerivative.h>
+
+#define CHECK_ANALYTICAL 1
 
 using namespace std;
 
@@ -31,10 +34,36 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
   try {
 
-    QuadricCamera camera(pose, calibration_);
-    DualConic dC = camera.project2(quadric);
-    AlignedBox2 predictedBounds = dC.bounds();
+    Eigen::Matrix<double, 9,6> dC_dx;
+    Eigen::Matrix<double, 9,9> dC_dq;
+    DualConic dC = QuadricCamera::project(quadric, pose, calibration_, H1?&dC_dq:0, H2?&dC_dx:0);
+
+    Eigen::Matrix<double, 4,9> db_dC;
+    AlignedBox2 predictedBounds = dC.bounds(H1||H2?&db_dC:0);
     Vector4 error = measured_.vector() - predictedBounds.vector();
+    if (H1) {
+      *H1 = db_dC * dC_dx;
+      if (CHECK_ANALYTICAL) {
+        boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
+				Eigen::Matrix<double, 4,6> db_dx_ = numericalDerivative21(funPtr, pose, quadric, 1e-11);
+        if (!db_dx_.isApprox(*H1)) {
+          cout << "WARNING: numerical != analytical" << endl;
+          cout << "Analytical db_dx_:\n" << *H1 << endl;
+          cout << "Numerical db_dx_:\n" << db_dx_ << endl;
+        }
+      }
+    } if (H2) {
+      *H2 = db_dC * dC_dq; 
+      if (CHECK_ANALYTICAL) {
+        boost::function<Vector(const Pose3&,  const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
+				Eigen::Matrix<double, 4,9> db_dq_ = numericalDerivative22(funPtr, pose, quadric, 1e-11);
+        if (!db_dq_.isApprox(*H2)) {
+          cout << "WARNING: numerical != analytical" << endl;
+          cout << "Analytical db_dq_:\n" << *H2 << endl;
+          cout << "Numerical db_dq_:\n" << db_dq_ << endl;
+        }
+      }
+    }
     return error;
 
   } catch(QuadricProjectionException& e) {
@@ -44,57 +73,15 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     throw NotImplementedException();
 
   }
-
 }
 
 
 Expression<AlignedBox2> BoundingBoxFactor::expression(const Expression<Pose3>& pose, const Expression<ConstrainedDualQuadric>& quadric) const {
 
-  // create pose_matrix (pose6v)
-  // create quadric_matrix (quadric6v)
-  // create projection matrix (pose_matrix, calibration)
-  // create conic_matrix (projection_matrix)
-  // create bounds (conic)
-
-  // GOALS
-  // express error wrt pose and quadric
-  // use only functions that have jacobians
-  // use class methods with Expression<res>(obj, func, arg)
-  // obj has to be an expression tho
-
-  // WHAT AM I ACTUALLY DOING / CAN I WRITE AS MATH
-  // 1. create projection matrix (pose, calibration)
-  // 2. project conic (P, Q)
-  // 3. calculate bounds (C)
-
-
-  // current jacobians that need to be calculated:
-  // QuadricCamera::Create (6,6) [eye], (6,5) [eye?]
-  // QuadricCamera::project (5,6), (5,9)
-  // DualConic::bounds (4,5) 
-
-  // - alternatively could use a static ::project(pose,quad,calib)
-  // P = projection(pose, calib)
-  // C = P*Q*P.T
-  // box = bounds(C)
-
-  // can I find somewhere that they calculate projection matrix?
-  // Expression<boost::shared_ptr<Cal3_S2>> calibration(calibration_); // constant calibration
-  // Expression<QuadricCamera> camera(&QuadricCamera::Create, pose, calibration); 
-  // Expression<DualConic> dualConic(camera, &QuadricCamera::project, quadric);
-  // Expression<AlignedBox2> predictedBounds(dualConic, &DualConic::bounds);
-  // return predictedBounds;
-
-  // auto func = static_cast<DualConic(*)(const ConstrainedDualQuadric&, const Pose3&, const boost::shared_ptr<Cal3_S2>&, 
-  // OptionalJacobian<5,9>, OptionalJacobian<5,6>, OptionalJacobian<5,5>)>(&QuadricCamera::project)
-
-  // DualConic (QuadricCamera::*static_project)(const ConstrainedDualQuadric&, const Pose3&, const boost::shared_ptr<Cal3_S2>&, OptionalJacobian<5,9>, OptionalJacobian<5,6>, OptionalJacobian<5,5>) = &QuadricCamera::project;
-
   Expression<boost::shared_ptr<Cal3_S2>> calibration(calibration_); // constant calibration
   Expression<DualConic> dualConic(&QuadricCamera::project, quadric, pose, calibration); 
   Expression<AlignedBox2> predictedBounds(dualConic, &DualConic::bounds);
   return predictedBounds;
-
 
 }
 
