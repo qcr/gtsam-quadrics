@@ -66,9 +66,6 @@ Matrix44 matrix(const Pose3& pose, OptionalJacobian<16,6> H) {
     (*H)(12,3) = 1.0;
     (*H)(13,4) = 1.0;
     (*H)(14,5) = 1.0;
-
-
-
   }
   return poseMatrix;
 }

@@ -64,12 +64,10 @@ DualConic QuadricCamera::project2(const ConstrainedDualQuadric& quadric, Optiona
 // NOTE: requires updating jacobians if we normalize q/c
 // this wont happen if we split it into sub functions and just combine jacobians
 DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
-  OptionalJacobian<5,9> dc_dq, OptionalJacobian<5,6> dc_dx, OptionalJacobian<5,5> dc_dk) {
+  OptionalJacobian<9,9> dc_dq, OptionalJacobian<9,6> dc_dx, OptionalJacobian<9,5> dc_dk) {
   
   using namespace internal;
   using namespace std;
-
-  
 
   // first retract quadric and pose to compute dX:/dx and dQ:/dq
   Matrix3 K = calibration->K();
@@ -81,36 +79,35 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
 
 
   if (dc_dq || dc_dx) {
-    Eigen::Matrix<double, 5,9> dc_dC = DualConic::dc_dC();
-    cout << "DEBUG dc_dC\n" << dc_dC << endl << endl;
+    // Eigen::Matrix<double, 5,9> dc_dC = DualConic::dc_dC();
+    // cout << "DEBUG dc_dC\n" << dc_dC << endl << endl;
 
     if (dc_dq) {
       Eigen::Matrix<double, 9,16> dC_dQ = kron(P, P);
       Eigen::Matrix<double, 16,9> dQ_dq; quadric.matrix(dQ_dq); // NOTE: this recalculates quadric.matrix
+      *dc_dq = dC_dQ * dQ_dq;
 
-      cout << "DEBUG dC_dQ\n" << dC_dQ << endl << endl;
-      cout << "DEBUG dQ_dq\n" << dQ_dq << endl << endl;
-      cout << "DEBUG dC_dq\n" << dC_dQ * dQ_dq << endl << endl;
-      *dc_dq = dc_dC * dC_dQ * dQ_dq;
+      // cout << "DEBUG dC_dQ\n" << dC_dQ << endl << endl;
+      // cout << "DEBUG dQ_dq\n" << dQ_dq << endl << endl;
+      // cout << "DEBUG dC_dq\n" << dC_dQ * dQ_dq << endl << endl;
+
     } if (dc_dx) {
       Eigen::Matrix<double, 9,12> dC_dP = kron(I33, P*Q) * TVEC(3,4) + kron(P*Q.transpose(), I33);
       Eigen::Matrix<double, 12,16> dP_dXi = kron(I44, K*I34);
       Eigen::Matrix<double, 16,16> dXi_dX = -kron(Xi.transpose(), Xi);
       Eigen::Matrix<double, 16,6> dX_dx; internal::matrix(pose, dX_dx);
+      *dc_dx = dC_dP * dP_dXi * dXi_dX * dX_dx;
 
-      cout << "DEBUG dC_dP\n" << dC_dP << endl << endl;
-      cout << "DEBUG dP_dX\n" << dP_dXi*dXi_dX << endl << endl;
-      cout << "DEBUG dP_dXi\n" << dP_dXi << endl << endl;
-      cout << "DEBUG dXi_dX\n" << dXi_dX << endl << endl;
-      cout << "DEBUG dX_dx\n" << dX_dx << endl << endl;
+      // cout << "DEBUG dC_dP\n" << dC_dP << endl << endl;
+      // cout << "DEBUG dP_dX\n" << dP_dXi*dXi_dX << endl << endl;
+      // cout << "DEBUG dP_dXi\n" << dP_dXi << endl << endl;
+      // cout << "DEBUG dXi_dX\n" << dXi_dX << endl << endl;
+      // cout << "DEBUG dX_dx\n" << dX_dx << endl << endl;
+      // cout << "DEBUG dC_dx\n" << dC_dP * dP_dXi * dXi_dX * dX_dx << endl << endl;
 
-
-
-      cout << "DEBUG dC_dx\n" << dC_dP * dP_dXi * dXi_dX * dX_dx << endl << endl;
-      *dc_dx = dc_dC * dC_dP * dP_dXi * dXi_dX * dX_dx;
     }
   } if (dc_dk) {
-    *dc_dk = Matrix::Zero(5,5);
+    *dc_dk = Matrix::Zero(9,5);
   }
 
   return DualConic(C);

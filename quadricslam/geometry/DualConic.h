@@ -49,7 +49,7 @@ namespace gtsam {
       void normalize();
 
       /** return 2D bounds on image plane */
-      AlignedBox2 bounds(OptionalJacobian<4,5> H = boost::none) const;
+      AlignedBox2 bounds(OptionalJacobian<4,9> H = boost::none) const;
 
       /** dc/dC */
       static Eigen::Matrix<double, 5,9> dc_dC(void);
@@ -74,7 +74,7 @@ namespace gtsam {
 
   template<>
   struct traits<DualConic> {
-    enum { dimension = 5};
+    enum { dimension = 9};
   };  
     
 } // namespace gtsam

@@ -71,12 +71,11 @@ Matrix44 ConstrainedDualQuadric::matrix(OptionalJacobian<16,9> dQ_dq) const {
     dQc_dq(0,6) = 2.0 * radii_(0);
     dQc_dq(5,7) = 2.0 * radii_(1);
     dQc_dq(10,8) = 2.0 * radii_(2);
-
     
-    cout << "dZ_dq: \n" << dZ_dq << endl << endl;
-    cout << "dQc_dq: \n" << dQc_dq << endl << endl;
     *dQ_dq = kron(I44, Z*Qc) * T44 * dZ_dq  +  kron(Z, I44) * (kron(I44, Z)*dQc_dq + kron(Qc, I44)*dZ_dq);
 
+    // cout << "DEBUG dZ_dq: \n" << dZ_dq << endl << endl;
+    // cout << "DEBUG dQc_dq: \n" << dQc_dq << endl << endl;
   }
   return Q;
 }

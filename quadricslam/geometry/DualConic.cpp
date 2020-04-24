@@ -48,7 +48,7 @@ void DualConic::normalize() {
 // TODO: assert conic is closed (eccentricity)
 // assert bounds are real-valued
 // normalize conic
-AlignedBox2 DualConic::bounds(OptionalJacobian<4,5> H) const {
+AlignedBox2 DualConic::bounds(OptionalJacobian<4,9> H) const {
   double xmin = (dC_(0,2) + std::sqrt(dC_(0,2)*dC_(0,2)-dC_(2,2)*dC_(0,0))) / dC_(2,2);
   double xmax = (dC_(0,2) - std::sqrt(dC_(0,2)*dC_(0,2)-dC_(2,2)*dC_(0,0))) / dC_(2,2);
   double ymin = (dC_(1,2) + std::sqrt(dC_(1,2)*dC_(1,2)-dC_(2,2)*dC_(1,1))) / dC_(2,2);
@@ -102,9 +102,10 @@ AlignedBox2 DualConic::bounds(OptionalJacobian<4,5> H) const {
     db_dC(3,7) = -(dC_(1,2)*1.0/g-1.0)/dC_(2,2);
     db_dC(3,8) = -1.0/(dC_(2,2)*dC_(2,2))*(dC_(1,2)-g)+(dC_(1,1)*1.0/g*(1.0/2.0))/dC_(2,2);
 
-    cout << "DEBUG db_dC\n" << db_dC << endl << endl;
-    cout << "DEBUG db_dc\n" << db_dC * dC_dc << endl << endl;
-    *H = db_dC * dC_dc;
+    // cout << "DEBUG db_dC\n" << db_dC << endl << endl;
+    // cout << "DEBUG db_dc\n" << db_dC * dC_dc << endl << endl;
+    // *H = db_dC * dC_dc;
+    *H = db_dC;
   }
 
   return AlignedBox2(xmin, ymin, xmax, ymax);
@@ -117,11 +118,6 @@ Eigen::Matrix<double, 5,9> DualConic::dc_dC(void) {
            0,0,0,0,1,0,0,0,0,
            0,0,0,0,0,0,1,0,0,
            0,0,0,0,0,0,0,1,0;
-  // dc_dC << 1,  0,  0,  0,  0,  0,  0,  0,  0,  
-  //          0, 0.5, 0, 0.5,  0,  0,  0,  0,  0,  
-  //          0,  0,  0,  0,  1,  0,  0,  0,  0,  
-  //          0,  0, 0.5, 0,  0,  0, 0.5, 0,  0,  
-  //          0,  0,  0,  0,  0, 0.5, 0, 0.5, 0;
   return dc_dC;
 }
 

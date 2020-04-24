@@ -31,6 +31,9 @@ q_ = sym('q_', [1,9]);
 [Q_,~] = buildQuadric(q_, 'none');
 [P_,~] = calculateProjection(X_,K, 'none');
 [C_,~,~] = calculateConic(Q_,P_, 'none');
+% C_ = C_/C_(3,3);
+% c_ = [C_(1,1),C_(1,2),C_(2,2),C_(1,3),C_(2,3)];
+% C_ = [c_(1),c_(2),c_(4);c_(2),c_(3),c_(5);c_(4),c_(5),1.0];
 [b_,~] = getBounds(C_, 'none');
 db_dx__s = double(subs(subs(jacobian(b_,x_), x_, x), q_, q))
 db_dq__s = double(subs(subs(jacobian(b_,q_), x_, x), q_, q))
@@ -65,6 +68,7 @@ r = abs(A-B)<tol;
 end
 
 function [b, db_dC] = getBounds(C, derive)
+% C = C/C(3,3);
 xmin = (C(1,3) + sqrt(C(1,3).^2 - (C(1,1) * C(3,3)))) / C(3,3);
 xmax = (C(1,3) - sqrt(C(1,3).^2 - (C(1,1) * C(3,3)))) / C(3,3);
 ymin = (C(2,3) + sqrt(C(2,3).^2 - (C(2,2) * C(3,3)))) / C(3,3);
