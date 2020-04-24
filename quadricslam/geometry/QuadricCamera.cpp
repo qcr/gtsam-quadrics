@@ -19,6 +19,9 @@
 #include <quadricslam/base/NotImplementedException.h>
 #include <quadricslam/base/Jacobians.h>
 
+#include <quadricslam/geometry/BoundingBoxFactor.h> // for CHECK_ANALYTICAL
+#include <gtsam/base/numericalDerivative.h>
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -61,6 +64,17 @@ DualConic QuadricCamera::project2(const ConstrainedDualQuadric& quadric, Optiona
   return DualConic(dC);
 }
 
+Matrix3 QuadricCamera::project_(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration) {
+  Matrix3 K = calibration->K();
+  Matrix4 X = pose.matrix();
+  Matrix4 Xi = X.inverse();
+  Matrix34 P = K * internal::I34 * Xi;
+  Matrix4 Q = quadric.matrix();
+  Matrix3 C = P * Q * P.transpose();
+  return C;
+}
+
+
 // NOTE: requires updating jacobians if we normalize q/c
 // this wont happen if we split it into sub functions and just combine jacobians
 DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
@@ -91,6 +105,20 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
       // cout << "DEBUG dQ_dq\n" << dQ_dq << endl << endl;
       // cout << "DEBUG dC_dq\n" << dC_dQ * dQ_dq << endl << endl;
 
+      if (CHECK_ANALYTICAL) {
+        boost::function<Matrix3(const ConstrainedDualQuadric&,  const Pose3&)> funPtr1(boost::bind(&QuadricCamera::project_, _1, _2, calibration));
+				Eigen::Matrix<double, 9,9> dC_dq_ = numericalDerivative21(funPtr1, quadric, pose, 1e-6);
+        boost::function<Matrix4(const ConstrainedDualQuadric&)> funPtr2(boost::bind(&ConstrainedDualQuadric::matrix, _1, boost::none));
+				Eigen::Matrix<double, 16,9> dQ_dq_ = numericalDerivative11(funPtr2, quadric, 1e-6);
+        if (!dC_dq_.isApprox(*dc_dq)) {
+          cout << "WARNING: numerical != analytical" << endl;
+          cout << "Analytical dc_dq:\n" << *dc_dq << endl;
+          cout << "Numerical dc_dq:\n" << dC_dq_ << endl << endl;
+
+          cout << "Analytical dQ_dq_:\n" << dQ_dq << endl;
+          cout << "Numerical dQ_dq:\n" << dQ_dq_ << endl << endl;
+        }
+      }
     } if (dc_dx) {
       Eigen::Matrix<double, 9,12> dC_dP = kron(I33, P*Q) * TVEC(3,4) + kron(P*Q.transpose(), I33);
       Eigen::Matrix<double, 12,16> dP_dXi = kron(I44, K*I34);
@@ -105,6 +133,22 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
       // cout << "DEBUG dX_dx\n" << dX_dx << endl << endl;
       // cout << "DEBUG dC_dx\n" << dC_dP * dP_dXi * dXi_dX * dX_dx << endl << endl;
 
+      if (CHECK_ANALYTICAL) {
+        boost::function<Matrix3(const ConstrainedDualQuadric&,  const Pose3&)> funPtr1(boost::bind(&QuadricCamera::project_, _1, _2, calibration));
+				Eigen::Matrix<double, 9,6> dC_dx_ = numericalDerivative22(funPtr1, quadric, pose, 1e-6);
+        boost::function<Matrix4(const Pose3&)> funPtr2(boost::bind(&internal::matrix, _1, boost::none));
+				Eigen::Matrix<double, 16,6> dX_dx_ = numericalDerivative11(funPtr2, pose, 1e-6);
+        if (!dC_dx_.isApprox(*dc_dx)) {
+          cout << "WARNING: numerical != analytical" << endl;
+          cout << "Analytical dc_dx:\n" << *dc_dx << endl;
+          cout << "Numerical dc_dx:\n" << dC_dx_ << endl << endl;
+
+          cout << "Analytical dX_dx:\n" << dX_dx << endl;
+          cout << "Numerical dX_dx:\n" << dX_dx_ << endl << endl;
+
+          cout << "Retract()\n" << gtsam::traits<Pose3>::Retract(Pose3(), (Vector6()<<1.1,2.2,3.3,4.4,5.5,6.6).finished()).matrix() << endl << endl;
+        }
+      }
     }
   } if (dc_dk) {
     *dc_dk = Matrix::Zero(9,5);

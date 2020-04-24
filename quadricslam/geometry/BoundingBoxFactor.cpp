@@ -22,8 +22,6 @@
 #include <quadricslam/base/NotImplementedException.h>
 #include <gtsam/base/numericalDerivative.h>
 
-#define CHECK_ANALYTICAL 1
-
 using namespace std;
 
 namespace gtsam {
@@ -45,22 +43,22 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
       *H1 = db_dC * dC_dx;
       if (CHECK_ANALYTICAL) {
         boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
-				Eigen::Matrix<double, 4,6> db_dx_ = numericalDerivative21(funPtr, pose, quadric, 1e-11);
+				Eigen::Matrix<double, 4,6> db_dx_ = numericalDerivative21(funPtr, pose, quadric, 1e-6);
         if (!db_dx_.isApprox(*H1)) {
           cout << "WARNING: numerical != analytical" << endl;
           cout << "Analytical db_dx_:\n" << *H1 << endl;
-          cout << "Numerical db_dx_:\n" << db_dx_ << endl;
+          cout << "Numerical db_dx_:\n" << db_dx_ << endl << endl;
         }
       }
     } if (H2) {
       *H2 = db_dC * dC_dq; 
       if (CHECK_ANALYTICAL) {
         boost::function<Vector(const Pose3&,  const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
-				Eigen::Matrix<double, 4,9> db_dq_ = numericalDerivative22(funPtr, pose, quadric, 1e-11);
+				Eigen::Matrix<double, 4,9> db_dq_ = numericalDerivative22(funPtr, pose, quadric, 1e-6);
         if (!db_dq_.isApprox(*H2)) {
           cout << "WARNING: numerical != analytical" << endl;
           cout << "Analytical db_dq_:\n" << *H2 << endl;
-          cout << "Numerical db_dq_:\n" << db_dq_ << endl;
+          cout << "Numerical db_dq_:\n" << db_dq_ << endl << endl;
         }
       }
     }
