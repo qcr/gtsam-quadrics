@@ -32,8 +32,44 @@ Matrix44 matrix(const Pose3& pose, OptionalJacobian<16,6> H) {
 
   if (H) {
 
-    boost::function<Matrix44(const Pose3&)> matrix_(boost::bind(&Pose3::matrix, _1));
-    *H = numericalDerivative11(matrix_, pose, 1e-6);
+    H->setZero();
+    (*H)(4,0) = poseMatrix(0,2);
+    (*H)(5,0) = poseMatrix(1,2);
+    (*H)(6,0) = poseMatrix(2,2);
+    (*H)(8,0) = -poseMatrix(0,1);
+    (*H)(9,0) = -poseMatrix(1,1);
+    (*H)(10,0) = -poseMatrix(2,1);
+
+    (*H)(0,1) = -poseMatrix(0,2);
+    (*H)(1,1) = -poseMatrix(1,2);
+    (*H)(2,1) = -poseMatrix(2,2);
+    (*H)(8,1) = poseMatrix(0,0);
+    (*H)(9,1) = poseMatrix(1,0);
+    (*H)(10,1) = poseMatrix(2,0);
+
+    (*H)(0,2) = poseMatrix(0,1);
+    (*H)(1,2) = poseMatrix(1,1);
+    (*H)(2,2) = poseMatrix(2,1);
+    (*H)(4,2) = -poseMatrix(0,0);
+    (*H)(5,2) = -poseMatrix(1,0);
+    (*H)(6,2) = -poseMatrix(2,0);
+
+    (*H)(12,3) = poseMatrix(0,0);
+    (*H)(13,3) = poseMatrix(1,0);
+    (*H)(14,3) = poseMatrix(2,0);
+
+    (*H)(12,4) = poseMatrix(0,1);
+    (*H)(13,4) = poseMatrix(1,1);
+    (*H)(14,4) = poseMatrix(2,1);
+
+    (*H)(12,5) = poseMatrix(0,2);
+    (*H)(13,5) = poseMatrix(1,2);
+    (*H)(14,5) = poseMatrix(2,2);
+
+
+    // numerical derivative
+    // boost::function<Matrix44(const Pose3&)> matrix_(boost::bind(&Pose3::matrix, _1));
+    // *H = numericalDerivative11(matrix_, pose, 1e-6);
 
 
     // // compute pose vector for dX:_dx 
