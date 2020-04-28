@@ -55,24 +55,23 @@ AlignedBox2 DualConic::bounds(OptionalJacobian<4,9> H) const {
   double ymax = (dC_(1,2) - std::sqrt(dC_(1,2)*dC_(1,2)-dC_(2,2)*dC_(1,1))) / dC_(2,2);
 
   if (H) {
-    Eigen::Matrix<double, 9,5> dC_dc = this->dC_dc();
+    // Eigen::Matrix<double, 9,5> dC_dc = this->dC_dc(); // used to parametrizing conic as 5vec
 
-    // calculate db_dC:
-    double x = 1.0 / std::sqrt( dC_(0,2)*dC_(0,2) - dC_(0,0)*dC_(2,2) );
-    double y = 1.0 / std::sqrt( dC_(1,2)*dC_(1,2) - dC_(1,1)*dC_(2,2) );
+    // // calculate db_dC:
+    // double x = 1.0 / std::sqrt( dC_(0,2)*dC_(0,2) - dC_(0,0)*dC_(2,2) );
+    // double y = 1.0 / std::sqrt( dC_(1,2)*dC_(1,2) - dC_(1,1)*dC_(2,2) );
 
-    double db1_dC11 = -0.5*x;
-    double db1_dC31 = 1./dC_(2,2) * (dC_(0,2)*x + 1);
-    double db2_dC22 = -0.5*y;
-    double db2_dC32 = 1./dC_(2,2) * (dC_(1,2)*y + 1);
+    // double db1_dC11 = -0.5*x;
+    // double db1_dC31 = 1./dC_(2,2) * (dC_(0,2)*x + 1);
+    // double db2_dC22 = -0.5*y;
+    // double db2_dC32 = 1./dC_(2,2) * (dC_(1,2)*y + 1);
     
-    double db1_dC33 = -1/(dC_(2,2) * dC_(2,2)) * (dC_(0,2) + x) - dC_(0,0) / (2.0*dC_(2,2)*x);
-    double db2_dC33 = -1/(dC_(2,2) * dC_(2,2)) * (dC_(1,2) + x) - dC_(1,1) / (2.0*dC_(2,2)*x);
-    double db3_dC33 = -1/(dC_(2,2) * dC_(2,2)) * (dC_(0,2) + x) + dC_(0,0) / (2.0*dC_(2,2)*x);
-    double db4_dC33 = -1/(dC_(2,2) * dC_(2,2)) * (dC_(1,2) + x) + dC_(1,1) / (2.0*dC_(2,2)*x);
+    // double db1_dC33 = -1/(dC_(2,2) * dC_(2,2)) * (dC_(0,2) + x) - dC_(0,0) / (2.0*dC_(2,2)*x);
+    // double db2_dC33 = -1/(dC_(2,2) * dC_(2,2)) * (dC_(1,2) + x) - dC_(1,1) / (2.0*dC_(2,2)*x);
+    // double db3_dC33 = -1/(dC_(2,2) * dC_(2,2)) * (dC_(0,2) + x) + dC_(0,0) / (2.0*dC_(2,2)*x);
+    // double db4_dC33 = -1/(dC_(2,2) * dC_(2,2)) * (dC_(1,2) + x) + dC_(1,1) / (2.0*dC_(2,2)*x);
 
 
-    Eigen::Matrix<double, 4,9> db_dC = Matrix::Zero(4,9);
     // OPTION1: db_dC31 == db_dC13
     //            c11, c21,  c31,    c12, c22,         c32,        c13,      c23,      c33
     // db_dC << db1_dC11,  0, db1_dC31,  0,     0,         0,     db1_dC31,      0,     db1_dC33,
@@ -87,6 +86,7 @@ AlignedBox2 DualConic::bounds(OptionalJacobian<4,9> H) const {
     //         -db1_dC11,  0, 0, 0,     0,     0,  -db1_dC31,     0,     db3_dC33,
     //               0,    0, 0, 0, -db2_dC22, 0,      0,     -db2_dC32, db4_dC33;
 
+    Eigen::Matrix<double, 4,9> db_dC = Matrix::Zero(4,9);
     double f = std::sqrt(dC_(0,2)*dC_(0,2)-dC_(0,0)*dC_(2,2));
     double g = std::sqrt(dC_(1,2)*dC_(1,2)-dC_(1,1)*dC_(2,2));
     db_dC(0,0) = 1.0/f*(-1.0/2.0);

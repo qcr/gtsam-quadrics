@@ -25,7 +25,7 @@ namespace internal {
 
 
 Eigen::VectorXd flatten(Matrix X);
-Matrix44 matrix(const Pose3& pose, OptionalJacobian<16,6> H);
+Matrix44 matrix(const Pose3& pose, OptionalJacobian<16,6> H = boost::none);
 Matrix kron(const Matrix m1, const Matrix m2);
 Matrix TVEC(const int m, const int n);
 

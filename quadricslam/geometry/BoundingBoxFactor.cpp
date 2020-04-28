@@ -38,14 +38,14 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
     Eigen::Matrix<double, 4,9> db_dC;
     AlignedBox2 predictedBounds = dC.bounds(H1||H2?&db_dC:0);
-    Vector4 error = measured_.vector() - predictedBounds.vector();
+    Vector4 error = predictedBounds.vector() - measured_.vector();
     if (H1) {
       *H1 = db_dC * dC_dx;
       if (CHECK_ANALYTICAL) {
         boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
 				Eigen::Matrix<double, 4,6> db_dx_ = numericalDerivative21(funPtr, pose, quadric, 1e-6);
-        if (!db_dx_.isApprox(*H1)) {
-          cout << "WARNING: numerical != analytical" << endl;
+        if (!db_dx_.isApprox(*H1, 1e-06)) {
+          cout << "WARNING(bbf/db_dx): numerical != analytical" << endl;
           cout << "Analytical db_dx_:\n" << *H1 << endl;
           cout << "Numerical db_dx_:\n" << db_dx_ << endl << endl;
         }
@@ -55,8 +55,8 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
       if (CHECK_ANALYTICAL) {
         boost::function<Vector(const Pose3&,  const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
 				Eigen::Matrix<double, 4,9> db_dq_ = numericalDerivative22(funPtr, pose, quadric, 1e-6);
-        if (!db_dq_.isApprox(*H2)) {
-          cout << "WARNING: numerical != analytical" << endl;
+        if (!db_dq_.isApprox(*H2, 1e-06)) {
+          cout << "WARNING(bbf/db_dq): numerical != analytical" << endl;
           cout << "Analytical db_dq_:\n" << *H2 << endl;
           cout << "Numerical db_dq_:\n" << db_dq_ << endl << endl;
         }

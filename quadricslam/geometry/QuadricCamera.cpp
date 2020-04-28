@@ -110,8 +110,8 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
 				Eigen::Matrix<double, 9,9> dC_dq_ = numericalDerivative21(funPtr1, quadric, pose, 1e-6);
         boost::function<Matrix4(const ConstrainedDualQuadric&)> funPtr2(boost::bind(&ConstrainedDualQuadric::matrix, _1, boost::none));
 				Eigen::Matrix<double, 16,9> dQ_dq_ = numericalDerivative11(funPtr2, quadric, 1e-6);
-        if (!dC_dq_.isApprox(*dc_dq)) {
-          cout << "WARNING: numerical != analytical" << endl;
+        if (!dC_dq_.isApprox(*dc_dq, 1e-06)) {
+          cout << "WARNING(quadriccamera/dc_dq): numerical != analytical" << endl;
           cout << "Analytical dc_dq:\n" << *dc_dq << endl;
           cout << "Numerical dc_dq:\n" << dC_dq_ << endl << endl;
 
@@ -138,15 +138,13 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
 				Eigen::Matrix<double, 9,6> dC_dx_ = numericalDerivative22(funPtr1, quadric, pose, 1e-6);
         boost::function<Matrix4(const Pose3&)> funPtr2(boost::bind(&internal::matrix, _1, boost::none));
 				Eigen::Matrix<double, 16,6> dX_dx_ = numericalDerivative11(funPtr2, pose, 1e-6);
-        if (!dC_dx_.isApprox(*dc_dx)) {
-          cout << "WARNING: numerical != analytical" << endl;
+        if (!dC_dx_.isApprox(*dc_dx, 1e-06)) {
+          cout << "WARNING(quadriccamera/dc_dx): numerical != analytical" << endl;
           cout << "Analytical dc_dx:\n" << *dc_dx << endl;
           cout << "Numerical dc_dx:\n" << dC_dx_ << endl << endl;
 
           cout << "Analytical dX_dx:\n" << dX_dx << endl;
           cout << "Numerical dX_dx:\n" << dX_dx_ << endl << endl;
-
-          cout << "Retract()\n" << gtsam::traits<Pose3>::Retract(Pose3(), (Vector6()<<1.1,2.2,3.3,4.4,5.5,6.6).finished()).matrix() << endl << endl;
         }
       }
     }
