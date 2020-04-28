@@ -70,10 +70,9 @@ struct traits<Foo> {
 
 
 
-Matrix h(Pose3 pose) {
-
+Matrix31 h(const Rot3& r, const Vector3& p) {
+    return r.matrix() * p;
 }
-
 
 
 
@@ -102,7 +101,7 @@ void testPose(void) {
     cout << "poseMatrixTraitsRetract\n" << poseMatrixTraitsRetract << endl << endl; 
 
     // create matricies from different retractions
-    Vector3 rotVector = (Vector3() << 1.0,2.0,3.0).finished();
+    Vector3 rotVector = (Vector3() << 1.2,12.3,3.5).finished();
     Rot3 rot = Rot3::Retract(rotVector);
     Matrix33 rotMatrix = rot.matrix();
     Matrix33 rotMatrixCayley = Rot3::CayleyChart::Retract(rotVector).matrix();
@@ -120,21 +119,30 @@ void testPose(void) {
     boost::function<Matrix3(const Vector3&)> retract_(boost::bind(&retract_matrix, _1));
     Eigen::Matrix<double, 9,3> dRetract = numericalDerivative11(retract_, rotVector, 1e-6);
 
-    cout << "dMatrix\n" << dMatrix << endl << endl;
-    cout << "dRetract\n" << dRetract << endl << endl;
+    cout << "dMatrix\n" << dMatrix << endl << endl; // this is what the numerical diff gives us 
+    cout << "dRetract\n" << dRetract << endl << endl; // this is what matlab gives us 
 
     // check what happens to rot matrix as we move r1
     Vector3 rotVectorDiff = (Vector3() << 1.0,0.0,0.0).finished();
-    Matrix33 rotRetractDiffMatrix = rot.retract(rotVectorDiff).matrix();
+    Matrix33 chartJacobian = Rot3::ExpmapDerivative(rotVector);
+    Matrix33 rotRetractDiffMatrix = rot.retract(rotVectorDiff).matrix(); 
     Matrix33 rotRetractAddVectors = Rot3::Retract(Rot3::LocalCoordinates(rot)+rotVectorDiff).matrix();
+
+    cout << "chartJacobian\n" << chartJacobian << endl << endl;
 
     cout << "rotMatrix\n" << rotMatrix << endl << endl;
     cout << "rotRetractDiffMatrix\n" << rotRetractDiffMatrix << endl << endl;
     cout << "rotRetractAddVectors\n" << rotRetractAddVectors << endl << endl;
 
+    Vector3 p = (Vector3() << 3.,4.,5.).finished();
+    Matrix31 y = h(rot, p);
+    boost::function<Matrix31(const Rot3&, const Vector3&)> h_(boost::bind(&h, _1, _2));
+    Eigen::Matrix<double, 3,3> dY_dr = numericalDerivative21(h_, rot, p, 1e-6);
+    Eigen::Matrix<double, 3,3> dY_dp = numericalDerivative22(h_, rot, p, 1e-6);
+    cout << "dY_dr\n" << dY_dr << endl << endl;
+    cout << "dY_dp\n" << dY_dp << endl << endl;
 
-
-
+  
 
 }
 // pose3::retracts are definitely using cayley for rotation
@@ -143,6 +151,8 @@ void testPose(void) {
 // it is clear that d(rot3.matrix()) and d(Rot3::retract(v).matrix()) are quite different 
 // rot.retract(dx) != Rot3::Retract(Rot3::Local(rot)+dx)
 // ^ because rot.retract(dx) = rot.matrix() * Rot3::Retract(dx).matrix()
+// if y = h(R,p) = R*p where p = [3,4,5] and r = [1,2,3]
+// then dy = R*[[-p]x I3] where first 3x3 is dy_dr and second is dy_dp
 
 
 int main(void) {
