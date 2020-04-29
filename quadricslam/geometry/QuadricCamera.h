@@ -75,6 +75,10 @@ namespace gtsam {
        * Calculate the 3x4 projection matrix 
        */
       Matrix34 transformToImage(OptionalJacobian<12,6> dP_dCamera = boost::none) const;
+
+      /** Static projection function */
+      static DualConic project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
+        OptionalJacobian<9,9> dc_dq = boost::none, OptionalJacobian<9,6> dc_dx = boost::none, OptionalJacobian<9,5> dc_dk = boost::none);
       
       /**
        * Project a quadric at the stored 3D pose and calibration
@@ -85,10 +89,6 @@ namespace gtsam {
 
       /** Matrix version of project for numerical differentiation */
       static Matrix3 project_(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
-
-      /** Static projection function */
-      static DualConic project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
-        OptionalJacobian<9,9> dc_dq = boost::none, OptionalJacobian<9,6> dc_dx = boost::none, OptionalJacobian<9,5> dc_dk = boost::none);
 
   };
 
