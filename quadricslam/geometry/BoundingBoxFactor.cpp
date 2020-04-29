@@ -84,12 +84,10 @@ Expression<AlignedBox2> BoundingBoxFactor::expression(const Expression<Pose3>& p
 
   Expression<boost::shared_ptr<Cal3_S2>> calibration(calibration_); // constant calibration
 
-  // boost::function<Vector(const ConstrainedDualQuadric&, const Pose3&, const boost::shared_ptr<Cal3_S2>&, 
-  //       OptionalJacobian<9,9>, OptionalJacobian<9,6>, OptionalJacobian<9,5>)> funPtr();
-  // auto staticProject = static_cast<DualConic (QuadricCamera::*)(const ConstrainedDualQuadric&, const Pose3&, const boost::shared_ptr<Cal3_S2>&, 
-  //       OptionalJacobian<9,9>, OptionalJacobian<9,6>, OptionalJacobian<9,5>)>(&QuadricCamera::project);
-  auto funPtr = boost::bind(&QuadricCamera::project, _1, _2, _3, boost::none, boost::none, boost::none);
-
+  // declare pointer to overloaded static project function
+  DualConic (*funPtr)(const ConstrainedDualQuadric&, const Pose3&, const boost::shared_ptr<Cal3_S2>&, 
+        OptionalJacobian<9,9>, OptionalJacobian<9,6>, OptionalJacobian<9,5>) = &QuadricCamera::project;
+        
   Expression<DualConic> dualConic(funPtr, quadric, pose, calibration); 
   Expression<AlignedBox2> predictedBounds(dualConic, &DualConic::bounds);
   return predictedBounds;

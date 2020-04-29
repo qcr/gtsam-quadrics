@@ -61,39 +61,42 @@ int main() {
   Matrix db_dx;
   Matrix db_dq;
   Vector4 error = bbf.evaluateError(cameraPose, quadric, db_dx, db_dq);
+  cout << "error: " << error.transpose() << endl;
+  cout << "db_dx\n" << db_dx << endl;
+  cout << "db_dq\n" << db_dq << endl;
+  // return 1;
+
+
+  // define expression for x,q
+  Expression<Pose3> cameraPose_('x',1);
+  Expression<ConstrainedDualQuadric> quadric_('q',1);
+
+  // create values
+  Values values;
+  values.insert(symbol('x',1), cameraPose);
+  values.insert(symbol('q',1), quadric);
+
+  // create gradients
+  std::vector<Matrix> gradients;
+  Eigen::Matrix<double, 4,6> db_dx1;
+  Eigen::Matrix<double, 4,9> db_dq1;
+  gradients.push_back(db_dq1);
+  gradients.push_back(db_dx1);
+
+  // // request expression and jacobians
+  Expression<AlignedBox2> bbfExpression = bbf.expression(cameraPose_, quadric_);
+  AlignedBox2 result = bbfExpression.value(values, gradients);
+
+  // // extract gradients
+  db_dq1 = gradients[0];
+  db_dx1 = gradients[1];
+
+  // print gradients
+  result.print("bounds");
+  cout << "db_dx1\n" << db_dx1 << endl;
+  cout << "db_dq1\n" << db_dq1 << endl;
+
+  cout << "done" << endl;
   return 1;
-
-
-//   // define expression for x,q
-//   Expression<Pose3> cameraPose_('x',1);
-//   Expression<ConstrainedDualQuadric> quadric_('q',1);
-
-//   // create values
-//   Values values;
-//   values.insert(symbol('x',1), cameraPose);
-//   values.insert(symbol('q',1), quadric);
-
-//   // create gradients
-//   std::vector<Matrix> gradients;
-//   Eigen::Matrix<double, 4,6> db_dx;
-//   Eigen::Matrix<double, 4,9> db_dq;
-//   gradients.push_back(db_dq);
-//   gradients.push_back(db_dx);
-
-//   // // request expression and jacobians
-//   Expression<AlignedBox2> bbfExpression = bbf.expression(cameraPose_, quadric_);
-//   AlignedBox2 result = bbfExpression.value(values, gradients);
-
-//   // // extract gradients
-//   db_dq = gradients[0];
-//   db_dx = gradients[1];
-
-//   // print gradients
-//   result.print("bounds");
-//   cout << "db_dx\n" << db_dx << endl;
-//   cout << "db_dq\n" << db_dq << endl;
-
-//   cout << "done" << endl;
-//   return 1;
 }
 
