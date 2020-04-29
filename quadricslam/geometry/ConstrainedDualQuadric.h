@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/geometry/Pose3.h>
+#include <random>
 
 namespace gtsam {
 
@@ -88,6 +89,11 @@ namespace gtsam {
        * @return 3D axis aligned bounding box
        */ 
       Vector6 bounds() const;
+
+      /** 
+       * Returns a quadric with noise added to the pose and radii
+       */
+      ConstrainedDualQuadric addNoise(double sd);
 
       /// @}
       /// @name Manifold group traits

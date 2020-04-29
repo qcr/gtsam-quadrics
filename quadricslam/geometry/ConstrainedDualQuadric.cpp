@@ -94,6 +94,24 @@ Vector6 ConstrainedDualQuadric::bounds() const {
 }
 
 /* ************************************************************************* */
+ConstrainedDualQuadric ConstrainedDualQuadric::addNoise(double sd) {
+  std::default_random_engine generator;
+  std::normal_distribution<double> distribution(0.0, sd);
+  vector<double> poseNoise(6); 
+  vector<double> radiiNoise(3); 
+  std::generate(poseNoise.begin(), poseNoise.end(), [&]{return distribution(generator);});
+  std::generate(radiiNoise.begin(), radiiNoise.end(), [&]{return distribution(generator);});
+
+  Pose3 poseDelta = Pose3::Retract(Vector6(poseNoise.data()));
+  Vector3 radiiDelta = Vector3(radiiNoise.data());
+
+  Pose3 noisyPose = pose_.compose(poseDelta);
+  Vector3 noisyRadii = radii_ + radiiDelta;
+
+  return ConstrainedDualQuadric(noisyPose, noisyRadii);    
+}
+
+/* ************************************************************************* */
 ConstrainedDualQuadric ConstrainedDualQuadric::Retract(const Vector9& v) {
   Pose3 pose = Pose3::Retract(v.head<6>());
   Vector3 radii = v.tail<3>();
@@ -125,7 +143,10 @@ Vector9 ConstrainedDualQuadric::localCoordinates(const ConstrainedDualQuadric& o
 
 /* ************************************************************************* */
 void ConstrainedDualQuadric::print(const std::string& s) const {
-  cout << s << " : \n" << this->matrix() << endl;
+  cout << s << " : " << endl;
+  cout << "QuadricPose\n" << pose_.matrix() << endl;
+  cout << "QuadricRadii: " << radii_.transpose() << endl;
+  cout << "QuadricMatrix\n" << this->matrix() << endl;
 }
 
 /* ************************************************************************* */
