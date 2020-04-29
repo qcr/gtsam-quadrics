@@ -24,11 +24,21 @@
 
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/geometry/Pose2.h>
 
 using namespace std;
 using namespace gtsam;
 
 int main() {
+
+  // DualConic conic(Pose2(Rot2(), Point2(45.2,13.8)), (Vector2() << 1.0,3.0).finished());
+  // DualConic conicNorm(conic.matrix()/conic.matrix()(2,2));
+  // cout << "conic polynomial\n" << conic.polynomial() << endl << endl;
+  // cout << "conic normalized poly\n" << conicNorm.polynomial() << endl << endl;
+  // cout << "conic matrix\n" << conic.matrix() << endl << endl;
+  // cout << "conicNorm matrix\n" << conicNorm.matrix() << endl << endl;
+  // cout << "conic matrix.inverse()\n" << conic.matrix().inverse() << endl << endl;
+  // cout << "conicNorm matrix.inverse()\n" << conicNorm.matrix().inverse() << endl << endl;
 
   // create measurement, calibration, dimensions, keys, model, pose, quadric
   AlignedBox2 measured(15.2, 18.5, 120.5, 230.2);

@@ -20,12 +20,9 @@
 #include <gtsam/base/numericalDerivative.h>
 
 using namespace std;
+
 namespace gtsam {
 namespace internal {
-
-Eigen::VectorXd flatten(Matrix X) {
-  return Eigen::Map<Eigen::VectorXd>(X.data(), X.size());
-}
 
 Matrix44 matrix(const Pose3& pose, OptionalJacobian<16,6> H) {
   Matrix44 poseMatrix = pose.matrix();

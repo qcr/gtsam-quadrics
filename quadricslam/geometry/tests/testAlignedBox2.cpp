@@ -37,15 +37,15 @@ TEST(AlignedBox2, constructors) {
   AlignedBox2 box2(2.0,3.0,4.0,5.0);
   AlignedBox2 box3(vector2);
 
-  EXPECT(assert_equal(box1.vector(), vector1));
-  EXPECT(assert_equal(box2.vector(), vector2));
-  EXPECT(assert_equal(box3.vector(), vector2));
+  EXPECT(assert_equal(vector1, box1.vector()));
+  EXPECT(assert_equal(vector2, box2.vector()));
+  EXPECT(assert_equal(vector2, box3.vector()));
 }
 
 TEST(AlignedBox2, equals) {
-  CHECK(b.equals(b));
   AlignedBox2 q(0.0,0.0,0.0,0.0);
-  CHECK(!b.equals(q));
+  EXPECT(b.equals(b));
+  EXPECT(!b.equals(q));
 }
 
 /* ************************************************************************* */

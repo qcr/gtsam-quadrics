@@ -123,14 +123,10 @@ namespace gtsam {
       /// @name Testable group traits
       /// @{
         
-      /**
-       * Prints the dual quadric with optional string
-       */
+      /** Prints the dual quadric with optional string */
       void print(const std::string& s = "") const;
 
-      /**
-       * Compares two ellipsoids
-       */
+      /** Compares two ellipsoids */
       bool equals(const ConstrainedDualQuadric& other, double tol = 1e-9) const;
       /// @}
   };
