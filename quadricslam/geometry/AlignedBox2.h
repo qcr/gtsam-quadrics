@@ -48,12 +48,17 @@ namespace gtsam {
        */
       AlignedBox2(Vector4 tlbr);
 
+      /** Returns box in xmin,ymin,xmax,ymax vector */
+      Vector4 vector() const;
+
+      /** 
+       * Applies normally distributed noise
+       */
+      AlignedBox2 addNoise(double sd);
+
       /// @}
       /// @name Testable group traits
       /// @{
-
-      /** Returns box in xmin,ymin,xmax,ymax vector */
-      Vector4 vector() const;
         
       /** Prints the box vector with optional string */
       void print(const std::string& s = "") const;

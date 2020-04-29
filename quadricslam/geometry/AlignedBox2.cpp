@@ -39,6 +39,17 @@ Vector4 AlignedBox2::vector() const {
 }
 
 /* ************************************************************************* */
+AlignedBox2 AlignedBox2::addNoise(double sd) {
+  std::default_random_engine generator;
+  std::normal_distribution<double> distribution(0.0, sd);
+  std::vector<double> boxNoise(4); 
+  std::generate(boxNoise.begin(), boxNoise.end(), [&]{return distribution(generator);});
+  Vector4 boxDelta(boxNoise.data());
+  return AlignedBox2(tlbr_+boxDelta);
+}
+
+
+/* ************************************************************************* */
 void AlignedBox2::print(const std::string& s) const {
   cout << s << " : " << this->vector().transpose() << endl;  
 }
