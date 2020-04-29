@@ -17,8 +17,12 @@
 
 #include <quadricslam/geometry/DualConic.h>
 #include <iostream>
+#include <iomanip>
+#include <cmath>
 
 using namespace std;
+
+#define SIGN2STR(n) (n >= 0 ? " + " : " - ")
 
 namespace gtsam {
 
@@ -35,13 +39,21 @@ DualConic::DualConic(const Matrix33& dC) {
 }
 
 /* ************************************************************************* */
-Matrix33 DualConic::matrix() const {
+DualConic::DualConic(const Pose2& pose, const Vector2& radii) {
+  Matrix33 Z = pose.matrix();
+  Matrix33 Cc = (Vector3() << (radii).array().pow(2), -1.0).finished().asDiagonal();
+  Matrix33 dC = Z * Cc * Z.transpose();
+  dC_ = dC;
+}
+
+/* ************************************************************************* */
+Matrix33 DualConic::matrix(void) const {
   return dC_;
 }
 
 /* ************************************************************************* */
-void DualConic::normalize() {
-  dC_ = dC_/dC_(2,2);
+DualConic DualConic::normalize(void) const {
+  return DualConic(dC_/dC_(2,2));
 }
 
 /* ************************************************************************* */
@@ -49,46 +61,15 @@ void DualConic::normalize() {
 // assert bounds are real-valued
 // normalize conic
 AlignedBox2 DualConic::bounds(OptionalJacobian<4,9> H) const {
-  double xmin = (dC_(0,2) + std::sqrt(dC_(0,2)*dC_(0,2)-dC_(2,2)*dC_(0,0))) / dC_(2,2);
-  double xmax = (dC_(0,2) - std::sqrt(dC_(0,2)*dC_(0,2)-dC_(2,2)*dC_(0,0))) / dC_(2,2);
-  double ymin = (dC_(1,2) + std::sqrt(dC_(1,2)*dC_(1,2)-dC_(2,2)*dC_(1,1))) / dC_(2,2);
-  double ymax = (dC_(1,2) - std::sqrt(dC_(1,2)*dC_(1,2)-dC_(2,2)*dC_(1,1))) / dC_(2,2);
+  double xmin = (dC_(0,2) + sqrt(dC_(0,2)*dC_(0,2)-dC_(2,2)*dC_(0,0))) / dC_(2,2);
+  double xmax = (dC_(0,2) - sqrt(dC_(0,2)*dC_(0,2)-dC_(2,2)*dC_(0,0))) / dC_(2,2);
+  double ymin = (dC_(1,2) + sqrt(dC_(1,2)*dC_(1,2)-dC_(2,2)*dC_(1,1))) / dC_(2,2);
+  double ymax = (dC_(1,2) - sqrt(dC_(1,2)*dC_(1,2)-dC_(2,2)*dC_(1,1))) / dC_(2,2);
 
   if (H) {
-    // Eigen::Matrix<double, 9,5> dC_dc = this->dC_dc(); // used to parametrizing conic as 5vec
-
-    // // calculate db_dC:
-    // double x = 1.0 / std::sqrt( dC_(0,2)*dC_(0,2) - dC_(0,0)*dC_(2,2) );
-    // double y = 1.0 / std::sqrt( dC_(1,2)*dC_(1,2) - dC_(1,1)*dC_(2,2) );
-
-    // double db1_dC11 = -0.5*x;
-    // double db1_dC31 = 1./dC_(2,2) * (dC_(0,2)*x + 1);
-    // double db2_dC22 = -0.5*y;
-    // double db2_dC32 = 1./dC_(2,2) * (dC_(1,2)*y + 1);
-    
-    // double db1_dC33 = -1/(dC_(2,2) * dC_(2,2)) * (dC_(0,2) + x) - dC_(0,0) / (2.0*dC_(2,2)*x);
-    // double db2_dC33 = -1/(dC_(2,2) * dC_(2,2)) * (dC_(1,2) + x) - dC_(1,1) / (2.0*dC_(2,2)*x);
-    // double db3_dC33 = -1/(dC_(2,2) * dC_(2,2)) * (dC_(0,2) + x) + dC_(0,0) / (2.0*dC_(2,2)*x);
-    // double db4_dC33 = -1/(dC_(2,2) * dC_(2,2)) * (dC_(1,2) + x) + dC_(1,1) / (2.0*dC_(2,2)*x);
-
-
-    // OPTION1: db_dC31 == db_dC13
-    //            c11, c21,  c31,    c12, c22,         c32,        c13,      c23,      c33
-    // db_dC << db1_dC11,  0, db1_dC31,  0,     0,         0,     db1_dC31,      0,     db1_dC33,
-    //              0,     0,     0,     0, db2_dC22,  db2_dC32,      0,     db2_dC32,  db2_dC33,
-    //         -db1_dC11,  0, -db1_dC31, 0,     0,         0,     -db1_dC31,     0,     db3_dC33,
-    //               0,    0,     0,     0, -db2_dC22, -db2_dC32,     0,     -db2_dC32, db4_dC33;
-
-    // OPTION2: db_dC31 != db_dC13
-    //           c11, c21,c31,c12, c22,    c32,    c13,      c23,      c33
-    // db_dC << db1_dC11,  0, 0, 0,     0,     0,  db1_dC31,      0,     db1_dC33,
-    //              0,     0, 0, 0, db2_dC22,  0,      0,     db2_dC32,  db2_dC33,
-    //         -db1_dC11,  0, 0, 0,     0,     0,  -db1_dC31,     0,     db3_dC33,
-    //               0,    0, 0, 0, -db2_dC22, 0,      0,     -db2_dC32, db4_dC33;
-
     Eigen::Matrix<double, 4,9> db_dC = Matrix::Zero(4,9);
-    double f = std::sqrt(dC_(0,2)*dC_(0,2)-dC_(0,0)*dC_(2,2));
-    double g = std::sqrt(dC_(1,2)*dC_(1,2)-dC_(1,1)*dC_(2,2));
+    double f = sqrt(dC_(0,2)*dC_(0,2)-dC_(0,0)*dC_(2,2));
+    double g = sqrt(dC_(1,2)*dC_(1,2)-dC_(1,1)*dC_(2,2));
     db_dC(0,0) = 1.0/f*(-1.0/2.0);
     db_dC(0,6) = (dC_(0,2)*1.0/f+1.0)/dC_(2,2);
     db_dC(0,8) = -1.0/(dC_(2,2)*dC_(2,2))*(dC_(0,2)+f)-(dC_(0,0)*1.0/f*(1.0/2.0))/dC_(2,2);
@@ -101,49 +82,34 @@ AlignedBox2 DualConic::bounds(OptionalJacobian<4,9> H) const {
     db_dC(3,4) = 1.0/g*(1.0/2.0);
     db_dC(3,7) = -(dC_(1,2)*1.0/g-1.0)/dC_(2,2);
     db_dC(3,8) = -1.0/(dC_(2,2)*dC_(2,2))*(dC_(1,2)-g)+(dC_(1,1)*1.0/g*(1.0/2.0))/dC_(2,2);
-
-    // cout << "DEBUG db_dC\n" << db_dC << endl << endl;
-    // cout << "DEBUG db_dc\n" << db_dC * dC_dc << endl << endl;
-    // *H = db_dC * dC_dc;
     *H = db_dC;
   }
 
   return AlignedBox2(xmin, ymin, xmax, ymax);
 }
 
-Eigen::Matrix<double, 5,9> DualConic::dc_dC(void) {
-  static Eigen::Matrix<double, 5,9> dc_dC;
-  dc_dC << 1,0,0,0,0,0,0,0,0,
-           0,0,0,1,0,0,0,0,0,
-           0,0,0,0,1,0,0,0,0,
-           0,0,0,0,0,0,1,0,0,
-           0,0,0,0,0,0,0,1,0;
-  return dc_dC;
+/* ************************************************************************* */
+string DualConic::polynomial(void) const {
+  Matrix33 C = dC_.inverse();
+  stringstream ss;
+  ss << std::fixed << std::setprecision(2);
+  ss << C(0,0)*1 << "*x^2";
+  ss << SIGN2STR(C(0,1)*2) << fabs(C(0,1)*2) << "*x*y";
+  ss << SIGN2STR(C(1,1)*1) << fabs(C(1,1)*1) << "*y^2";
+  ss << SIGN2STR(C(0,2)*2) << fabs(C(0,2)*2) << "*x";
+  ss << SIGN2STR(C(1,2)*2) << fabs(C(1,2)*2) << "*y";
+  ss << SIGN2STR(C(2,2)*1) << fabs(C(2,2)*1) << " = 0";
+  return ss.str();
 }
-
-Eigen::Matrix<double, 9,5> DualConic::dC_dc(void) {
-  static Eigen::Matrix<double, 9,5> dC_dc;
-  dC_dc << 1,0,0,0,0,
-           0,1,0,0,0,
-           0,0,0,1,0,
-           0,1,0,0,0,
-           0,0,1,0,0,
-           0,0,0,0,1,
-           0,0,0,1,0,
-           0,0,0,0,1,
-           0,0,0,0,0;
-  return dC_dc;
-}
-
 
 /* ************************************************************************* */
-void DualConic::print(const std::string& s) const {
+void DualConic::print(const string& s) const {
   cout << s << " : \n" << dC_ << endl;
 }
 
 /* ************************************************************************* */
 bool DualConic::equals(const DualConic& other, double tol) const {
-  return dC_.isApprox(other.dC_, tol);
+  return this->normalize().matrix().isApprox(other.normalize().matrix(), tol);
 }
     
 } // namespace gtsam
