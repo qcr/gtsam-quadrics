@@ -73,14 +73,20 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
   }
 }
 
-
+/* ************************************************************************* */
 Expression<AlignedBox2> BoundingBoxFactor::expression(const Expression<Pose3>& pose, const Expression<ConstrainedDualQuadric>& quadric) const {
 
   Expression<boost::shared_ptr<Cal3_S2>> calibration(calibration_); // constant calibration
-  Expression<DualConic> dualConic(&QuadricCamera::project, quadric, pose, calibration); 
+
+  // boost::function<Vector(const ConstrainedDualQuadric&, const Pose3&, const boost::shared_ptr<Cal3_S2>&, 
+  //       OptionalJacobian<9,9>, OptionalJacobian<9,6>, OptionalJacobian<9,5>)> funPtr();
+  // auto staticProject = static_cast<DualConic (QuadricCamera::*)(const ConstrainedDualQuadric&, const Pose3&, const boost::shared_ptr<Cal3_S2>&, 
+  //       OptionalJacobian<9,9>, OptionalJacobian<9,6>, OptionalJacobian<9,5>)>(&QuadricCamera::project);
+  auto funPtr = boost::bind(&QuadricCamera::project, _1, _2, _3, boost::none, boost::none, boost::none);
+
+  Expression<DualConic> dualConic(funPtr, quadric, pose, calibration); 
   Expression<AlignedBox2> predictedBounds(dualConic, &DualConic::bounds);
   return predictedBounds;
-
 }
 
 

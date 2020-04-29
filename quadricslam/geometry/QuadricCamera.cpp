@@ -34,47 +34,37 @@ QuadricCamera QuadricCamera::Create(const Pose3& pose, const boost::shared_ptr<C
   return QuadricCamera(pose, K);
 }
 
-
 /* ************************************************************************* */
 // Note: will compute inverse camPose with jacobian regardless of OptionalJacobian
 Matrix34 QuadricCamera::transformToImage(OptionalJacobian<12,6> dP_dCamera) const {
   
   Matrix3 image_T_camera = calibration().K();
-
-  // can also use pose.rotation() and pose.translation() which comes with 3,6 jacobians
-  // ^ how can we use this to get full 14,6 jacobian for matricision?
-  // Matrix6 dPoseInv_dPose = Matrix6::Zero();
-  // Matrix4 camera_T_world = pose().inverse(&dPoseInv_dPose).matrix();
   Matrix4 camera_T_world = pose().matrix().inverse();
-  
   Matrix34 image_T_world = image_T_camera * (camera_T_world).block(0,0,3,4);
   
-  // if (dP_dCamera) {
-  //   *dP_dCamera = Matrix33::Identity() 
-  // }
+  if (dP_dCamera) {
+    throw NotImplementedException();
+    // throw std::runtime_error("Rot3::CayleyChart::Local Derivative");
+  }
   return image_T_world;
 }
 
 /* ************************************************************************* */
-DualConic QuadricCamera::project2(const ConstrainedDualQuadric& quadric, OptionalJacobian<5,6> dC_dCamera, OptionalJacobian<5,9> dC_dQ) const {
+DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, OptionalJacobian<5,6> dC_dCamera, OptionalJacobian<5,9> dC_dQ) const {
   Matrix34 image_T_world = transformToImage(); 
   Matrix4 dQ = quadric.matrix();
-  Matrix4 dQn = dQ/dQ(3,3);
-  Matrix3 dC = image_T_world * dQn * image_T_world.transpose();
+  // dQ = dQ/dQ(3,3);
+  Matrix3 dC = image_T_world * dQ * image_T_world.transpose();
   return DualConic(dC);
 }
 
+/* ************************************************************************* */
 Matrix3 QuadricCamera::project_(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration) {
-  Matrix3 K = calibration->K();
-  Matrix4 X = pose.matrix();
-  Matrix4 Xi = X.inverse();
-  Matrix34 P = K * internal::I34 * Xi;
-  Matrix4 Q = quadric.matrix();
-  Matrix3 C = P * Q * P.transpose();
+  Matrix3 C = project(quadric, pose, calibration).matrix();
   return C;
 }
 
-
+/* ************************************************************************* */
 // NOTE: requires updating jacobians if we normalize q/c
 // this wont happen if we split it into sub functions and just combine jacobians
 DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
@@ -153,7 +143,6 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
   }
 
   return DualConic(C);
-
 }
     
 } // namespace gtsam

@@ -56,17 +56,17 @@ namespace gtsam {
 
     private:
 
-      typedef PinholePose<Cal3_S2> Base; ///< basde class has pose and calibration as private member
+      typedef PinholePose<Cal3_S2> Base; ///< base class has pose and calibration as private member
 
     public:
     
-      /** default constructor */
+      /** Default constructor */
       QuadricCamera() {};
 
-      /** constructor with pose and calibration */
+      /** Constructor with pose and calibration */
       QuadricCamera(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K) : Base(pose, K) {};
 
-      /** named static constructor for Expressions 
+      /** Named static constructor for Expressions 
        * as found in PinholeCamera.h
       */
       static QuadricCamera Create(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K, OptionalJacobian<6,6> dCamera_dPose, OptionalJacobian<6,5> dCamera_dCalibration);
@@ -81,17 +81,18 @@ namespace gtsam {
        * @param quadric the 3D quadric surface to be projected
        * @return the projected dual conic 
        */
-      DualConic project2(const ConstrainedDualQuadric& quadric, OptionalJacobian<5,6> dC_dCamera = boost::none, OptionalJacobian<5,9> dC_dQ = boost::none) const;
+      DualConic project(const ConstrainedDualQuadric& quadric, OptionalJacobian<5,6> dC_dCamera = boost::none, OptionalJacobian<5,9> dC_dQ = boost::none) const;
 
+      /** Matrix version of project for numerical differentiation */
       static Matrix3 project_(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
 
-      /** static projection function */
+      /** Static projection function */
       static DualConic project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
         OptionalJacobian<9,9> dc_dq = boost::none, OptionalJacobian<9,6> dc_dx = boost::none, OptionalJacobian<9,5> dc_dk = boost::none);
 
   };
 
-  // add traits<A>::dimension for Expressions
+  // Add dimensions for expressions
   template<>
   struct traits<QuadricCamera> {
     enum { dimension = 6};
