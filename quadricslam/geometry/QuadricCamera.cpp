@@ -39,7 +39,7 @@ QuadricCamera QuadricCamera::Create(const Pose3& pose, const boost::shared_ptr<C
 Matrix34 QuadricCamera::transformToImage(OptionalJacobian<12,6> dP_dCamera) const {
   
   Matrix3 image_T_camera = calibration().K();
-  Matrix4 camera_T_world = pose().matrix().inverse();
+  Matrix4 camera_T_world = pose().inverse().matrix();
   Matrix34 image_T_world = image_T_camera * (camera_T_world).block(0,0,3,4);
   
   if (dP_dCamera) {
@@ -75,8 +75,7 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
 
   // first retract quadric and pose to compute dX:/dx and dQ:/dq
   Matrix3 K = calibration->K();
-  Matrix4 X = pose.matrix();
-  Matrix4 Xi = X.inverse();
+  Matrix4 Xi = pose.inverse().matrix();
   Matrix34 P = K * I34 * Xi;
   Matrix4 Q = quadric.matrix();
   Matrix3 C = P * Q * P.transpose();
