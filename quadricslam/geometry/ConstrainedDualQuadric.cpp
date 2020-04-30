@@ -94,16 +94,9 @@ Vector6 ConstrainedDualQuadric::bounds() const {
 }
 
 /* ************************************************************************* */
-ConstrainedDualQuadric ConstrainedDualQuadric::addNoise(double sd) {
-  std::default_random_engine generator;
-  std::normal_distribution<double> distribution(0.0, sd);
-  vector<double> poseNoise(6); 
-  vector<double> radiiNoise(3); 
-  std::generate(poseNoise.begin(), poseNoise.end(), [&]{return distribution(generator);});
-  std::generate(radiiNoise.begin(), radiiNoise.end(), [&]{return distribution(generator);});
-
-  Pose3 poseDelta = Pose3::Retract(Vector6(poseNoise.data()));
-  Vector3 radiiDelta = Vector3(radiiNoise.data());
+ConstrainedDualQuadric ConstrainedDualQuadric::addNoise(const Vector9& noiseVector) {
+  Pose3 poseDelta = Pose3::Retract(noiseVector.head<6>());
+  Vector3 radiiDelta = Vector3(noiseVector.tail<3>());
 
   Pose3 noisyPose = pose_.compose(poseDelta);
   Vector3 noisyRadii = radii_ + radiiDelta;

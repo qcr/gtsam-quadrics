@@ -99,10 +99,8 @@ namespace gtsam {
        */ 
       Vector6 bounds() const;
 
-      /** 
-       * Returns a quadric with noise added to the pose and radii
-       */
-      ConstrainedDualQuadric addNoise(double sd);
+      /* Adds noise using noise vector */
+      ConstrainedDualQuadric addNoise(const Vector9& noiseVector);
 
       /// @}
       /// @name Manifold group traits

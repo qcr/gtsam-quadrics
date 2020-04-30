@@ -54,7 +54,7 @@ namespace gtsam {
       /** 
        * Applies normally distributed noise
        */
-      AlignedBox2 addNoise(double sd);
+      AlignedBox2 addNoise(const Vector4& noiseVector);
 
       /// @}
       /// @name Testable group traits
