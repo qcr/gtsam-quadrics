@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/geometry/Pose3.h>
+#include <random>
 
 namespace gtsam {
 
@@ -70,6 +71,15 @@ namespace gtsam {
         return ConstrainedDualQuadric(pose, radii);
       }
 
+      /* get pose, avoid computation with it */
+      Pose3 getPose(void) const {return pose_;}
+
+      /* get quadric radii, avoid computation with it */
+      Vector3 getRadii(void) const {return radii_;}
+
+      /* get quadric centroid */
+      Point3 centroid(void) const {return pose_.translation();}
+
       /**
        * Constructs 4x4 quadric matrix from pose & radii
        * Q = Z * Qc * Z.T
@@ -81,7 +91,7 @@ namespace gtsam {
        * see Nicholson et. al 2019 QuadricSLAM for full details
        * @return 4x4 constrained quadric
        */
-      Matrix44 matrix() const;
+      Matrix44 matrix(OptionalJacobian<16,9> H = boost::none) const;
 
       /**
        * Calculates the AlignedBox3 bounds of the ellipsoid
@@ -89,10 +99,24 @@ namespace gtsam {
        */ 
       Vector6 bounds() const;
 
+      /* Adds noise using noise vector */
+      ConstrainedDualQuadric addNoise(const Vector9& noiseVector);
+
       /// @}
       /// @name Manifold group traits
       /// @{
       enum { dimension = 9 };
+
+      /**
+       * The Retract at origin
+       */
+      static ConstrainedDualQuadric Retract(const Vector9& v);
+
+      /**
+       * The Local at origin
+       */
+      static Vector9 LocalCoordinates(const ConstrainedDualQuadric& q);
+
 
       /**
        * The retract function
@@ -112,14 +136,10 @@ namespace gtsam {
       /// @name Testable group traits
       /// @{
         
-      /**
-       * Prints the dual quadric with optional string
-       */
+      /** Prints the dual quadric with optional string */
       void print(const std::string& s = "") const;
 
-      /**
-       * Compares two ellipsoids
-       */
+      /** Compares two ellipsoids */
       bool equals(const ConstrainedDualQuadric& other, double tol = 1e-9) const;
       /// @}
   };

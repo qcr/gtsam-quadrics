@@ -27,11 +27,11 @@
 using namespace std;
 using namespace gtsam;
 
-static const Matrix33 matrix1 = (Matrix33() << 2.181975e+06, 1.843200e+06, 7.680000e+03,
+static const DualConic conic1 = DualConic((Matrix33() << 2.181975e+06, 1.843200e+06, 7.680000e+03,
                                               1.843200e+06, 1.106775e+06, 5.760000e+03,
-                                              7.680000e+03, 5.760000e+03, 2.400000e+01).finished();
+                                              7.680000e+03, 5.760000e+03, 2.400000e+01).finished());
 
-TEST(QuadricCamera, constructors) {
+TEST(QuadricCamera, Constructors) {
   QuadricCamera camera1;
 }
 
@@ -42,7 +42,10 @@ TEST(QuadricCamera, ProjectQuadric) {
   Matrix34 P = camera1.transformToImage();
   ConstrainedDualQuadric Q;
   DualConic C = camera1.project(Q);
-  EXPECT(assert_equal(matrix1, C.matrix()))
+
+  DualConic C2 = QuadricCamera::project(Q, cameraPose, K);
+  EXPECT(assert_equal(conic1, C));
+  EXPECT(assert_equal(conic1, C2));
 }
 
 

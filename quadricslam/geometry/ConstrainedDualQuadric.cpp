@@ -17,6 +17,7 @@
 
 #include <quadricslam/geometry/ConstrainedDualQuadric.h>
 #include <quadricslam/base/NotImplementedException.h>
+#include <quadricslam/base/Jacobians.h>
 
 #include <iostream>
 
@@ -50,8 +51,33 @@ ConstrainedDualQuadric::ConstrainedDualQuadric(const Rot3& R, const Point3& t, c
 }
 
 /* ************************************************************************* */
-Matrix44 ConstrainedDualQuadric::matrix() const {
-  return pose_.matrix() * (Vector4() << (radii_).array().pow(2), -1.0).finished().asDiagonal() * pose_.matrix().transpose();
+Matrix44 ConstrainedDualQuadric::matrix(OptionalJacobian<16,9> dQ_dq) const {
+  Matrix44 Z = pose_.matrix();
+  Matrix44 Qc = (Vector4() << (radii_).array().pow(2), -1.0).finished().asDiagonal();
+  Matrix44 Q = Z * Qc * Z.transpose();
+
+  if (dQ_dq) {
+    using namespace internal;
+
+    // NOTE: this will recalculate pose.matrix
+    // NOTE: pose.matrix derivative will also cost an extra Local()
+    Eigen::Matrix<double, 16,6> dZ_dx;
+    internal::matrix(pose_, dZ_dx);
+    Eigen::Matrix<double, 16,9> dZ_dq = Matrix::Zero(16,9);
+    dZ_dq.block(0,0,16,6) = dZ_dx;
+
+
+    Eigen::Matrix<double, 16,9> dQc_dq = Matrix::Zero(16,9);
+    dQc_dq(0,6) = 2.0 * radii_(0);
+    dQc_dq(5,7) = 2.0 * radii_(1);
+    dQc_dq(10,8) = 2.0 * radii_(2);
+    
+    *dQ_dq = kron(I44, Z*Qc) * T44 * dZ_dq  +  kron(Z, I44) * (kron(I44, Z)*dQc_dq + kron(Qc, I44)*dZ_dq);
+
+    // cout << "DEBUG dZ_dq: \n" << dZ_dq << endl << endl;
+    // cout << "DEBUG dQc_dq: \n" << dQc_dq << endl << endl;
+  }
+  return Q;
 }
 
 /* ************************************************************************* */
@@ -65,6 +91,32 @@ Vector6 ConstrainedDualQuadric::bounds() const {
   double y_max = (dE(1,3) - std::sqrt(dE(1,3) * dE(1,3) - (dE(1,1) * dE(3,3)))) / dE(3,3);
   double z_max = (dE(2,3) - std::sqrt(dE(2,3) * dE(2,3) - (dE(2,2) * dE(3,3)))) / dE(3,3);
   return (Vector6() << x_min, y_min, z_min, x_max, y_max, z_max).finished();
+}
+
+/* ************************************************************************* */
+ConstrainedDualQuadric ConstrainedDualQuadric::addNoise(const Vector9& noiseVector) {
+  Pose3 poseDelta = Pose3::Retract(noiseVector.head<6>());
+  Vector3 radiiDelta = Vector3(noiseVector.tail<3>());
+
+  Pose3 noisyPose = pose_.compose(poseDelta);
+  Vector3 noisyRadii = radii_ + radiiDelta;
+
+  return ConstrainedDualQuadric(noisyPose, noisyRadii);    
+}
+
+/* ************************************************************************* */
+ConstrainedDualQuadric ConstrainedDualQuadric::Retract(const Vector9& v) {
+  Pose3 pose = Pose3::Retract(v.head<6>());
+  Vector3 radii = v.tail<3>();
+  return ConstrainedDualQuadric(pose, radii);
+}
+
+/* ************************************************************************* */
+Vector9 ConstrainedDualQuadric::LocalCoordinates(const ConstrainedDualQuadric& q) {
+  Vector9 v = Vector9::Zero();
+  v.head<6>() = Pose3::LocalCoordinates(q.pose_);
+  v.tail<3>() = q.radii_;
+  return v;
 }
 
 /* ************************************************************************* */
@@ -84,7 +136,10 @@ Vector9 ConstrainedDualQuadric::localCoordinates(const ConstrainedDualQuadric& o
 
 /* ************************************************************************* */
 void ConstrainedDualQuadric::print(const std::string& s) const {
-  cout << s << " : \n" << this->matrix() << endl;
+  cout << s << " : " << endl;
+  cout << "QuadricPose\n" << pose_.matrix() << endl;
+  cout << "QuadricRadii: " << radii_.transpose() << endl;
+  cout << "QuadricMatrix\n" << this->matrix() << endl;
 }
 
 /* ************************************************************************* */

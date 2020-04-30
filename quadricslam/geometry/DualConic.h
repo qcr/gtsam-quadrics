@@ -17,7 +17,10 @@
 
 #pragma once
 
-#include<quadricslam/geometry/AlignedBox2.h>
+#include <quadricslam/geometry/AlignedBox2.h>
+
+#include <gtsam/base/Testable.h>
+#include <gtsam/geometry/Pose2.h>
 
 namespace gtsam {
 
@@ -28,7 +31,7 @@ namespace gtsam {
   class GTSAM_EXPORT DualConic {
 
     protected:
-      Matrix33 dC_; ///< 3x3 dual conic matrix
+      Matrix33 dC_; ///< 3x3 matrix of the quadratic equation
 
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -36,38 +39,57 @@ namespace gtsam {
       /// @name Constructors and named constructors
       /// @{
       
-      /** default constructor, unit circle at origin */
+      /** Default constructor, unit circle at origin */
       DualConic();
 
-      /** constructor from 3x3 matrix */
+      /** Constructor from 3x3 matrix */
       DualConic(const Matrix33& dC);
 
-      /** return 3x3 conic matrix */
-      Matrix33 matrix() const;
+      /** Create ellipse from 2D pose and axis lengths */
+      DualConic(const Pose2& pose, const Vector2& radii);
 
-      /** return 2D bounds on image plane */
-      AlignedBox2 bounds(OptionalJacobian<4,5> H = boost::none) const;
+      /** Return 3x3 conic matrix */
+      Matrix33 matrix(void) const;
 
+      /** Return normalized dual conic */
+      DualConic normalize(void) const;
+
+      /** Return 2D bounds on image plane */
+      AlignedBox2 bounds(OptionalJacobian<4,9> H = boost::none) const;
+
+      /** 
+       * Classify conic section as generate/degenerate 
+       * Using det(C) as opposed to sign(eigenvalues)
+       */
+      bool isDegenerate(void) const;
+
+      /** Classify conic section as elliptical vs hyperbola/parabola */
+      bool isEllipse(void) const;
+
+      /** The polynomial / cartesian form as a string */
+      std::string polynomial(void) const;
 
       /// @}
       /// @name Testable group traits
       /// @{
         
-      /**
-       * Prints the dual quadric with optional string
-       */
+      /** Prints the dual quadric with optional string */
       void print(const std::string& s = "") const;
 
-      /**
-       * Compares two ellipsoids
-       */
+      /** Compares two dual conics accounting for normalization */
       bool equals(const DualConic& other, double tol = 1e-9) const;
+
       /// @}
   };
 
-  template<>
-  struct traits<DualConic> {
-    enum { dimension = 5};
-  };  
+  // Add DualConic to Testable group with dimensions for expressions
+  template <>
+  struct traits<DualConic> : public Testable<DualConic> {
+    enum { dimension = 9};
+  };
+  template <>
+  struct traits<const DualConic> : public Testable<DualConic> {
+    enum { dimension = 9};
+  };
     
 } // namespace gtsam

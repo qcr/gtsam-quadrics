@@ -24,20 +24,21 @@
 
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/geometry/Pose2.h>
 
 using namespace std;
 using namespace gtsam;
 
 int main() {
 
-  ConstrainedDualQuadric x; 
-  AlignedBox2 box(1.2, 3.4, 5.6, 7.8);
-  TestClass t(5);
-
-  // // power of a matrix
-  // Matrix22 z = (Matrix22() << 1.0,2.0,3.0,4.0).finished();
-  // print((Matrix)z, "z:");
-  // print((Matrix)z.array().pow(2).matrix(), "z.array():");
+  // DualConic conic(Pose2(Rot2(), Point2(45.2,13.8)), (Vector2() << 1.0,3.0).finished());
+  // DualConic conicNorm(conic.matrix()/conic.matrix()(2,2));
+  // cout << "conic polynomial\n" << conic.polynomial() << endl << endl;
+  // cout << "conic normalized poly\n" << conicNorm.polynomial() << endl << endl;
+  // cout << "conic matrix\n" << conic.matrix() << endl << endl;
+  // cout << "conicNorm matrix\n" << conicNorm.matrix() << endl << endl;
+  // cout << "conic matrix.inverse()\n" << conic.matrix().inverse() << endl << endl;
+  // cout << "conicNorm matrix.inverse()\n" << conicNorm.matrix().inverse() << endl << endl;
 
   // create measurement, calibration, dimensions, keys, model, pose, quadric
   AlignedBox2 measured(15.2, 18.5, 120.5, 230.2);
@@ -46,29 +47,54 @@ int main() {
   Key poseKey(Symbol('x', 1));
   Key quadricKey(Symbol('q', 1));
   boost::shared_ptr<noiseModel::Diagonal> model = noiseModel::Diagonal::Sigmas(Vector4(0.2,0.2,0.2,0.2));
-  Pose3 cameraPose(Rot3(), Point3(0,0,-3));
-  ConstrainedDualQuadric quadric;
+
+  // set camera pose and quadric
+  Pose3 cameraPose = Pose3::Retract((Vector6() << 1.1,2.2,3.3, 4.4,-5.5,-10.0).finished());
+  ConstrainedDualQuadric quadric = ConstrainedDualQuadric::Retract((Vector9() << 1.1,2.2,3.3,4.4,5.5,6.6,7.7,8.8,9.9).finished());
+  // Pose3 cameraPose(Rot3(), Point3(0,0,-3));
+  // ConstrainedDualQuadric quadric;
 
   // create and use bbf
   BoundingBoxFactor bbf(measured, calibration, imageDimensions, poseKey, quadricKey, model);
-  // Vector4 error = bbf.evaluateError(cameraPose, quadric);
 
-  // calculate prediction by hand
-  QuadricCamera camera(cameraPose, calibration);
-  DualConic dC = camera.project(quadric);
-  AlignedBox2 predictedBounds = dC.bounds();
-  predictedBounds.print("By hand");
+  // use bbf to evaluate error with jacobians
+  Matrix db_dx;
+  Matrix db_dq;
+  Vector4 error = bbf.evaluateError(cameraPose, quadric, db_dx, db_dq);
+  cout << "error: " << error.transpose() << endl;
+  cout << "db_dx\n" << db_dx << endl;
+  cout << "db_dq\n" << db_dq << endl;
+  // return 1;
 
-  // check expression has same result
+
+  // define expression for x,q
   Expression<Pose3> cameraPose_('x',1);
   Expression<ConstrainedDualQuadric> quadric_('q',1);
+
+  // create values
   Values values;
   values.insert(symbol('x',1), cameraPose);
   values.insert(symbol('q',1), quadric);
-  Expression<AlignedBox2> bbfExpression = bbf.expression(cameraPose_, quadric_);
-  AlignedBox2 result = bbfExpression.value(values);
-  result.print("expression");
 
+  // create gradients
+  std::vector<Matrix> gradients;
+  Eigen::Matrix<double, 4,6> db_dx1;
+  Eigen::Matrix<double, 4,9> db_dq1;
+  gradients.push_back(db_dq1);
+  gradients.push_back(db_dx1);
+
+  // // request expression and jacobians
+  Expression<AlignedBox2> bbfExpression = bbf.expression(cameraPose_, quadric_);
+  AlignedBox2 result = bbfExpression.value(values, gradients);
+
+  // // extract gradients
+  db_dq1 = gradients[0];
+  db_dx1 = gradients[1];
+
+  // print gradients
+  result.print("bounds");
+  cout << "db_dx1\n" << db_dx1 << endl;
+  cout << "db_dq1\n" << db_dq1 << endl;
 
   cout << "done" << endl;
   return 1;

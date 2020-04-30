@@ -25,6 +25,8 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/nonlinear/Expression.h>
 
+#define CHECK_ANALYTICAL 1
+
 namespace gtsam {
 
   /**
@@ -42,10 +44,10 @@ namespace gtsam {
 
     public:
 
-      /** default constructor */
+      /** Default constructor */
       BoundingBoxFactor() {};
 
-      /** constructor from measured box, calbration, dimensions and posekey, quadrickey, noisemodel */
+      /** Constructor from measured box, calbration, dimensions and posekey, quadrickey, noisemodel */
       BoundingBoxFactor(const AlignedBox2& measured, const boost::shared_ptr<Cal3_S2>& calibration, 
         const boost::shared_ptr<Vector2>& imageDimensions, const Key& poseKey, const Key& quadricKey, 
         const SharedNoiseModel& model) : 
@@ -53,7 +55,7 @@ namespace gtsam {
           calibration_(calibration), imageDimensions_(imageDimensions) {};
 
       /**
-       * evaluate the error between a quadric and 3D pose
+       * Evaluate the error between a quadric and 3D pose
        * @param pose the 3D camera position
        * @param quadric the quadric
        * @param H1 the derivative of the error wrt pose (4x6)
@@ -63,12 +65,13 @@ namespace gtsam {
 			  boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const;
 
       /**
-       * returns an expression for the prediction wrt pose and quadric
+       * Returns an expression for the prediction wrt pose and quadric
        */
       Expression<AlignedBox2> expression(const Expression<Pose3>& pose, const Expression<ConstrainedDualQuadric>& quadric) const;
 
   };
 
+  // declare dimensions of calibration pointer for expressions
   template <>
   struct traits<boost::shared_ptr<Cal3_S2>> {
     enum { dimension = 5};

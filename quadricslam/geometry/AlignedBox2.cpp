@@ -39,6 +39,12 @@ Vector4 AlignedBox2::vector() const {
 }
 
 /* ************************************************************************* */
+AlignedBox2 AlignedBox2::addNoise(const Vector4& noiseVector) {
+  return AlignedBox2(tlbr_+noiseVector);
+}
+
+
+/* ************************************************************************* */
 void AlignedBox2::print(const std::string& s) const {
   cout << s << " : " << this->vector().transpose() << endl;  
 }

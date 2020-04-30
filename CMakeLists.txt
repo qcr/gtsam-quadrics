@@ -26,7 +26,9 @@ include_directories(BEFORE "${PROJECT_SOURCE_DIR}")
 
 # set source files
 set(SOURCE_FILES
+	./quadricslam/base/Dataset.cpp
 	./quadricslam/base/TestClass.cpp
+	./quadricslam/base/Jacobians.cpp
 	./quadricslam/geometry/ConstrainedDualQuadric.cpp
 	./quadricslam/geometry/AlignedBox2.cpp
 	./quadricslam/geometry/BoundingBoxFactor.cpp
@@ -49,17 +51,20 @@ target_link_libraries(${CONVENIENCE_LIB_NAME} gtsam)
 # compile .exe files
 add_executable(main ./quadricslam/main.cpp)
 add_executable(runsystem ./quadricslam/base/System.cpp)
-add_executable(expressions ./quadricslam/base/tests/testExpressions.cpp)
+add_executable(expressions ./quadricslam/base/executables/testExpressions.cpp)
+add_executable(poseJacobians ./quadricslam/base/executables/testPoseJacobians.cpp)
 
 # link with gtsam (or recieve undefined refrences)
 target_link_libraries(main gtsam;${CONVENIENCE_LIB_NAME})
 target_link_libraries(runsystem gtsam;${CONVENIENCE_LIB_NAME})
 target_link_libraries(expressions gtsam;${CONVENIENCE_LIB_NAME})
+target_link_libraries(poseJacobians gtsam;${CONVENIENCE_LIB_NAME})
 
 
 ###################################################################################
 # Build tests (CMake tracks the dependecy to link with GTSAM through our project's static library)
 gtsamAddTestsGlob("geometry" "quadricslam/geometry/tests/test*.cpp" "" "${CONVENIENCE_LIB_NAME}")
+gtsamAddTestsGlob("geometry" "quadricslam/base/tests/test*.cpp" "" "${CONVENIENCE_LIB_NAME}")
 
 ###################################################################################
 # Build example files (CMake tracks the dependecy to link with GTSAM through our project's static library)

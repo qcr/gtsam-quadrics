@@ -23,24 +23,23 @@ namespace gtsam {
 
   /**
    * @class AlignedBox2
-   * A constrained dual quadric (r,t,s): see Nicholson et al. 2019 for details
+   * An axis aligned 2D bounding box (xmin,ymin,xmax,ymax)
    */
   class GTSAM_EXPORT AlignedBox2 {
 
     protected:
-      Vector4 tlbr_;
+      Vector4 tlbr_; ///< xmin,ymin,xmax,ymax
 
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
       /// @name Constructors and named constructors
       /// @{
-      /** default constructor */
+
+      /** Default constructor */
       AlignedBox2() : tlbr_(0,0,0,0) {};
       
-      /**
-       * Constructor from parts
-       */
+      /** Constructor from bounds */
       AlignedBox2(const double& xmin, const double& ymin, const double& xmax, const double& ymax);
 
       /**
@@ -49,27 +48,28 @@ namespace gtsam {
        */
       AlignedBox2(Vector4 tlbr);
 
+      /** Returns box in xmin,ymin,xmax,ymax vector */
+      Vector4 vector() const;
+
+      /** 
+       * Applies normally distributed noise
+       */
+      AlignedBox2 addNoise(const Vector4& noiseVector);
+
       /// @}
       /// @name Testable group traits
       /// @{
-
-      /**
-       * returns box in xmin,ymin,xmax,ymax vector
-       */
-      Vector4 vector() const;
         
-      /**
-       * Prints the dual quadric with optional string
-       */
+      /** Prints the box vector with optional string */
       void print(const std::string& s = "") const;
 
-      /**
-       * Compares two ellipsoids
-       */
+      /** Compares two boxes */
       bool equals(const AlignedBox2& other, double tol = 1e-9) const;
+
       /// @}
   };
 
+  // Add dimensions for expressions
   template <>
   struct traits<AlignedBox2> {
     enum { dimension = 4 };
