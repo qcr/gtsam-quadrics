@@ -48,7 +48,7 @@ class System {
             LevenbergMarquardtParams parameters;
             parameters.setRelativeErrorTol(1e-10); ///< stop iterating when change in error between steps is less than this
             parameters.setAbsoluteErrorTol(1e-8); ///< stop when cost-costchange < tol
-            parameters.setMaxIterations(20); 
+            parameters.setMaxIterations(100); 
             // parameters.setlambdaInitial(1e-5);
             // parameters.setlambdaUpperBound(1e10) ///< defaults to 1e5
             // parameters.setlambdaLowerBound(0) ///< defaults to 0.0
@@ -152,7 +152,7 @@ vector<AlignedBox2> addNoise(const vector<AlignedBox2>& boxes, double sd) {
  * Recieves trajectory in local reference frame, transforms to global frame 
  * i.e, reference pose is where the first pose of the trajectory should sit in global frame
 */
-vector<Pose3> transformTrajectoryFrom(const Pose3& reference, const vector<Pose3>& trajectory) {
+vector<Pose3> transformTrajectoryFrom(const vector<Pose3>& trajectory, const Pose3& reference) {
     vector<Pose3> transformed;
     for (auto pose : trajectory) {
         transformed.push_back(reference.transformPoseFrom(pose));
@@ -199,6 +199,12 @@ void test(void) {
     vector<AlignedBox2> measurements = reprojectQuadric(quadric, trajectory, calibration); 
     vector<AlignedBox2> noisyMeasurements = addNoise(measurements, BOX_SD);
 
+    // because noisyTrajectory is in a local reference frame
+    // we need to align it with our initial quadric estimate
+    // either by putting the trajectory in the global reference frame (set ref=trajectory[0])
+    // or by transforming the quadric to the local frame (transformTo(ref=trajector[0]))
+    noisyTrajectory = transformTrajectoryFrom(noisyTrajectory, poses[0]);
+
     // define sigmas 
     boost::shared_ptr<noiseModel::Diagonal> odomNoiseModel = noiseModel::Diagonal::Sigmas( (Vector6() << ODOM_SD,ODOM_SD,ODOM_SD,ODOM_SD,ODOM_SD,ODOM_SD).finished() );
     boost::shared_ptr<noiseModel::Diagonal> boxNoiseModel = noiseModel::Diagonal::Sigmas(Vector4(BOX_SD,BOX_SD,BOX_SD,BOX_SD));
@@ -208,11 +214,21 @@ void test(void) {
     NonlinearFactorGraph graph;
     Values initialEstimate;
 
-    // create and add box factors
+    // add trajectory estimate
+    for (int i = 0; i < trajectory.size(); i++) {
+        Key poseKey(Symbol('x', i));
+        initialEstimate.insert(poseKey, noisyTrajectory[i]);
+    }
+
+    // add quadric estimate
     Key quadricKey(Symbol('q', 0));
+    initialEstimate.insert(quadricKey, noisyQuadric);
+
+    // create and add box factors
     for (int i = 0; i < trajectory.size(); i++) {
         Key poseKey(Symbol('x', i));
         BoundingBoxFactor bbf(noisyMeasurements[i], calibration, imageDimensions, poseKey, quadricKey, boxNoiseModel);
+        // cout << "error(" << i << "): " << bbf.unwhitenedError(initialEstimate).transpose() << endl;
         graph.add(bbf);
     }
 
@@ -224,18 +240,8 @@ void test(void) {
         graph.add(bf);
     }
 
-    // add trajectory estimate
-    for (int i = 0; i < trajectory.size(); i++) {
-        Key poseKey(Symbol('x', i));
-        initialEstimate.insert(poseKey, noisyTrajectory[i]);
-    }
-
-    // add quadric estimate
-    initialEstimate.insert(quadricKey, noisyQuadric);
-
     // send to back end
     Values optValues = System::offline(graph, initialEstimate);
-    cout << "optimisation complete!" << endl;
 } 
 };
 
