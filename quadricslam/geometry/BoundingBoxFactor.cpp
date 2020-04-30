@@ -49,11 +49,15 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
     // evaluate error 
     Vector4 error = predictedBounds.vector() - measured_.vector();
+    // cout << error.transpose() << endl;
     if (error.array().isInf().any() or error.array().isNaN().any()) {
       cout << "\nWARNING: error inf/nan\nError: " << error.transpose() << endl << endl;  
     }
 
     if (H1) {
+      // boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
+      // *H1 = numericalDerivative21(funPtr, pose, quadric, 1e-6);
+
       *H1 = db_dC * dC_dx;
       if ((*H1).array().isInf().any() or (*H1).array().isNaN().any()) {
         cout << "\nWARNING: (*H1) inf/nan\nH1:\n" << (*H1) << endl << endl;  
@@ -69,6 +73,9 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
         }
       }
     } if (H2) {
+      // boost::function<Vector(const Pose3&,  const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
+      // *H2 = numericalDerivative22(funPtr, pose, quadric, 1e-6);
+      
       *H2 = db_dC * dC_dq; 
       if ((*H2).array().isInf().any() or (*H2).array().isNaN().any()) {
         cout << "\nWARNING: (*H2) inf/nan\nH1:\n" << (*H2) << endl << endl;  
