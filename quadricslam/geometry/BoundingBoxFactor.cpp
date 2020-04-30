@@ -32,6 +32,13 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
   try {
 
+
+    // debugging
+    // QuadricCamera camera(pose, calibration_);
+    // Point2 p = camera.project2(quadric.centroid());
+    // cout << "projected quad point: " << p.vector().transpose() << endl;
+
+
     // project quadric taking into account partial derivatives 
     Eigen::Matrix<double, 9,6> dC_dx; Eigen::Matrix<double, 9,9> dC_dq;
     DualConic dC = QuadricCamera::project(quadric, pose, calibration_, H1?&dC_dq:0, H2?&dC_dx:0);
@@ -42,9 +49,15 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
     // evaluate error 
     Vector4 error = predictedBounds.vector() - measured_.vector();
+    if (error.array().isInf().any() or error.array().isNaN().any()) {
+      cout << "\nWARNING: error inf/nan\nError: " << error.transpose() << endl << endl;  
+    }
 
     if (H1) {
       *H1 = db_dC * dC_dx;
+      if ((*H1).array().isInf().any() or (*H1).array().isNaN().any()) {
+        cout << "\nWARNING: (*H1) inf/nan\nH1:\n" << (*H1) << endl << endl;  
+      }
 
       if (CHECK_ANALYTICAL) {
         boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
@@ -57,6 +70,9 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
       }
     } if (H2) {
       *H2 = db_dC * dC_dq; 
+      if ((*H2).array().isInf().any() or (*H2).array().isNaN().any()) {
+        cout << "\nWARNING: (*H2) inf/nan\nH1:\n" << (*H2) << endl << endl;  
+      }
       
       if (CHECK_ANALYTICAL) {
         boost::function<Vector(const Pose3&,  const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));

@@ -25,7 +25,7 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/nonlinear/Expression.h>
 
-#define CHECK_ANALYTICAL 0
+#define CHECK_ANALYTICAL 1
 
 namespace gtsam {
 

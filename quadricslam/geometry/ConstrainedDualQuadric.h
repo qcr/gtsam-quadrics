@@ -71,6 +71,15 @@ namespace gtsam {
         return ConstrainedDualQuadric(pose, radii);
       }
 
+      /* get pose, avoid computation with it */
+      Pose3 getPose(void) const {return pose_;}
+
+      /* get quadric radii, avoid computation with it */
+      Vector3 getRadii(void) const {return radii_;}
+
+      /* get quadric centroid */
+      Point3 centroid(void) const {return pose_.translation();}
+
       /**
        * Constructs 4x4 quadric matrix from pose & radii
        * Q = Z * Qc * Z.T
