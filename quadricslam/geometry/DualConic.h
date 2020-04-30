@@ -57,6 +57,15 @@ namespace gtsam {
       /** Return 2D bounds on image plane */
       AlignedBox2 bounds(OptionalJacobian<4,9> H = boost::none) const;
 
+      /** 
+       * Classify conic section as generate/degenerate 
+       * Using det(C) as opposed to sign(eigenvalues)
+       */
+      bool isDegenerate(void) const;
+
+      /** Classify conic section as elliptical vs hyperbola/parabola */
+      bool isEllipse(void) const;
+
       /** The polynomial / cartesian form as a string */
       std::string polynomial(void) const;
 

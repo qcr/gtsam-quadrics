@@ -23,6 +23,7 @@
 using namespace std;
 
 #define SIGN2STR(n) (n >= 0 ? " + " : " - ")
+#define ISCLOSE(a,b,e) (fabs(a - b) <= ( (fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * e))
 
 namespace gtsam {
 
@@ -86,6 +87,23 @@ AlignedBox2 DualConic::bounds(OptionalJacobian<4,9> H) const {
   }
 
   return AlignedBox2(xmin, ymin, xmax, ymax);
+}
+
+/* ************************************************************************* */
+// TODO: float compare, what eps?
+bool DualConic::isDegenerate(void) const {
+  Matrix33 C = dC_.inverse();
+  return ISCLOSE(dC_.determinant(), 0, 1e-9);
+}
+
+/* ************************************************************************* */
+bool DualConic::isEllipse(void) const {
+  if (!this->isDegenerate()) {
+    Matrix33 C = dC_.inverse();
+    Matrix22 A33 = C.block(0,0,2,2);
+    return (A33.determinant() > 0);
+  }
+  return false;
 }
 
 /* ************************************************************************* */
