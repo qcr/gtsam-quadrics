@@ -43,7 +43,7 @@ using namespace std;
 
 class BackEnd {
     public:
-        static Values offline(NonlinearFactorGraph graph, Values initialEstimate) {
+        static Values offline(NonlinearFactorGraph graph, Values initialEstimate, bool testSensitivity = false) {
 
             // define parameters
             LevenbergMarquardtParams parameters;
@@ -61,6 +61,16 @@ class BackEnd {
             // optimise the graph
             Values result = optimizer.optimize();
             // int n_iterations = optimizer.iterations();
+
+            // test sensitivity
+            /// TODO: quantify how much results differ
+            if (testSensitivity) {
+                Values initialEstimatePerturbed = Noise::perturbValues(initialEstimate, 1e-8);
+                Values sensResult = BackEnd::offline(graph, initialEstimatePerturbed);
+                if (!result.equals(sensResult, 1e-6)) {
+                    cout << "WARNING: system is sensitive to input" << endl;
+                }
+            }
 
             // return result and info
             return result;
@@ -116,28 +126,7 @@ class FrontEnd {
             }
 
             // send to back end
-            Values optValues = BackEnd::offline(graph, initialEstimate);
-
-            Pose3 r1 = optValues.at<Pose3>(Symbol('x',2));
-            r1.print("\nx2\n");
-
-            // perturb values
-
-            // for each value
-            // add 1e-8 to each value
-            // update value in values
-
-            // auto value = optValues.at(1);
-            // value.dim();
-
-            // auto vv = optValues.zeroVectors();
-            // vv.print("\nvectorvalues\n");
-
-            optValues = Noise::perturbValues(optValues, 1e-1);
-
-            r1 = optValues.at<Pose3>(Symbol('x',2));
-            r1.print("\nx2\n");
-
+            Values optValues = BackEnd::offline(graph, initialEstimate, true);
         }
 };
 
