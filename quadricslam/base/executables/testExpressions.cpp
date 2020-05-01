@@ -53,6 +53,7 @@ Vector3 g(Vector3 y, OptionalJacobian<3,3> H) {
 
 
 Vector3 h(Vector3 y, OptionalJacobian<3,3> H) {
+    *H = Matrix33::Zero();
     return y.cwiseProduct(y);
 }
 
@@ -66,16 +67,20 @@ class Foo {
         Foo();
         Foo(Vector3 x, Vector3 y) : x_(x), y_(y) {};
         static Foo Create(Vector3 x, Vector3 y, OptionalJacobian<6,3> H1 = boost::none, OptionalJacobian<6,3> H2 = boost::none) {
+            *H1 = Matrix63::Zero();
+            *H2 = Matrix63::Zero();
             return Foo(x,y);
         }
         Vector3 doWork(const Vector3& z, OptionalJacobian<3,6> H1 = boost::none, OptionalJacobian<3,3> H2 = boost::none) const {
+            *H1 = Matrix36::Zero();
+            *H2 = Matrix33::Zero();
             return x_+y_+z;
         }
 
         // Foo retract(const Vector6& v) const {};
         // Vector6 localCoordinates(const Foo& other) const {};
-        void print(const std::string& s = "") const {};
-        bool equals(const Foo& other, double tol = 1e-9) const {};
+        // void print(const std::string& s = "") const {};
+        // bool equals(const Foo& other, double tol = 1e-9) const {};
 
 };
 
@@ -93,10 +98,14 @@ struct traits<Foo> {
 
 
 ConstrainedDualQuadric constructQuadric(Pose3 pose, Vector3 radii, OptionalJacobian<9,6> H1, OptionalJacobian<9,3> H2) {
+    *H1 = Matrix96::Zero();
+    *H2 = Matrix93::Zero();
     return ConstrainedDualQuadric(pose, radii);
 } 
 
 Foo constructFoo(Vector3 x, Vector3 y, OptionalJacobian<6,3> H1, OptionalJacobian<6,3> H2) {
+    *H1 = Matrix63::Zero();
+    *H2 = Matrix63::Zero();
     return Foo(x,y);
 }
 
@@ -173,6 +182,7 @@ void wrap_dot(void) {
     // cout << "C2: \n" << C2;
 
     Matrix34 Ca = A.operator*(B);
+    cout << Ca << endl;
     // Matrix34 Cb = A.applyOnTheRight(B);
 
 
@@ -232,7 +242,7 @@ void without_expressions(void) {
     // calculate y and dy_dx
     Matrix33 dy_dx;
     Vector3 y = f(x, dy_dx);
-    Vector3 t = f(x);
+    // Vector3 t = f(x);
 
     // calculate g and dz_dy
     Matrix33 dz_dy;

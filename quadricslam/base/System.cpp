@@ -20,6 +20,7 @@
 #include <quadricslam/geometry/QuadricCamera.h>
 #include <quadricslam/geometry/BoundingBoxFactor.h>
 #include <quadricslam/base/Dataset.h>
+#include <quadricslam/base/Noise.h>
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
@@ -32,7 +33,6 @@
 #include <random>
 #include <string>
 #include <iostream>
-
 
 #define ODOM_SD 0.01
 #define QUAD_SD 0.1
@@ -60,7 +60,7 @@ class BackEnd {
 
             // optimise the graph
             Values result = optimizer.optimize();
-            int n_iterations = optimizer.iterations();
+            // int n_iterations = optimizer.iterations();
 
             // return result and info
             return result;
@@ -80,25 +80,25 @@ class FrontEnd {
             boost::shared_ptr<noiseModel::Diagonal> boxNoiseModel = noiseModel::Diagonal::Sigmas(Vector4(BOX_SD,BOX_SD,BOX_SD,BOX_SD));
 
             // add or create trajectory estimate 
-            for (int i = 0; i < dataset.noisyTrajectory_.size(); i++) {
+            for (unsigned i = 0; i < dataset.noisyTrajectory_.size(); i++) {
                 Key poseKey(Symbol('x', i));
                 // cout << "pose " << i << endl << dataset.noisyTrajectory_[i].matrix() << endl;
                 initialEstimate.insert(poseKey, dataset.noisyTrajectory_[i]);
             }
 
             // add quadric estimates
-            for (int j = 0; j < dataset.noisyQuadrics_.size(); j++) {
+            for (unsigned j = 0; j < dataset.noisyQuadrics_.size(); j++) {
                 Key quadricKey(Symbol('q', j));
                 // cout << "quadric " << j << endl << dataset.noisyQuadrics_[j].matrix() << endl;
                 initialEstimate.insert(quadricKey, dataset.noisyQuadrics_[j]);
             }
 
             // create and add box factors
-            for (int j = 0; j < dataset.noisyQuadrics_.size(); j++) {
+            for (unsigned j = 0; j < dataset.noisyQuadrics_.size(); j++) {
                 Key quadricKey(Symbol('q', j));
                 // cout << "Quadric " << j << endl;
 
-                for (int i = 0; i < dataset.noisyTrajectory_.size(); i++) {
+                for (unsigned i = 0; i < dataset.noisyTrajectory_.size(); i++) {
                     Key poseKey(Symbol('x', i));
                     BoundingBoxFactor bbf(dataset.noisyBoxes_[j][i], dataset.calibration_, dataset.imageDimensions_, poseKey, quadricKey, boxNoiseModel);
                     // cout << "box " << i << ": " << dataset.noisyBoxes_[j][i].vector().transpose() << endl;
@@ -108,7 +108,7 @@ class FrontEnd {
             }
 
             // create odometry factors
-            for (int i = 0; i < dataset.noisyOdometry_.size(); i++) {
+            for (unsigned i = 0; i < dataset.noisyOdometry_.size(); i++) {
                 Key startKey(Symbol('x', i));
                 Key endKey(Symbol('x', i+1));
                 BetweenFactor<Pose3> bf(startKey, endKey, dataset.noisyOdometry_[i], odomNoiseModel);
@@ -116,9 +116,28 @@ class FrontEnd {
             }
 
             // send to back end
-            // graph.print("FACTOR GRAPH: ");
-            // initialEstimate.print("ESTIMATE: ");
             Values optValues = BackEnd::offline(graph, initialEstimate);
+
+            Pose3 r1 = optValues.at<Pose3>(Symbol('x',2));
+            r1.print("\nx2\n");
+
+            // perturb values
+
+            // for each value
+            // add 1e-8 to each value
+            // update value in values
+
+            // auto value = optValues.at(1);
+            // value.dim();
+
+            // auto vv = optValues.zeroVectors();
+            // vv.print("\nvectorvalues\n");
+
+            optValues = Noise::perturbValues(optValues, 1e-1);
+
+            r1 = optValues.at<Pose3>(Symbol('x',2));
+            r1.print("\nx2\n");
+
         }
 };
 

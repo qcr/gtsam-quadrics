@@ -42,14 +42,11 @@ Matrix Noise::gaussianNoise(int n, int m, double mu, double sd) {
   // define random distribution
   std::normal_distribution<double> distribution(mu, sd);
 
-  // define noise matrix
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> noiseMatrix(n, m);
-
   // define unary noise function
   auto gaussian = [&] {return distribution(Noise::generator_);};
 
   // apply function to all matrix elements
-  noiseMatrix = noiseMatrix.NullaryExpr(gaussian);
+  auto noiseMatrix = Eigen::MatrixXd::NullaryExpr(n,m, gaussian);
 
   return noiseMatrix;
 }
@@ -69,6 +66,7 @@ Values Noise::perturbValues(const Values& values, double sd) {
     }
     // auto noiseVector = Eigen::MatrixXd::Zero(value.dim(),1, 0.0,1e-8);
   }
+  return newValues;
 }
 
 

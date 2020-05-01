@@ -93,7 +93,7 @@ AlignedBox2 DualConic::bounds(OptionalJacobian<4,9> H) const {
 // TODO: float compare, what eps?
 bool DualConic::isDegenerate(void) const {
   Matrix33 C = dC_.inverse();
-  return ISCLOSE(dC_.determinant(), 0, 1e-9);
+  return ISCLOSE(C.determinant(), 0, 1e-9);
 }
 
 /* ************************************************************************* */

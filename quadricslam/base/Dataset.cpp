@@ -74,11 +74,11 @@ void SimulatedDataset::printTrajectory(const vector<Pose3>& poses) {
 vector<Pose3> SimulatedDataset::interpolatePoses(const vector<Pose3>& poses, int nBetween) {
 
   vector<Pose3> trajectory;
-  for(int i = 0; i < poses.size()-1; i++) {
+  for (unsigned i = 0; i < poses.size()-1; i++) {
       trajectory.push_back(poses[i]);
 
       double p = 1.0/(nBetween+1);
-      for(int j = 0; j < nBetween; j++) {
+      for (int j = 0; j < nBetween; j++) {
           double perc = p*(j+1);
           Pose3 newPose = gtsam::interpolate<Pose3>(poses[i], poses[i+1], perc);
           trajectory.push_back(newPose);
@@ -91,7 +91,7 @@ vector<Pose3> SimulatedDataset::interpolatePoses(const vector<Pose3>& poses, int
 /* ************************************************************************* */
 vector<Pose3> SimulatedDataset::asOdometry(const vector<Pose3>& trajectory) {
   vector<Pose3> odometry;
-  for (int i = 0; i < trajectory.size()-1; i++) {
+  for (unsigned i = 0; i < trajectory.size()-1; i++) {
       odometry.push_back(trajectory[i].between(trajectory[i+1]));
   }
   return odometry;
@@ -101,7 +101,7 @@ vector<Pose3> SimulatedDataset::asOdometry(const vector<Pose3>& trajectory) {
 vector<Pose3> SimulatedDataset::asTrajectory(const vector<Pose3>& odometry, const Pose3& reference) {
   vector<Pose3> trajectory;
   trajectory.push_back(reference);
-  for (int i = 0; i < odometry.size(); i++) {
+  for (unsigned i = 0; i < odometry.size(); i++) {
       trajectory.push_back(trajectory.back().compose(odometry[i]));
   }
   return trajectory;

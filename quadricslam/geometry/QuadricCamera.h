@@ -85,7 +85,7 @@ namespace gtsam {
        * @param quadric the 3D quadric surface to be projected
        * @return the projected dual conic 
        */
-      DualConic project(const ConstrainedDualQuadric& quadric, OptionalJacobian<5,6> dC_dCamera = boost::none, OptionalJacobian<5,9> dC_dQ = boost::none) const;
+      DualConic project(const ConstrainedDualQuadric& quadric) const;
 
       /** Matrix version of project for numerical differentiation */
       static Matrix3 project_(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
