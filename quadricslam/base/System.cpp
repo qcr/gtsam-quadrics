@@ -49,10 +49,10 @@ class BackEnd {
             LevenbergMarquardtParams parameters;
             parameters.setRelativeErrorTol(1e-10); ///< stop iterating when change in error between steps is less than this
             parameters.setAbsoluteErrorTol(1e-8); ///< stop when cost-costchange < tol
-            parameters.setMaxIterations(100); 
+            parameters.setMaxIterations(20); 
             // parameters.setlambdaInitial(1e-5);
-            // parameters.setlambdaUpperBound(1e10) ///< defaults to 1e5
-            // parameters.setlambdaLowerBound(0) ///< defaults to 0.0
+            // parameters.setlambdaUpperBound(1e5); ///< defaults to 1e5
+            // parameters.setlambdaLowerBound(1e-8); ///< defaults to 0.0
             parameters.setVerbosityLM("SUMMARY"); // SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
 
             // build optimiser

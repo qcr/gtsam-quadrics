@@ -29,10 +29,13 @@ namespace gtsam {
 SimulatedDataset::SimulatedDataset(double quad_sd, double odom_sd, double box_sd) {
 
   // seed random
-  generator_ = std::default_random_engine(5.2);
+  generator_ = std::default_random_engine(19);
 
   // generate random quadrics
   trueQuadrics_.push_back(ConstrainedDualQuadric(Pose3(), Vector3(1.,2.,3.)));
+  trueQuadrics_.push_back(ConstrainedDualQuadric(Pose3(), Vector3(1.,1.,1.)));
+  trueQuadrics_.push_back(ConstrainedDualQuadric(Pose3(), Vector3(1.,1.,1.)));
+  trueQuadrics_.push_back(ConstrainedDualQuadric(Pose3(), Vector3(1.,1.,1.)));
   noisyQuadrics_ = this->addNoise(trueQuadrics_, quad_sd);
 
   // generate n random camera positions looking at quadric(s)
