@@ -52,6 +52,18 @@ class FrontEnd {
      * Static function to build factor graph / estimate
     */
     static void begin(SimulatedDataset dataset);
+
+    /**
+     * Initialize quadrics from trajectory, boxes, camera
+     * Checking each quadric is OK and constrained
+     */
+    static vector<ConstrainedDualQuadric> initializeQuadrics(const vector<Pose3>& trajectory, const vector<vector<AlignedBox2>>& boxes, const QuadricCamera& camera);
+
+    /**
+     * Initialize a single quadric using SVD
+     */ 
+    static ConstrainedDualQuadric initializeQuadric(const vector<Pose3>& poses, const vector<AlignedBox2>& boxes, const QuadricCamera& camera);
+
 };
 
 

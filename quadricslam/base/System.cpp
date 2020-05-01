@@ -88,23 +88,42 @@ void FrontEnd::begin(SimulatedDataset dataset) {
   auto odomNoiseModel = noiseModel::Diagonal::Sigmas( Vector6::Constant(ODOM_SD) );
   auto boxNoiseModel = noiseModel::Diagonal::Sigmas( Vector4::Constant(BOX_SD) );
 
-  // add or create trajectory estimate 
-  for (unsigned i = 0; i < dataset.noisyTrajectory_.size(); i++) {
-    Key poseKey(Symbol('x', i));
-    initialEstimate.insert(poseKey, dataset.noisyTrajectory_[i]);
+  // create initial estimates if not supplied
+  vector<ConstrainedDualQuadric> noisyQuadrics;
+  vector<Pose3> noisyTrajectory;
+  bool estimatesSupplied = false;
+  if (!estimatesSupplied) {
+
+    /// Initialize trajectory from odometry
+    /// NOTE: if no reference, will be in local coordinates
+    noisyTrajectory = SimulatedDataset::asTrajectory(dataset.noisyOdometry_);
+
+    /// Initialize quadrics from boxes / trajectory
+    // noisyQuadrics = FrontEnd::intializeQuadrics(noisyTrajectory, dataset.noisyBoxes_);
+    
+  } else {
+    noisyTrajectory = dataset.noisyTrajectory_;
+    noisyQuadrics = dataset.noisyQuadrics_;
   }
 
-  // add quadric estimates
-  for (unsigned j = 0; j < dataset.noisyQuadrics_.size(); j++) {
+
+  // add trajectory estimate
+  for (unsigned i = 0; i < noisyTrajectory.size(); i++) {
+    Key poseKey(Symbol('x', i));
+    initialEstimate.insert(poseKey, noisyTrajectory[i]);
+  }
+
+  // add or create quadric estimates
+  for (unsigned j = 0; j < noisyQuadrics.size(); j++) {
     Key quadricKey(Symbol('q', j));
-    initialEstimate.insert(quadricKey, dataset.noisyQuadrics_[j]);
+    initialEstimate.insert(quadricKey, noisyQuadrics[j]);
   }
 
   // create and add box factors
-  for (unsigned j = 0; j < dataset.noisyQuadrics_.size(); j++) {
+  for (unsigned j = 0; j < noisyQuadrics.size(); j++) {
     Key quadricKey(Symbol('q', j));
 
-    for (unsigned i = 0; i < dataset.noisyTrajectory_.size(); i++) {
+    for (unsigned i = 0; i < noisyTrajectory.size(); i++) {
       Key poseKey(Symbol('x', i));
       BoundingBoxFactor bbf(dataset.noisyBoxes_[j][i], dataset.calibration_, dataset.imageDimensions_, poseKey, quadricKey, boxNoiseModel);
       graph.add(bbf);
@@ -123,8 +142,26 @@ void FrontEnd::begin(SimulatedDataset dataset) {
   Values optValues = BackEnd::offline(graph, initialEstimate, false);
 }
 
+/* ************************************************************************* */
+vector<ConstrainedDualQuadric> FrontEnd::initializeQuadrics(const vector<Pose3>& trajectory, const vector<vector<AlignedBox2>>& boxes, const QuadricCamera& camera) {
 
+  vector<ConstrainedDualQuadric> quadrics;
+  
+  // for each quadric 
+  // extract relevent poses
+  // extract aligning box at each pose
+  // calculate SVD
+  // constrain quadric
+  // check quadric is ok
+  // push back
 
+  return quadrics;
+}
+
+ConstrainedDualQuadric FrontEnd::initializeQuadric(const vector<Pose3>& poses, const vector<AlignedBox2>& boxes, const QuadricCamera& camera) {
+  ConstrainedDualQuadric quadric;
+  return quadric;
+}
 
 
 /* ************************************************************************* */

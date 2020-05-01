@@ -26,6 +26,7 @@ include_directories(BEFORE "${PROJECT_SOURCE_DIR}")
 
 # set source files
 set(SOURCE_FILES
+	./quadricslam/base/Evaluation.cpp
 	./quadricslam/base/Noise.cpp
 	./quadricslam/base/Dataset.cpp
 	./quadricslam/base/TestClass.cpp
