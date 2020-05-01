@@ -15,6 +15,14 @@
  * @brief a simple class used to test wrapper, etc
  */
 
+#pragma once
+
+#include <quadricslam/base/Noise.h>
+
+#include <gtsam/base/Matrix.h>
+
+#include <vector>
+
 namespace gtsam {
 
 class TestClass {
