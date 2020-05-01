@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <quadricslam/base/Noise.h>
 #include <quadricslam/geometry/AlignedBox2.h>
 #include <quadricslam/geometry/ConstrainedDualQuadric.h>
 #include <quadricslam/geometry/QuadricCamera.h>
@@ -59,7 +60,6 @@ class Dataset {
 
 class SimulatedDataset {
   public:
-    std::default_random_engine generator_;
     boost::shared_ptr<Cal3_S2> calibration_;
     boost::shared_ptr<Vector2> imageDimensions_;
     vector<ConstrainedDualQuadric> trueQuadrics_;
@@ -75,7 +75,6 @@ class SimulatedDataset {
     SimulatedDataset(double quad_sd, double odom_sd, double box_sd);
     // static SimulatedDataset simulate(double quad_sd, double odom_sd, double box_sd);
 
-    Vector generateNoise(int n, double sd);
     vector<Pose3> addNoise(const vector<Pose3>& odometry, double sd);
     vector<AlignedBox2> addNoise(const vector<AlignedBox2>& boxes, double sd);
     vector<vector<AlignedBox2>> addNoise(const vector<vector<AlignedBox2>>& boxes, double sd);
