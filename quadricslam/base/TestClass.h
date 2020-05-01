@@ -25,15 +25,34 @@
 
 namespace gtsam {
 
+/**
+ * @class TestClass
+ * A simple test class (double)
+ */
 class TestClass {
   private:
-    double x_;
+    double x_; ///< double to be stored
 
   public:
+    // EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    /// @name Constructors and named constructors
+    /// @{
+
+    /** Default constructor */
     TestClass() {};
+
+    /** Constructor from double */
     TestClass(double x) : x_(x) {};
+
+    /// @}
+    /// @name Testable group traits
+    /// @{
+
     double getx(void) {return x_;}
     double doWork(double y);
+
+    /// @}
 };
 
-}
+} // namespace gtsam
