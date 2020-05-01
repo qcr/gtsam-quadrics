@@ -15,6 +15,8 @@
  * @brief code to operate the quadric slam library on a dataset
  */
 
+#include <quadricslam/base/System.h>
+
 #include <quadricslam/geometry/ConstrainedDualQuadric.h>
 #include <quadricslam/geometry/AlignedBox2.h>
 #include <quadricslam/geometry/QuadricCamera.h>
@@ -41,116 +43,103 @@
 using namespace gtsam;
 using namespace std;
 
-class BackEnd {
-    public:
-        static Values offline(NonlinearFactorGraph graph, Values initialEstimate, bool testSensitivity = false) {
+/* ************************************************************************* */
+Values BackEnd::offline(NonlinearFactorGraph graph, Values initialEstimate, bool testSensitivity) {
 
-            // define parameters
-            LevenbergMarquardtParams parameters;
-            parameters.setRelativeErrorTol(1e-10); ///< stop iterating when change in error between steps is less than this
-            parameters.setAbsoluteErrorTol(1e-8); ///< stop when cost-costchange < tol
-            parameters.setMaxIterations(20); 
-            // parameters.setlambdaInitial(1e-5);
-            // parameters.setlambdaUpperBound(1e5); ///< defaults to 1e5
-            // parameters.setlambdaLowerBound(1e-8); ///< defaults to 0.0
-            parameters.setVerbosityLM("SUMMARY"); // SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
+  // define parameters
+  LevenbergMarquardtParams parameters;
+  parameters.setRelativeErrorTol(1e-10); ///< stop iterating when change in error between steps is less than this
+  parameters.setAbsoluteErrorTol(1e-8); ///< stop when cost-costchange < tol
+  parameters.setMaxIterations(20); 
+  // parameters.setlambdaInitial(1e-5);
+  // parameters.setlambdaUpperBound(1e5); ///< defaults to 1e5
+  // parameters.setlambdaLowerBound(1e-8); ///< defaults to 0.0
+  parameters.setVerbosityLM("SUMMARY"); // SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
 
-            // build optimiser
-            LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, parameters);
+  // build optimiser
+  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, parameters);
 
-            // optimise the graph
-            Values result = optimizer.optimize();
-            // int n_iterations = optimizer.iterations();
+  // optimise the graph
+  Values result = optimizer.optimize();
+  // int n_iterations = optimizer.iterations();
 
-            // test sensitivity
-            /// TODO: quantify how much results differ
-            if (testSensitivity) {
-                Values initialEstimatePerturbed = Noise::perturbValues(initialEstimate, 1e-8);
-                Values sensResult = BackEnd::offline(graph, initialEstimatePerturbed);
-                if (!result.equals(sensResult, 1e-6)) {
-                    cout << "WARNING: system is sensitive to input" << endl;
-                }
-            }
+  // test sensitivity
+  /// TODO: quantify how much results differ
+  if (testSensitivity) {
+    Values initialEstimatePerturbed = Noise::perturbValues(initialEstimate, 1e-8);
+    Values sensResult = BackEnd::offline(graph, initialEstimatePerturbed);
+    if (!result.equals(sensResult, 1e-6)) {
+      cout << "WARNING: system is sensitive to input" << endl;
+    }
+  }
 
-            // return result and info
-            return result;
-        }
-};
-
-class FrontEnd {
-    public:
-        static void begin(SimulatedDataset dataset) {
-
-            // create empty graph / estimate
-            NonlinearFactorGraph graph;
-            Values initialEstimate;
-
-            // define sigmas 
-            boost::shared_ptr<noiseModel::Diagonal> odomNoiseModel = noiseModel::Diagonal::Sigmas( (Vector6() << ODOM_SD,ODOM_SD,ODOM_SD,ODOM_SD,ODOM_SD,ODOM_SD).finished() );
-            boost::shared_ptr<noiseModel::Diagonal> boxNoiseModel = noiseModel::Diagonal::Sigmas(Vector4(BOX_SD,BOX_SD,BOX_SD,BOX_SD));
-
-            // add or create trajectory estimate 
-            for (unsigned i = 0; i < dataset.noisyTrajectory_.size(); i++) {
-                Key poseKey(Symbol('x', i));
-                // cout << "pose " << i << endl << dataset.noisyTrajectory_[i].matrix() << endl;
-                initialEstimate.insert(poseKey, dataset.noisyTrajectory_[i]);
-            }
-
-            // add quadric estimates
-            for (unsigned j = 0; j < dataset.noisyQuadrics_.size(); j++) {
-                Key quadricKey(Symbol('q', j));
-                // cout << "quadric " << j << endl << dataset.noisyQuadrics_[j].matrix() << endl;
-                initialEstimate.insert(quadricKey, dataset.noisyQuadrics_[j]);
-            }
-
-            // create and add box factors
-            for (unsigned j = 0; j < dataset.noisyQuadrics_.size(); j++) {
-                Key quadricKey(Symbol('q', j));
-                // cout << "Quadric " << j << endl;
-
-                for (unsigned i = 0; i < dataset.noisyTrajectory_.size(); i++) {
-                    Key poseKey(Symbol('x', i));
-                    BoundingBoxFactor bbf(dataset.noisyBoxes_[j][i], dataset.calibration_, dataset.imageDimensions_, poseKey, quadricKey, boxNoiseModel);
-                    // cout << "box " << i << ": " << dataset.noisyBoxes_[j][i].vector().transpose() << endl;
-                    // cout << "error(" << j << "," << i << "): " << bbf.unwhitenedError(initialEstimate).transpose() << endl;
-                    graph.add(bbf);
-                }
-            }
-
-            // create odometry factors
-            for (unsigned i = 0; i < dataset.noisyOdometry_.size(); i++) {
-                Key startKey(Symbol('x', i));
-                Key endKey(Symbol('x', i+1));
-                BetweenFactor<Pose3> bf(startKey, endKey, dataset.noisyOdometry_[i], odomNoiseModel);
-                graph.add(bf);
-            }
-
-            // send to back end
-            Values optValues = BackEnd::offline(graph, initialEstimate, true);
-        }
-};
-
-
-
-
-
-
-int main(void) {
-
-    // load test datasets
-    SimulatedDataset dataset(QUAD_SD, ODOM_SD, BOX_SD);
-
-    // run system on datasets
-    FrontEnd::begin(dataset);
-
-    // evaluate results against ground truth
-    // metrics = Evaluation::evaluate(result);
-
-
-    cout << "Main finished\n";
-    return 1;
+  // return result and info
+  return result;
 }
 
-// run on a dataset
-// DATASET_PATH = x
-// FrontEnd.begin(DATASET_PATH)
+/* ************************************************************************* */
+void FrontEnd::begin(SimulatedDataset dataset) {
+
+  // create empty graph / estimate
+  NonlinearFactorGraph graph;
+  Values initialEstimate;
+
+  // define sigmas 
+  auto odomNoiseModel = noiseModel::Diagonal::Sigmas( Vector6::Constant(ODOM_SD) );
+  auto boxNoiseModel = noiseModel::Diagonal::Sigmas( Vector4::Constant(BOX_SD) );
+
+  // add or create trajectory estimate 
+  for (unsigned i = 0; i < dataset.noisyTrajectory_.size(); i++) {
+    Key poseKey(Symbol('x', i));
+    initialEstimate.insert(poseKey, dataset.noisyTrajectory_[i]);
+  }
+
+  // add quadric estimates
+  for (unsigned j = 0; j < dataset.noisyQuadrics_.size(); j++) {
+    Key quadricKey(Symbol('q', j));
+    initialEstimate.insert(quadricKey, dataset.noisyQuadrics_[j]);
+  }
+
+  // create and add box factors
+  for (unsigned j = 0; j < dataset.noisyQuadrics_.size(); j++) {
+    Key quadricKey(Symbol('q', j));
+
+    for (unsigned i = 0; i < dataset.noisyTrajectory_.size(); i++) {
+      Key poseKey(Symbol('x', i));
+      BoundingBoxFactor bbf(dataset.noisyBoxes_[j][i], dataset.calibration_, dataset.imageDimensions_, poseKey, quadricKey, boxNoiseModel);
+      graph.add(bbf);
+    }
+  }
+
+  // create odometry factors
+  for (unsigned i = 0; i < dataset.noisyOdometry_.size(); i++) {
+    Key startKey(Symbol('x', i));
+    Key endKey(Symbol('x', i+1));
+    BetweenFactor<Pose3> bf(startKey, endKey, dataset.noisyOdometry_[i], odomNoiseModel);
+    graph.add(bf);
+  }
+
+  // send to back end
+  Values optValues = BackEnd::offline(graph, initialEstimate, false);
+}
+
+
+
+
+
+/* ************************************************************************* */
+int main(void) {
+
+  // load test datasets
+  SimulatedDataset dataset(QUAD_SD, ODOM_SD, BOX_SD);
+
+  // run system on datasets
+  FrontEnd::begin(dataset);
+
+  // evaluate results against ground truth
+  // metrics = Evaluation::evaluate(result);
+
+  cout << "Main finished\n";
+  return 1;
+}
+/* ************************************************************************* */
