@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/nonlinear/Values.h>
 
 #include <vector>
 #include <random>
@@ -26,11 +27,21 @@ namespace gtsam {
 
 class Noise {
   private:
-    static std::default_random_engine generator_;
+    static std::default_random_engine generator_; ///< the random engine
 
   public:
-    static Matrix gaussianNoise(int n, int m, double mu, double sd);
+
+    /** Seed the psuedo random engine */
     static void srand(double s);
+
+    /** Return a matrix of normal noise */
+    static Matrix gaussianNoise(int n, int m, double mu, double sd);
+
+    /**
+     * Add noise to Values object
+     * TODO: add noise without branching for obj type
+     */
+    static Values perturbValues(const Values& values, double sd);
 };
 
 }
