@@ -39,7 +39,6 @@ class Noise {
 
     /**
      * Add noise to Values object
-     * TODO: add noise without branching for obj type
      */
     static Values perturbValues(const Values& values, double sd);
 };

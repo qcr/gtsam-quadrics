@@ -54,17 +54,11 @@ Matrix Noise::gaussianNoise(int n, int m, double mu, double sd) {
 /* ************************************************************************* */
 Values Noise::perturbValues(const Values& values, double sd) {
   Values newValues(values);
-  for (auto key : newValues.keys()) {
-    if (Symbol(key).chr() == 'x') {
-        auto value = newValues.at<Pose3>(key);
-        auto noiseVector = Noise::gaussianNoise(6,1, 0.0,sd);
-        newValues.update(key, value.retract(noiseVector));
-    } else if (Symbol(key).chr() == 'q') {
-        auto value = newValues.at<ConstrainedDualQuadric>(key);
-        auto noiseVector = Noise::gaussianNoise(9,1, 0.0,sd);
-        newValues.update(key, value.retract(noiseVector));
-    }
-    // auto noiseVector = Eigen::MatrixXd::Zero(value.dim(),1, 0.0,1e-8);
+  for (auto key : values.keys()) {
+    const Value& value = values.at(key);
+    auto noiseVector = Noise::gaussianNoise(value.dim(),1, 0.0,sd);
+    auto newValue = value.retract_(noiseVector); 
+    newValues.update(key, *newValue);
   }
   return newValues;
 }
