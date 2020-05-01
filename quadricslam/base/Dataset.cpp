@@ -28,9 +28,6 @@ namespace gtsam {
 /* ************************************************************************* */
 SimulatedDataset::SimulatedDataset(double quad_sd, double odom_sd, double box_sd) {
 
-  // seed random
-  generator_ = std::default_random_engine(19);
-
   // generate random quadrics
   trueQuadrics_.push_back(ConstrainedDualQuadric(Pose3(), Vector3(1.,2.,3.)));
   trueQuadrics_.push_back(ConstrainedDualQuadric(Pose3(), Vector3(1.,1.,1.)));
@@ -65,16 +62,6 @@ SimulatedDataset::SimulatedDataset(double quad_sd, double odom_sd, double box_sd
   trueBoxes_ = reprojectQuadrics(trueQuadrics_, trueTrajectory_, calibration_); 
   noisyBoxes_ = addNoise(trueBoxes_, box_sd);
 }
-
-/* ************************************************************************* */
-Vector SimulatedDataset::generateNoise(int n, double sd) {
-  std::normal_distribution<double> distribution(0.0, sd);
-  vector<double> noiseVector(n);
-  std::generate(noiseVector.begin(), noiseVector.end(), [&]{return distribution(generator_);});
-  auto eigenVector = Eigen::Map<Eigen::VectorXd>(noiseVector.data(), noiseVector.size());
-  return eigenVector;
-}
-
 
 /* ************************************************************************* */
 void SimulatedDataset::printTrajectory(const vector<Pose3>& poses) {
@@ -124,7 +111,7 @@ vector<Pose3> SimulatedDataset::asTrajectory(const vector<Pose3>& odometry, cons
 vector<Pose3> SimulatedDataset::addNoise(const vector<Pose3>& odometry, double sd) {
   vector<Pose3> noisyOdometry;
   for (auto pose : odometry) {
-    Vector6 noiseVector = this->generateNoise(6, sd);
+    Vector6 noiseVector = Noise::gaussianNoise(6, 1, 0.0, sd);
     Pose3 delta = Pose3::Retract(noiseVector);
     noisyOdometry.push_back(pose.compose(delta));
   }
@@ -135,7 +122,7 @@ vector<Pose3> SimulatedDataset::addNoise(const vector<Pose3>& odometry, double s
 vector<AlignedBox2> SimulatedDataset::addNoise(const vector<AlignedBox2>& boxes, double sd) {
   vector<AlignedBox2> noisyBoxes;
   for (auto box : boxes) {
-    Vector4 noiseVector = this->generateNoise(4, sd);
+    Vector4 noiseVector = Noise::gaussianNoise(4, 1, 0.0, sd);
     noisyBoxes.push_back(box.addNoise(noiseVector));
   }
   return noisyBoxes;
@@ -154,7 +141,7 @@ vector<vector<AlignedBox2>> SimulatedDataset::addNoise(const vector<vector<Align
 vector<ConstrainedDualQuadric> SimulatedDataset::addNoise(const vector<ConstrainedDualQuadric>& quadrics, double sd) {
   vector<ConstrainedDualQuadric> noiseyQuadrics;
   for (auto quadric : quadrics) {
-    Vector9 noiseVector = this->generateNoise(9, sd);
+    Vector9 noiseVector = Noise::gaussianNoise(9, 1, 0.0, sd);
     noiseyQuadrics.push_back(quadric.addNoise(noiseVector));
   }
   return noiseyQuadrics;
