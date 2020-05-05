@@ -36,6 +36,10 @@ set(SOURCE_FILES
 	./quadricslam/geometry/BoundingBoxFactor.cpp
 	./quadricslam/geometry/QuadricCamera.cpp
 	./quadricslam/geometry/DualConic.cpp
+	./quadricslam/containers/Trajectory.cpp
+	./quadricslam/containers/Odometry.cpp
+	./quadricslam/containers/QuadricMap.cpp
+	./quadricslam/containers/Detections.cpp
 )
 
 ###################################################################################

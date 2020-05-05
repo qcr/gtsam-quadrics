@@ -91,12 +91,12 @@ void FrontEnd::begin(SimulatedDataset dataset) {
   // create initial estimates if not supplied
   vector<ConstrainedDualQuadric> noisyQuadrics;
   vector<Pose3> noisyTrajectory;
-  bool estimatesSupplied = false;
+  bool estimatesSupplied = true;
   if (!estimatesSupplied) {
 
     /// Initialize trajectory from odometry
     /// NOTE: if no reference, will be in local coordinates
-    noisyTrajectory = SimulatedDataset::asTrajectory(dataset.noisyOdometry_);
+    // noisyTrajectory = SimulatedDataset::asTrajectory(dataset.noisyOdometry_);
 
     /// Initialize quadrics from boxes / trajectory
     // noisyQuadrics = FrontEnd::intializeQuadrics(noisyTrajectory, dataset.noisyBoxes_);
@@ -142,26 +142,26 @@ void FrontEnd::begin(SimulatedDataset dataset) {
   Values optValues = BackEnd::offline(graph, initialEstimate, false);
 }
 
-/* ************************************************************************* */
-vector<ConstrainedDualQuadric> FrontEnd::initializeQuadrics(const vector<Pose3>& trajectory, const vector<vector<AlignedBox2>>& boxes, const QuadricCamera& camera) {
+// /* ************************************************************************* */
+// vector<ConstrainedDualQuadric> FrontEnd::initializeQuadrics(const vector<Pose3>& trajectory, const vector<vector<AlignedBox2>>& boxes, const QuadricCamera& camera) {
 
-  vector<ConstrainedDualQuadric> quadrics;
+//   vector<ConstrainedDualQuadric> quadrics;
   
-  // for each quadric 
-  // extract relevent poses
-  // extract aligning box at each pose
-  // calculate SVD
-  // constrain quadric
-  // check quadric is ok
-  // push back
+//   // for each quadric 
+//   // extract relevent poses
+//   // extract aligning box at each pose
+//   // calculate SVD
+//   // constrain quadric
+//   // check quadric is ok
+//   // push back
 
-  return quadrics;
-}
+//   return quadrics;
+// }
 
-ConstrainedDualQuadric FrontEnd::initializeQuadric(const vector<Pose3>& poses, const vector<AlignedBox2>& boxes, const QuadricCamera& camera) {
-  ConstrainedDualQuadric quadric;
-  return quadric;
-}
+// ConstrainedDualQuadric FrontEnd::initializeQuadric(const vector<Pose3>& poses, const vector<AlignedBox2>& boxes, const QuadricCamera& camera) {
+//   ConstrainedDualQuadric quadric;
+//   return quadric;
+// }
 
 
 /* ************************************************************************* */

@@ -19,22 +19,22 @@
 
 namespace gtsam {
   
-/* ************************************************************************* */
-Vector4 Evaluation::evaluateResult(const vector<Pose3>& estimatedTrajectory, const vector<ConstrainedDualQuadric>& estimatedQuadrics,
-  const vector<Pose3>& trueTrajectory, const vector<ConstrainedDualQuadric>& trueQuadrics) {
+// /* ************************************************************************* */
+// Vector4 Evaluation::evaluateResult(const vector<Pose3>& estimatedTrajectory, const vector<ConstrainedDualQuadric>& estimatedQuadrics,
+//   const vector<Pose3>& trueTrajectory, const vector<ConstrainedDualQuadric>& trueQuadrics) {
   
-  // evaluate trajectory
+//   // evaluate trajectory
 
-  // evaluate quadrics
+//   // evaluate quadrics
 
-  // return metrics
-}
+//   // return metrics
+// }
 
-/* ************************************************************************* */
-Vector2 Evaluation::evaluateTrajectory(const vector<Pose3>& estimatedTrajectory, const vector<Pose3>& trueTrajectory) {
+// /* ************************************************************************* */
+// Vector2 Evaluation::evaluateTrajectory(const vector<Pose3>& estimatedTrajectory, const vector<Pose3>& trueTrajectory) {
 
-  // evaluate ATE_trans 
-}
+//   // evaluate ATE_trans 
+// }
 
 
 } // namespace gtsam
