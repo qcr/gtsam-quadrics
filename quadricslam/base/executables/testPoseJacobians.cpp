@@ -40,33 +40,33 @@ using namespace noiseModel;
 // GOAL3: derive jacobian for and use arbitrary parametrization 
 
 
-namespace gtsam {
-class Foo {
-    private:
-        Vector3 x_;
-        Vector3 y_;
+// namespace gtsam {
+// class Foo {
+//     private:
+//         Vector3 x_;
+//         Vector3 y_;
 
-    public:
-        Foo();
-        Foo(Vector3 x, Vector3 y) : x_(x), y_(y) {};
-        static Foo Create(Vector3 x, Vector3 y, OptionalJacobian<6,3> H1 = boost::none, OptionalJacobian<6,3> H2 = boost::none) {
-            return Foo(x,y);
-        }
-        Vector3 doWork(const Vector3& z, OptionalJacobian<3,6> H1 = boost::none, OptionalJacobian<3,3> H2 = boost::none) const {
-            return x_+y_+z;
-        }
+//     public:
+//         Foo();
+//         Foo(Vector3 x, Vector3 y) : x_(x), y_(y) {};
+//         static Foo Create(Vector3 x, Vector3 y, OptionalJacobian<6,3> H1 = boost::none, OptionalJacobian<6,3> H2 = boost::none) {
+//             return Foo(x,y);
+//         }
+//         Vector3 doWork(const Vector3& z, OptionalJacobian<3,6> H1 = boost::none, OptionalJacobian<3,3> H2 = boost::none) const {
+//             return x_+y_+z;
+//         }
 
-        // Foo retract(const Vector6& v) const {};
-        // Vector6 localCoordinates(const Foo& other) const {};
-        void print(const std::string& s = "") const {};
-        bool equals(const Foo& other, double tol = 1e-9) const {};
+//         // Foo retract(const Vector6& v) const {};
+//         // Vector6 localCoordinates(const Foo& other) const {};
+//         void print(const std::string& s = "") const {};
+//         bool equals(const Foo& other, double tol = 1e-9) const {};
 
-};
-template <>
-struct traits<Foo> {
-    enum { dimension = 6};
-};
-}
+// };
+// template <>
+// struct traits<Foo> {
+//     enum { dimension = 6};
+// };
+// }
 
 
 
@@ -135,7 +135,7 @@ void testPose(void) {
     cout << "rotRetractAddVectors\n" << rotRetractAddVectors << endl << endl;
 
     Vector3 p = (Vector3() << 3.,4.,5.).finished();
-    Matrix31 y = h(rot, p);
+    // Matrix31 y = h(rot, p);
     boost::function<Matrix31(const Rot3&, const Vector3&)> h_(boost::bind(&h, _1, _2));
     Eigen::Matrix<double, 3,3> dY_dr = numericalDerivative21(h_, rot, p, 1e-6);
     Eigen::Matrix<double, 3,3> dY_dp = numericalDerivative22(h_, rot, p, 1e-6);

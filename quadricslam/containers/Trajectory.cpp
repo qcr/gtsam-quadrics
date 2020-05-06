@@ -9,19 +9,26 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file TestClass.cpp
- * @date Apr 14, 2020
+ * @file Trajectory.cpp
+ * @date May 5, 2020
  * @author Lachlan Nicholson
- * @brief a simple class used to test wrapper, etc
+ * @brief contains a class for a camera trajectory
  */
 
-#include <quadricslam/base/TestClass.h>
+#include <quadricslam/containers/Trajectory.h>
+
+using namespace std;
+
 
 namespace gtsam {
   
 /* ************************************************************************* */
-double TestClass::doWork(double y) {
-  return x_*y;
+Trajectory::Trajectory(const vector<Pose3>& poses) {
+  for (unsigned i = 0; i < poses.size(); i++) {
+    trajectory_[symbol('x', i)] = poses[i];
+  }
 }
+
+/* ************************************************************************* */
 
 }

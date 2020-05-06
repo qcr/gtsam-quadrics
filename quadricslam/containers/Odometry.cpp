@@ -9,19 +9,21 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file TestClass.cpp
- * @date Apr 14, 2020
+ * @file Odometry.cpp
+ * @date May 5, 2020
  * @author Lachlan Nicholson
- * @brief a simple class used to test wrapper, etc
+ * @brief Odometry contains the relative movements between poses in a trajectory
  */
 
-#include <quadricslam/base/TestClass.h>
+#include <quadricslam/containers/Odometry.h>
+
+using namespace std;
+
 
 namespace gtsam {
   
 /* ************************************************************************* */
-double TestClass::doWork(double y) {
-  return x_*y;
-}
+
+/* ************************************************************************* */
 
 }

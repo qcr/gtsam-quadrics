@@ -64,13 +64,6 @@ namespace gtsam {
        */
       ConstrainedDualQuadric(const Rot3& R, const Point3& t, const Vector3& r);
 
-      /**
-       * named constructor for Expression
-       */
-      static ConstrainedDualQuadric Create(const Pose3& pose, const Vector3& radii, OptionalJacobian<9,6> H1, OptionalJacobian<9,3> H2) {
-        return ConstrainedDualQuadric(pose, radii);
-      }
-
       /* get pose, avoid computation with it */
       Pose3 getPose(void) const {return pose_;}
 

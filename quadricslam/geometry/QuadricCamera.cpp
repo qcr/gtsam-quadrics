@@ -50,7 +50,7 @@ Matrix34 QuadricCamera::transformToImage(OptionalJacobian<12,6> dP_dCamera) cons
 }
 
 /* ************************************************************************* */
-DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, OptionalJacobian<5,6> dC_dCamera, OptionalJacobian<5,9> dC_dQ) const {
+DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric) const {
   Matrix34 image_T_world = transformToImage(); 
   Matrix4 dQ = quadric.matrix();
   // dQ = dQ/dQ(3,3);
