@@ -29,8 +29,8 @@ AlignedBox2::AlignedBox2(const double& xmin, const double& ymin, const double& x
 
 /* ************************************************************************* */
 // TODO: ensure correct dim order, box has width
-AlignedBox2::AlignedBox2(Vector4 tlbr) {
-  tlbr_ = tlbr;
+AlignedBox2::AlignedBox2(const Vector4& tlbr) {
+  tlbr_ = Vector4(tlbr);
 }
 
 /* ************************************************************************* */

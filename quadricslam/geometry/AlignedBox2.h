@@ -46,7 +46,7 @@ namespace gtsam {
        * Constructor from vector
        * @param tlbr vector of xmin,ymin,xmax,ymax (Vector4)
        */
-      AlignedBox2(Vector4 tlbr);
+      AlignedBox2(const Vector4& tlbr);
 
       /** Returns box in xmin,ymin,xmax,ymax vector */
       Vector4 vector() const;
