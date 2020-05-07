@@ -41,6 +41,7 @@
 
 class Pose3;
 class Point3;
+class Cal3_S2;
 virtual class NoiseModelFactor;
 class ConstrainedDualQuadric;
 class AlignedBox2;
@@ -110,6 +111,11 @@ class AlignedBox2 {
   void print() const;
   bool equals(const AlignedBox2& other, double tol) const;
   bool equals(const AlignedBox2& other) const;
+};
+
+#include <quadricslam/geometry/QuadricCamera.h>
+class QuadricCamera {
+  static Matrix transformToImage(const Pose3& pose, const Cal3_S2* calibration);
 };
 
 }

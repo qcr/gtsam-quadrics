@@ -65,6 +65,15 @@ Matrix3 QuadricCamera::project_(const ConstrainedDualQuadric& quadric, const Pos
 }
 
 /* ************************************************************************* */
+Matrix34 QuadricCamera::transformToImage(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration) {
+  Matrix3 image_T_camera = calibration->K();
+  Matrix4 camera_T_world = pose.inverse().matrix();
+  Matrix34 image_T_world = image_T_camera * (camera_T_world).block(0,0,3,4);
+  // Matrix34 image_T_world = image_T_camera * internal::I34 * camera_T_world;
+  return image_T_world;
+}
+
+/* ************************************************************************* */
 // NOTE: requires updating jacobians if we normalize q/c
 // this wont happen if we split it into sub functions and just combine jacobians
 DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
