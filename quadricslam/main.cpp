@@ -43,7 +43,7 @@ int main() {
   // create measurement, calibration, dimensions, keys, model, pose, quadric
   AlignedBox2 measured(15.2, 18.5, 120.5, 230.2);
   boost::shared_ptr<Cal3_S2> calibration(new Cal3_S2(525.0, 525.0, 0.0, 320.0, 240.0));
-  boost::shared_ptr<Vector2> imageDimensions(new Vector2(320.0, 240.0));
+  Vector2 imageDimensions(320.0, 240.0);
   Key poseKey(Symbol('x', 1));
   Key quadricKey(Symbol('q', 1));
   boost::shared_ptr<noiseModel::Diagonal> model = noiseModel::Diagonal::Sigmas(Vector4(0.2,0.2,0.2,0.2));

@@ -39,7 +39,7 @@ namespace gtsam {
     protected:
       AlignedBox2 measured_; ///< measured bounding box
       boost::shared_ptr<Cal3_S2> calibration_; ///< camera calibration
-      boost::shared_ptr<Vector2> imageDimensions_; ///< camera calibration
+      Vector2 imageDimensions_; ///< camera calibration
       typedef NoiseModelFactor2<Pose3, ConstrainedDualQuadric> Base; ///< base class has keys and noisemodel as private members
 
     public:
@@ -49,7 +49,7 @@ namespace gtsam {
 
       /** Constructor from measured box, calbration, dimensions and posekey, quadrickey, noisemodel */
       BoundingBoxFactor(const AlignedBox2& measured, const boost::shared_ptr<Cal3_S2>& calibration, 
-        const boost::shared_ptr<Vector2>& imageDimensions, const Key& poseKey, const Key& quadricKey, 
+        const Vector2& imageDimensions, const Key& poseKey, const Key& quadricKey, 
         const SharedNoiseModel& model) : 
           Base(model, poseKey, quadricKey), measured_(measured), 
           calibration_(calibration), imageDimensions_(imageDimensions) {};

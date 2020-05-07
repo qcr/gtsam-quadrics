@@ -77,27 +77,28 @@ class ConstrainedDualQuadric {
   bool equals(const ConstrainedDualQuadric& other) const;
 };
 
-// #include <quadricslam/geometry/BoundingBoxFactor.h>
-// virtual class BoundingBoxFactor : NoiseModelFactor {
-//   BoundingBoxFactor();
-//   BoundingBoxFactor(const AlignedBox2& measured, const Cal3_S2* calibration, 
-//     const Vector* imageDimensions, const size_t& poseKey, const size_t& quadricKey, 
-//     const gtsam::noiseModel::Base* model);
-//   // Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric,
-//   //   boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const;
-// };
+#include <quadricslam/geometry/BoundingBoxFactor.h>
+virtual class BoundingBoxFactor : NoiseModelFactor {
+  BoundingBoxFactor();
+  BoundingBoxFactor(const AlignedBox2& measured, const Cal3_S2* calibration, 
+    const Vector& imageDimensions, const size_t& poseKey, const size_t& quadricKey, 
+    const gtsam::noiseModel::Base* model);
+  Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
+  Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric,
+    Matrix& H1, Matrix& H2) const;
+};
 
-// #include <quadricslam/geometry/AlignedBox2.h>
-// class AlignedBox2 {
-//   AlignedBox2();
-//   AlignedBox2(const double& xmin, const double& ymin, const double& xmax, const double& ymax);
-//   AlignedBox2(const Vector& tlbr);
-//   Vector vector() const;
-//   AlignedBox2 addNoise(const Vector& noiseVector);
-//   void print(const string& s) const;
-//   void print() const;
-//   bool equals(const AlignedBox2& other, double tol) const;
-//   bool equals(const AlignedBox2& other) const;
-// };
+#include <quadricslam/geometry/AlignedBox2.h>
+class AlignedBox2 {
+  AlignedBox2();
+  AlignedBox2(const double& xmin, const double& ymin, const double& xmax, const double& ymax);
+  AlignedBox2(const Vector& tlbr);
+  Vector vector() const;
+  AlignedBox2 addNoise(const Vector& noiseVector);
+  void print(const string& s) const;
+  void print() const;
+  bool equals(const AlignedBox2& other, double tol) const;
+  bool equals(const AlignedBox2& other) const;
+};
 
 }

@@ -125,7 +125,7 @@ void FrontEnd::begin(SimulatedDataset dataset) {
 
     for (unsigned i = 0; i < noisyTrajectory.size(); i++) {
       Key poseKey(Symbol('x', i));
-      BoundingBoxFactor bbf(dataset.noisyBoxes_[j][i], dataset.calibration_, dataset.imageDimensions_, poseKey, quadricKey, boxNoiseModel);
+      BoundingBoxFactor bbf(dataset.noisyBoxes_[j][i], dataset.calibration_, *dataset.imageDimensions_, poseKey, quadricKey, boxNoiseModel);
       graph.add(bbf);
     }
   }
