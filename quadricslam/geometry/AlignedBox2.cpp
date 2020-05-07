@@ -39,6 +39,16 @@ Vector4 AlignedBox2::vector() const {
 }
 
 /* ************************************************************************* */
+std::vector<Vector3> AlignedBox2::lines() const {
+  std::vector<Vector3> mLines; 
+  mLines.push_back(Vector3(1, 0, -tlbr_[0]));
+  mLines.push_back(Vector3(0, 1, -tlbr_[1]));
+  mLines.push_back(Vector3(1, 0, -tlbr_[2]));
+  mLines.push_back(Vector3(0, 1, -tlbr_[3]));
+  return mLines;
+}
+
+/* ************************************************************************* */
 AlignedBox2 AlignedBox2::addNoise(const Vector4& noiseVector) {
   return AlignedBox2(tlbr_+noiseVector);
 }

@@ -23,7 +23,7 @@
     - forward declare return type classes for gtsam objects
     - show inheritence with virtual + forward declare virtual
     - for default arguments expose the method twice 
-    - declare returns of vector<gtsamclass> as entire class 
+    - wrap std::vector<class> with typedef and python class, ensure gtsam::class
     - for std::string remove std::
     - const boost::shared_ptr<X>& -> const X*
     - const SharedNoiseModel& -> const gtsam::noiseModel::Base* 
@@ -34,6 +34,7 @@
 
   QUESTIONS:
     - how to wrap optional jacobians?
+    - how to wrap operator[] ?
  */
 
 
@@ -89,11 +90,21 @@ virtual class BoundingBoxFactor : NoiseModelFactor {
 };
 
 #include <quadricslam/geometry/AlignedBox2.h>
+class Vector3Vector 
+{
+  Vector3Vector();
+  size_t size() const;
+  bool empty() const;
+  Vector at(size_t n) const;
+  void push_back(const Vector& pose);
+};
+
 class AlignedBox2 {
   AlignedBox2();
   AlignedBox2(const double& xmin, const double& ymin, const double& xmax, const double& ymax);
   AlignedBox2(const Vector& tlbr);
   Vector vector() const;
+  gtsam::Vector3Vector lines() const;
   AlignedBox2 addNoise(const Vector& noiseVector);
   void print(const string& s) const;
   void print() const;
