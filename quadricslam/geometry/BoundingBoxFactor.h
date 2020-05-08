@@ -24,6 +24,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/nonlinear/Expression.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #define CHECK_ANALYTICAL 1
 
@@ -69,6 +70,17 @@ namespace gtsam {
        */
       Expression<AlignedBox2> expression(const Expression<Pose3>& pose, const Expression<ConstrainedDualQuadric>& quadric) const;
 
+      /** Add to graph */
+      void addToGraph(NonlinearFactorGraph& graph);
+
+      /** Get from graph */
+      static BoundingBoxFactor getFromGraph(const NonlinearFactorGraph& graph, size_t idx);
+
+      /** Prints the dual quadric with optional string */
+      void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+
+      /** Compares two ellipsoids */
+      // bool equals(const ConstrainedDualQuadric& other, double tol = 1e-9) const;
   };
 
   // declare dimensions of calibration pointer for expressions
@@ -76,6 +88,5 @@ namespace gtsam {
   struct traits<boost::shared_ptr<Cal3_S2>> {
     enum { dimension = 5};
   };
-
 
 } // namespace gtsam

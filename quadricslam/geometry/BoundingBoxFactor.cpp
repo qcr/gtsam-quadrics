@@ -116,5 +116,26 @@ Expression<AlignedBox2> BoundingBoxFactor::expression(const Expression<Pose3>& p
   return predictedBounds;
 }
 
+/* ************************************************************************* */
+void BoundingBoxFactor::addToGraph(NonlinearFactorGraph& graph) { 
+  graph.add(*this);
+}
+
+/* ************************************************************************* */
+BoundingBoxFactor BoundingBoxFactor::getFromGraph(const NonlinearFactorGraph& graph, size_t idx) { 
+  return *boost::dynamic_pointer_cast<BoundingBoxFactor>(graph.at(idx)).get();
+}
+
+/* ************************************************************************* */
+void BoundingBoxFactor::print(const std::string& s, const KeyFormatter& keyFormatter) const {
+  cout << s << "BoundingBoxFactor(" << keyFormatter(key1()) << "," << keyFormatter(key2()) << ")" << endl;
+  measured_.print("    Measured");
+  cout << "    NoiseModel:"; noiseModel()->print(); cout << endl;
+}
+
+/* ************************************************************************* */
+// bool BoundingBoxFactor::equals(const BoundingBoxFactor& other, double tol) const {
+//   return this->matrix().isApprox(other.matrix(), tol);
+// }
 
 } // namespace gtsam

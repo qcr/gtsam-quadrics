@@ -43,7 +43,9 @@ class Pose3;
 class Point3;
 class Values;
 class Cal3_S2;
+class NonlinearFactorGraph;
 virtual class NoiseModelFactor;
+
 class ConstrainedDualQuadric;
 class AlignedBox2;
 
@@ -92,6 +94,8 @@ virtual class BoundingBoxFactor : NoiseModelFactor {
   Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
   Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric,
     Matrix& H1, Matrix& H2) const;
+  void addToGraph(NonlinearFactorGraph& graph);
+  static gtsam::BoundingBoxFactor getFromGraph(const NonlinearFactorGraph& graph, size_t idx);
 };
 
 #include <quadricslam/geometry/AlignedBox2.h>
