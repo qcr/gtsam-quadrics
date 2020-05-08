@@ -6,3 +6,5 @@ build/
 graveyard\.txt
 
 *.m~
+
+*.pyc
