@@ -114,7 +114,7 @@ class AlignedBox2 {
   AlignedBox2(const Vector& tlbr);
   Vector vector() const;
   gtsam::Vector3Vector lines() const;
-  AlignedBox2 addNoise(const Vector& noiseVector);
+  gtsam::AlignedBox2 addNoise(const Vector& noiseVector);
   void print(const string& s) const;
   void print() const;
   bool equals(const AlignedBox2& other, double tol) const;

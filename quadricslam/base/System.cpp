@@ -142,7 +142,24 @@ void FrontEnd::begin(SimulatedDataset dataset) {
   }
 
   // send to back end
-  Values optValues = BackEnd::offline(graph, initialEstimate, false);
+  // Values optValues = BackEnd::offline(graph, initialEstimate);
+
+
+  // debug:
+  for (unsigned i = 0; i < graph.size(); i++) {
+
+    // get bbfs from graph
+    auto x = BoundingBoxFactor::getFromGraph(graph, 1);
+    x.print("hey");
+    
+    // cout << graph.exists(i) << endl;
+    // auto graph.at(i);
+
+    // graph.at(i)->print();
+  }
+
+
+
 }
 
 // /* ************************************************************************* */

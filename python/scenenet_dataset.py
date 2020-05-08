@@ -2,12 +2,11 @@
 QuadricSLAM Copyright 2020, ARC Centre of Excellence for Robotic Vision, Queensland University of Technology (QUT)
 Brisbane, QLD 4000
 All Rights Reserved
-Authors: Lachlan Nicholson, et al. (see THANKS for the full author list)
 
 See LICENSE for the license information
 
-Dataset interface.
-Author: Frank Dellaert & Duy Nguyen Ta (Python)
+Description: Dataset interface 
+Author: Lachlan Nicholson (Python)
 """
 
 import os
@@ -482,198 +481,6 @@ class SceneNetPlayer(InteractivePlayer):
 
 
 
-class System(object):
-    """
-    Python front-end to build graph/estimate from dataset. 
-    """
-    X = lambda i: int(gtsam.symbol(ord('x'), i))
-    Q = lambda i: int(gtsam.symbol(ord('q'), i))
-    L = lambda i: int(gtsam.symbol(ord('l'), i))
-    ZERO = 0.000001 
-
-    @staticmethod
-    def build_graph(sequence):
-        """
-        Sequence contains:
-        * noisyOdometry
-        * noisyBoxes
-        * calibration 
-        """
-
-        # set seed
-        np.random.seed(121)
-
-        # create empty graph / estimate
-        graph = gtsam.NonlinearFactorGraph()
-        initial_estimate = gtsam.Values()
-
-        # declare noise models
-        ODOM_SIGMA = 0.01; BOX_SIGMA = 3.0
-        noise_zero = gtsam.noiseModel_Diagonal.Sigmas(np.array([1e-12]*6, dtype=np.float))
-        odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([ODOM_SIGMA]*3 + [ODOM_SIGMA]*3, dtype=np.float))
-        bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([BOX_SIGMA]*4, dtype=np.float))
-        X = lambda i: int(gtsam.symbol(ord('x'), i))
-        Q = lambda i: int(gtsam.symbol(ord('q'), i))
-
-        # get noisy odometry / boxes 
-        true_odometry = sequence.true_trajectory.as_odometry()
-        noisy_odometry = true_odometry.add_noise(mu=0.0, sd=ODOM_SIGMA)
-        noisy_boxes = sequence.true_boxes.add_noise(mu=0.0, sd=BOX_SIGMA)
-
-        # initialize trajectory and quadrics 
-        # TODO: ensure aligned in same reference frame
-        initial_trajectory = noisy_odometry.as_trajectory()
-        initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_boxes, sequence.calibration)
-
-        # add prior pose
-        initial_trajectory.add_prior(graph, noise_zero)
-
-        # add odometry measurements
-        noisy_odometry.add_factors(graph, odometry_noise)
-
-        # add bbox measurements
-        noisy_boxes.add_factors(graph, bbox_noise, sequence.calibration, sequence.image_dimensions)
-
-        # add initial pose estimates
-        initial_trajectory.add_estimates(initial_estimate)
-        
-        # add initial landmark estimates
-        initial_quadrics.add_estimates(initial_estimate)
-
-        return graph, initial_estimate
-
-    @staticmethod
-    def initialize_quadrics(trajectory, boxes, calibration):
-        quadrics = Quadrics()
-
-        # loop through object keys
-        for object_key in np.unique(boxes.object_keys()):
-
-            # get all detections at object key
-            object_boxes = boxes.at_object(object_key)
-
-            # get the poses associated with each detection 
-            pose_keys = object_boxes.pose_keys()
-            poses = trajectory.at_keys(pose_keys)
-
-            # ensure quadric seen from > 3 views
-            if len(np.unique(pose_keys)) < 3:
-                continue
-
-            # initialize and constrain quadric
-            quadric_matrix = System.initialize_quadric(poses, object_boxes, calibration)
-            quadric = System.constrain_quadric(quadric_matrix)
-
-            # check quadric is okay
-            if (System.is_okay(quadric, poses, calibration)):
-                quadrics.add(quadric, object_key)
-
-        return quadrics
-
-    @staticmethod
-    def initialize_quadric(poses, object_boxes, calibration):
-        """ calculates quadric_matrix using SVD """
-
-        # iterate through box/pose data
-        planes = []
-        for box, pose in zip(object_boxes.data(), poses.data()):
-
-            # calculate boxes lines
-            lines = box.lines()
-
-            # convert Vector3Vector to list
-            lines = [lines.at(i) for i in range(lines.size())]
-
-            # calculate projection matrix
-            P = quadricslam.QuadricCamera.transformToImage(pose, calibration).transpose()
-
-            # project lines to planes
-            planes += [P @ line for line in lines]
-
-        # create A matrix
-        A = np.asarray([np.array([p[0]**2,  2*(p[0]*p[1]),  2*(p[0]*p[2]),  2*(p[0]*p[3]),
-                                                p[1]**2,  	2*(p[1]*p[2]),  2*(p[1]*p[3]),
-                                                                p[2]**2,  	2*(p[2]*p[3]),
-                                                                               p[3]**2]) for p in planes])
-
-        # solve SVD for Aq = 0, which should be equal to p'Qp = 0
-        _,_,V = np.linalg.svd(A, full_matrices=True)
-        q = V.T[:, -1]
-
-        # construct quadric
-        dual_quadric = np.array([[q[0], q[1], q[2], q[3]],
-                                [q[1], q[4], q[5], q[6]],
-                                [q[2], q[5], q[7], q[8]],
-                                [q[3], q[6], q[8], q[9]]])
-
-        return dual_quadric
-            
-    @staticmethod
-    def constrain_quadric(dual_quadric_matrix):
-        """ constrains quadric using method in paper """
-
-        # calculate point quadric
-        point_quadric = np.linalg.inv(dual_quadric_matrix)
-
-        # normalize point quadric
-        point_quadric = point_quadric/point_quadric[-1,-1]
-
-        # calculate shape
-        lambdaa = np.linalg.eigh(point_quadric[:3,:3])[0]
-        lambdaa = [complex(ele) for ele in lambdaa]
-        s = np.sqrt( -( np.linalg.det(point_quadric) / np.linalg.det(point_quadric[:3,:3]) ) *  1.0/lambdaa)
-        s = np.abs(s)
-
-        # calculate normal dual quadric for translation
-        Q = dual_quadric_matrix/dual_quadric_matrix[-1,-1]
-
-        # calculate translation
-        t = np.asarray([Q[0,3]/Q[-1,-1], Q[1,3]/Q[-1,-1], Q[2,3]/Q[-1,-1]])
-
-        # calculate rotation
-        r1 = np.linalg.eigh(point_quadric[:3,:3])[1]
-
-        # store as quadric
-        ellipsoid = quadricslam.ConstrainedDualQuadric(gtsam.Rot3(r1), gtsam.Point3(t), s)
-        ellipsoid_vector = quadricslam.ConstrainedDualQuadric.LocalCoordinates(ellipsoid)
-
-
-        # check if rotation valid
-        if np.isclose(np.linalg.det(r1), -1.0) or np.any(np.isinf(ellipsoid_vector)) or np.any(np.isnan(ellipsoid_vector)):
-
-            # identify bad rotation
-            # print('[SVD] estimated quadric rotation invalid, resolving by inverting axis')
-
-            # flip if rotation is improper
-            AxisFlip = np.eye(3); AxisFlip*=-1.0;
-            r2 = r1.dot(AxisFlip)
-            ellipsoid_2 = quadricslam.ConstrainedDualQuadric(gtsam.Rot3(r2), gtsam.Point3(t), s)
-            ellipsoid_vector_2 = quadricslam.ConstrainedDualQuadric.LocalCoordinates(ellipsoid_2)
-
-            # check if still broken
-            if np.isclose(np.linalg.det(r2), -1.0) or np.any(np.isinf(ellipsoid_vector_2)) or np.any(np.isnan(ellipsoid_vector_2)):
-                print('\n\n ~~~~~ STILL BROKEN ~~~~~~ \n\n')
-
-            # save result
-            ellipsoid = ellipsoid_2
-
-        return ellipsoid
-
-    @staticmethod
-    def is_okay(quadric, poses, calibration):
-        """
-        Checks quadric is valid:
-            quadric constrained correctly
-            paralax > threshold
-            reprojections valid in each frame 
-                quadric infront of camera : positive depth 
-                camera outside quadric
-                conic is an ellipse 
-            ensure views provide enough DOF (due to edges / out of frame)
-        """
-        return True
-
-
 
 if __name__ == '__main__':
     trainval = 'train'
@@ -682,20 +489,9 @@ if __name__ == '__main__':
     reader_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py'
     dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path)
 
-    # player = SceneNetPlayer(dataset)
-    # player.start()
+    player = SceneNetPlayer(dataset)
+    player.start()
 
-    graph, initial_estimate = System.build_graph(dataset[0])
-
-    params = gtsam.LevenbergMarquardtParams()
-    # params.setVerbosityLM("SUMMARY")
-    params.setMaxIterations(20)
-    params.setlambdaUpperBound(1e30)    # default 1e5
-    params.setRelativeErrorTol(1e-10)   # if cost change < tol, stop
-    params.setAbsoluteErrorTol(1e-8)    # if cost - cost chage < tol, stop
-    optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)
-
-    estimation = optimizer.optimize()
 
 
 

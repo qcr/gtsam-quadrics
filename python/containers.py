@@ -1,3 +1,14 @@
+"""
+QuadricSLAM Copyright 2020, ARC Centre of Excellence for Robotic Vision, Queensland University of Technology (QUT)
+Brisbane, QLD 4000
+All Rights Reserved
+
+See LICENSE for the license information
+
+Description: Trajectory, Quadrics, Boxes, Odometry containers
+Author: Lachlan Nicholson (Python)
+"""
+
 import sys
 import gtsam
 from collections import defaultdict
@@ -110,7 +121,8 @@ class Quadrics(object):
 
     def add_estimates(self, values):
         for key, quadric in self._quadrics.items():
-            quadricslam.insertConstrainedDualQuadric(values, Quadrics.Q(key), quadric)
+            quadric.addToValues(values, key)
+            # quadricslam.insertConstrainedDualQuadric(values, Quadrics.Q(key), quadric)
             # values.insert(Quadrics.Q(key), quadric)
 
 
@@ -172,7 +184,8 @@ class Boxes(object):
     def add_factors(self, graph, noisemodel, calibration, image_dimensions):
         for (pose_key, object_key), box in self._boxes.items():
             bbf = quadricslam.BoundingBoxFactor(box, calibration, image_dimensions, pose_key, object_key, noisemodel)
-            graph.add(bbf)
+            bbf.addToGraph(graph)
+            # graph.add(bbf)
 
     def add_noise(self, mu, sd):
         """ compose noisevec onto relative poses """
