@@ -40,11 +40,13 @@
 #define QUAD_SD 0.1
 #define BOX_SD 3
 
+#define CHECK_SENSITIVITY 0
+
 using namespace gtsam;
 using namespace std;
 
 /* ************************************************************************* */
-Values BackEnd::offline(NonlinearFactorGraph graph, Values initialEstimate, bool testSensitivity) {
+Values BackEnd::offline(const NonlinearFactorGraph& graph, const Values& initialEstimate) {
 
   // define parameters
   LevenbergMarquardtParams parameters;
@@ -65,9 +67,10 @@ Values BackEnd::offline(NonlinearFactorGraph graph, Values initialEstimate, bool
 
   // test sensitivity
   /// TODO: quantify how much results differ
-  if (testSensitivity) {
+  if (CHECK_SENSITIVITY) {
     Values initialEstimatePerturbed = Noise::perturbValues(initialEstimate, 1e-8);
-    Values sensResult = BackEnd::offline(graph, initialEstimatePerturbed);
+    LevenbergMarquardtOptimizer sensOptimizer(graph, initialEstimate, parameters);
+    Values sensResult = sensOptimizer.optimize();
     if (!result.equals(sensResult, 1e-6)) {
       cout << "WARNING: system is sensitive to input" << endl;
     }

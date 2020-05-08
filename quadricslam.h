@@ -126,4 +126,9 @@ class QuadricCamera {
   static Matrix transformToImage(const Pose3& pose, const Cal3_S2* calibration);
 };
 
+// #include <quadricslam/base/System.h>
+// class BackEnd {
+//   void offline(const NonlinearFactorGraph& graph, const Values& initialEstimate);
+// };
+
 }

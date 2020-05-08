@@ -37,7 +37,7 @@ class BackEnd {
      * Static function to optimise the graph
      * optionally test sensitivity
     */
-    static Values offline(NonlinearFactorGraph graph, Values initialEstimate, bool testSensitivity = false);
+    static Values offline(const NonlinearFactorGraph& graph, const Values& initialEstimate);
 };
 
 
