@@ -71,18 +71,18 @@ class ConstrainedDualQuadric {
   Point3 centroid() const;
   Matrix matrix() const;
   Vector bounds() const;
-  ConstrainedDualQuadric addNoise(const Vector& noiseVector);
+  gtsam::ConstrainedDualQuadric addNoise(const Vector& noiseVector);
   static ConstrainedDualQuadric Retract(const Vector& v);
   static Vector LocalCoordinates(const ConstrainedDualQuadric& q);
-  ConstrainedDualQuadric retract(const Vector& v) const;
+  gtsam::ConstrainedDualQuadric retract(const Vector& v) const;
   Vector localCoordinates(const ConstrainedDualQuadric& other) const;
+  void addToValues(Values &v, const size_t& k);
+  static ConstrainedDualQuadric getFromValues(const Values &v, const size_t& k);
   void print(const string& s) const;
   void print() const;
   bool equals(const ConstrainedDualQuadric& other, double tol) const;
   bool equals(const ConstrainedDualQuadric& other) const;
 };
-void insertConstrainedDualQuadric(Values &v, const size_t& k, const ConstrainedDualQuadric& q);
-ConstrainedDualQuadric atConstrainedDualQuadric(const Values &v, const size_t& k);
 
 
 #include <quadricslam/geometry/BoundingBoxFactor.h>

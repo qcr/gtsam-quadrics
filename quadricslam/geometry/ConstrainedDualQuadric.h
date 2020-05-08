@@ -126,6 +126,11 @@ namespace gtsam {
        */
       Vector9 localCoordinates(const ConstrainedDualQuadric& other) const;
 
+      /** Add quadric to values */
+      void addToValues(Values &v, const Key& k);
+
+      static ConstrainedDualQuadric getFromValues(const Values &v, const Key& k);
+
       /// @}
       /// @name Testable group traits
       /// @{
@@ -145,10 +150,4 @@ namespace gtsam {
   template <>
   struct traits<const ConstrainedDualQuadric> : public internal::Manifold<ConstrainedDualQuadric> {};
 
-  // Add quadric to values
-  void insertConstrainedDualQuadric(Values &v, const Key& k, const ConstrainedDualQuadric& q);
-
-  // Get quadric from values
-  ConstrainedDualQuadric atConstrainedDualQuadric(const Values &v, const Key& k);
-    
 } // namespace gtsam

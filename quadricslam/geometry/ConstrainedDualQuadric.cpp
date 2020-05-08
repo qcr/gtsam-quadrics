@@ -148,9 +148,9 @@ bool ConstrainedDualQuadric::equals(const ConstrainedDualQuadric& other, double 
 }
 
 /* ************************************************************************* */
-void insertConstrainedDualQuadric(Values &v, const Key& k, const ConstrainedDualQuadric& q) { v.insert(k,q);}
+void ConstrainedDualQuadric::addToValues(Values &v, const Key& k) { v.insert(k,*this);}
 
 /* ************************************************************************* */
-ConstrainedDualQuadric atConstrainedDualQuadric(const Values &v, const Key& k) { return v.at<ConstrainedDualQuadric>(k);}
+ConstrainedDualQuadric ConstrainedDualQuadric::getFromValues(const Values &v, const Key& k) { return v.at<ConstrainedDualQuadric>(k);}
 
 } // namespace gtsam
