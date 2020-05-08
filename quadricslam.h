@@ -27,7 +27,7 @@
     - for std::string remove std::
     - const boost::shared_ptr<X>& -> const X*
     - const SharedNoiseModel& -> const gtsam::noiseModel::Base* 
-    - size_t -> size_t
+    - Key -> size_t
 
   RESTRICTIONS:
     - cant used boost::shared_ptr<eigenobject>
@@ -41,6 +41,7 @@
 
 class Pose3;
 class Point3;
+class Values;
 class Cal3_S2;
 virtual class NoiseModelFactor;
 class ConstrainedDualQuadric;
@@ -78,6 +79,9 @@ class ConstrainedDualQuadric {
   bool equals(const ConstrainedDualQuadric& other, double tol) const;
   bool equals(const ConstrainedDualQuadric& other) const;
 };
+void insertConstrainedDualQuadric(Values &v, const size_t& k, const ConstrainedDualQuadric& q);
+ConstrainedDualQuadric atConstrainedDualQuadric(const Values &v, const size_t& k);
+
 
 #include <quadricslam/geometry/BoundingBoxFactor.h>
 virtual class BoundingBoxFactor : NoiseModelFactor {

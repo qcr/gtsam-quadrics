@@ -54,7 +54,7 @@ ConstrainedDualQuadric::ConstrainedDualQuadric(const Rot3& R, const Point3& t, c
 Matrix44 ConstrainedDualQuadric::matrix(OptionalJacobian<16,9> dQ_dq) const {
   Matrix44 Z = pose_.matrix();
   Matrix44 Qc = (Vector4() << (radii_).array().pow(2), -1.0).finished().asDiagonal();
-  Matrix44 Q = Z * Qc * Z.transpose();
+  Matrix44 Q = Z * Qc * Z.transpose(); 
 
   if (dQ_dq) {
     using namespace internal;
@@ -146,5 +146,11 @@ void ConstrainedDualQuadric::print(const std::string& s) const {
 bool ConstrainedDualQuadric::equals(const ConstrainedDualQuadric& other, double tol) const {
   return this->matrix().isApprox(other.matrix(), tol);
 }
+
+/* ************************************************************************* */
+void insertConstrainedDualQuadric(Values &v, const Key& k, const ConstrainedDualQuadric& q) { v.insert(k,q);}
+
+/* ************************************************************************* */
+ConstrainedDualQuadric atConstrainedDualQuadric(const Values &v, const Key& k) { return v.at<ConstrainedDualQuadric>(k);}
 
 } // namespace gtsam
