@@ -49,6 +49,46 @@ std::vector<Vector3> AlignedBox2::lines() const {
 }
 
 /* ************************************************************************* */
+bool AlignedBox2::contains(const Point2& point) const {
+  if (point.x() >= xmin() && point.x() <= xmax() 
+    && point.y() >= ymin() && point.y() <= ymax()) {
+    return true;
+  }
+  return false;
+}
+
+/* ************************************************************************* */
+bool AlignedBox2::completelyContains(const AlignedBox2& other) const {
+  if (this->contains(other.minPoint()) && this->contains(other.maxPoint())) {
+    return true;
+  }
+  return false;
+}
+
+/* ************************************************************************* */
+bool AlignedBox2::contains(const AlignedBox2& other) const {
+  int n_corners = 0;
+  if (this->contains(other.minPoint())) { n_corners++;}
+  if (this->contains(other.maxPoint())) { n_corners++;}
+  if (n_corners > 0) {
+    return true;
+  }
+  return false;
+}
+
+/* ************************************************************************* */
+bool AlignedBox2::intersects(const AlignedBox2& other) const {
+  int n_corners = 0;
+  if (this->contains(other.minPoint())) { n_corners++;}
+  if (this->contains(other.maxPoint())) { n_corners++;}
+  if (n_corners == 1) {
+    return true;
+  }
+  return false;
+}
+
+
+/* ************************************************************************* */
 AlignedBox2 AlignedBox2::addNoise(const Vector4& noiseVector) {
   return AlignedBox2(tlbr_+noiseVector);
 }

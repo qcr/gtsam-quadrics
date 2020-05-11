@@ -50,11 +50,49 @@ namespace gtsam {
        */
       AlignedBox2(const Vector4& tlbr);
 
+      /** Get xmin */
+      double xmin() const { return tlbr_[0];}
+
+      /** Get ymin */
+      double ymin() const { return tlbr_[1];}
+
+      /** Get xmax */
+      double xmax() const { return tlbr_[2];}
+
+      /** Get ymax */
+      double ymax() const { return tlbr_[3];}
+
       /** Returns box in xmin,ymin,xmax,ymax vector */
       Vector4 vector() const;
 
+      /** Returns Point2(xmin, ymin) */
+      Point2 minPoint() const {return Vector2(xmin(), ymin());}
+
+      /** Returns Point2(xmax, ymax) */
+      Point2 maxPoint() const {return Vector2(xmax(), ymax());}
+
       /** Returns equation of boxes lines */
       std::vector<Vector3> lines() const;
+
+      /** 
+       * Returns true if this contains the point 
+       * Points intersecting a line is considered containing
+       */
+      bool contains(const Point2& other) const;
+
+      /** 
+       * Returns true if this completely contains other box 
+       * Lines ontop of eachother are considered containing
+      */
+      bool completelyContains(const AlignedBox2& other) const;
+
+      /** 
+       * Returns true if this completely contains or intersects other
+       */
+      bool contains(const AlignedBox2& other) const;
+
+      /** Returns true if this intersects other box */
+      bool intersects(const AlignedBox2& other) const;
 
       /** 
        * Applies normally distributed noise
