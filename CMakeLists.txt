@@ -37,10 +37,6 @@ set(SOURCE_FILES
 	./quadricslam/geometry/BoundingBoxFactor.cpp
 	./quadricslam/geometry/QuadricCamera.cpp
 	./quadricslam/geometry/DualConic.cpp
-	./quadricslam/containers/Trajectory.cpp
-	./quadricslam/containers/Odometry.cpp
-	./quadricslam/containers/QuadricMap.cpp
-	./quadricslam/containers/Detections.cpp
 )
 
 ###################################################################################
@@ -57,13 +53,11 @@ target_link_libraries(${CONVENIENCE_LIB_NAME} gtsam)
 ## Build executables and link to our shared library. NOTE: can't have two mains in source_files
 # compile .exe files
 add_executable(main ./quadricslam/main.cpp)
-add_executable(runsystem ./quadricslam/base/System.cpp)
 add_executable(expressions ./quadricslam/base/executables/testExpressions.cpp)
 add_executable(poseJacobians ./quadricslam/base/executables/testPoseJacobians.cpp)
 
 # link with gtsam (or recieve undefined refrences)
 target_link_libraries(main gtsam;${CONVENIENCE_LIB_NAME})
-target_link_libraries(runsystem gtsam;${CONVENIENCE_LIB_NAME})
 target_link_libraries(expressions gtsam;${CONVENIENCE_LIB_NAME})
 target_link_libraries(poseJacobians gtsam;${CONVENIENCE_LIB_NAME})
 
