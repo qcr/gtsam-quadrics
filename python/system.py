@@ -39,11 +39,50 @@ class System(object):
         # draw factor graph 
         # Drawing.draw_problem(graph, initial_estimate)
 
+        # check graph + estimate
+        System.check_problem(graph, initial_estimate)
+
         # optimize using c++ back-end
         quadrics, trajectory = System.optimize(graph, initial_estimate)
 
     @staticmethod
+    def check_problem(graph, estimate):
+        # check trajectory
+        # must be prior pose 
+        # must be odometry between each pose variable
+        # check quadrics
+        # each quadric must be viewed from 3 poses
+
+        factor_keys = []
+        for i in range(graph.size()):
+            factor = graph.at(i)
+            int_keys = [factor.keys().at(j) for j in range(factor.keys().size())]
+            factor_keys += ['{}{}'.format(chr(gtsam.symbolChr(key)), gtsam.symbolIndex(key)) for key in int_keys]
+
+        estimate_int_keys = [estimate.keys().at(i) for i in range(estimate.keys().size())]
+        estimate_keys = ['{}{}'.format(chr(gtsam.symbolChr(key)), gtsam.symbolIndex(key)) for key in estimate_int_keys]
+
+        # check each factor has a variable
+        # and each quadric is viewed 3 times
+        for factor_key in factor_keys:
+            
+            if factor_key not in estimate_keys:
+                print(factor_key, 'doesnt exist in estimate!')
+
+        for estimate_key in estimate_keys:
+
+            if 'q' in estimate_key:
+
+                mkeys = [fkey for fkey in factor_keys if fkey==estimate_key]
+                if len(mkeys) < 3:
+                    print(estimate_key, 'doesnt have 3 bbfs')
+            
+
+
+    @staticmethod
     def optimize(graph, initial_estimate):
+
+        # create optimizer parameters
         params = gtsam.LevenbergMarquardtParams()
         params.setVerbosityLM("SUMMARY")    # SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
         params.setMaxIterations(20)
@@ -54,10 +93,10 @@ class System(object):
         params.setAbsoluteErrorTol(1e-8)    # stop when cost-costchange < tol
   
 
-        # graph.print_("GRAPH")
-        # initial_estimate.print_("EST")
+        # create optimizer
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)
 
+        # run optimizer
         estimation = optimizer.optimize()
 
         # extract quadrics / trajectory 
@@ -94,10 +133,12 @@ class System(object):
         noisy_odometry = true_odometry.add_noise(mu=0.0, sd=ODOM_NOISE)
         noisy_boxes = sequence.true_boxes.add_noise(mu=0.0, sd=BOX_NOISE)
 
-        # initialize trajectory and quadrics 
+        # initialize trajectory
         # TODO: ensure aligned in same reference frame
         initial_trajectory = noisy_odometry.as_trajectory(sequence.true_trajectory.data()[0])
-        initial_trajectory = noisy_odometry.as_trajectory(sequence.true_trajectory.data()[0])
+        # initial_trajectory = noisy_odometry.as_trajectory()
+
+        # initialize quadrics
         initial_quadrics = sequence.true_quadrics
         # initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_boxes, sequence.calibration)
 
@@ -107,14 +148,39 @@ class System(object):
         # add odometry measurements
         noisy_odometry.add_factors(graph, odometry_noise)
 
-        # add bbox measurements
-        noisy_boxes.add_factors(graph, bbox_noise, sequence.calibration, sequence.image_dimensions)
+        X = lambda i: int(gtsam.symbol(ord('x'), i))
+        Q = lambda i: int(gtsam.symbol(ord('q'), i))
+
+
+        # add valid box measurements
+        valid_objects = []
+        initialized_quadrics = initial_quadrics.keys()
+        for object_key in np.unique(noisy_boxes.object_keys()):
+
+            # add if quadric initialized
+            if object_key in initialized_quadrics:
+                
+                # get all views of quadric
+                object_boxes = noisy_boxes.at_object(object_key)
+
+                # add if enough views
+                if len(object_boxes) > 3:
+
+                    # add measurements
+                    valid_objects.append(object_key)
+                    for (pose_key, t), box in object_boxes.items():
+                        bbf = quadricslam.BoundingBoxFactor(box, sequence.calibration, sequence.image_dimensions, X(pose_key), Q(object_key), bbox_noise)
+                        bbf.addToGraph(graph)
 
         # add initial pose estimates
         initial_trajectory.add_estimates(initial_estimate)
         
         # add initial landmark estimates
-        initial_quadrics.add_estimates(initial_estimate)
+        for object_key, quadric in initial_quadrics.items():
+
+            # add if seen > 3 times
+            if (object_key in valid_objects):
+                quadric.addToValues(initial_estimate, Q(object_key))
 
         return graph, initial_estimate
 

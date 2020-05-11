@@ -29,12 +29,12 @@ class Trajectory(object):
     def __init__(self, poses):
         self._poses = poses
 
-    # def __len__(self):
-    #     return len(self._poses)
+    def __len__(self):
+        return len(self._poses)
 
-    # def __getitem__(self, index):
-    #     """ return in order with images[index] """
-    #     return self._poses[index]
+    def __getitem__(self, index):
+        """ return in order with images[index] """
+        return self._poses[index]
 
     def items(self):
         """ [(key, pose)] """
@@ -84,11 +84,11 @@ class Odometry(object):
     def __init__(self, rposes):
         self._rposes = rposes
 
-    # def __len__(self):
-    #     return len(self._rposes)
+    def __len__(self):
+        return len(self._rposes)
 
-    # def __getitem__(self, index):
-    #     return self._rposes[index]
+    def __getitem__(self, index):
+        return self._rposes[index]
 
     def data(self):
         return self._rposes
@@ -140,11 +140,15 @@ class Quadrics(object):
     def items(self):
         return list(self._quadrics.items())
 
-    def add_estimates(self, values):
-        for key, quadric in self._quadrics.items():
-            quadric.addToValues(values, Q(key))
-            # quadricslam.insertConstrainedDualQuadric(values, Q(key), quadric)
-            # values.insert(Q(key), quadric)
+    def keys(self):
+        return list(self._quadrics.keys())
+
+    # def add_estimates(self, values):
+    #     """ add q if n bbfs > 3 """
+    #     for key, quadric in self._quadrics.items():
+    #         quadric.addToValues(values, Q(key))
+    #         # quadricslam.insertConstrainedDualQuadric(values, Q(key), quadric)
+    #         # values.insert(Q(key), quadric)
 
     @staticmethod
     def from_values(values):
@@ -176,12 +180,15 @@ class Boxes(object):
         # mashed_keys = len([keypair for keypair in self.keypairs() if keypair in boxes.keypairs()])
         self._boxes.update(boxes._boxes)
 
-    # def __len__(self):
-    #     return len(self._boxes.values())
+    def __len__(self):
+        return len(self._boxes.values())
 
     # def __getitem__(self, index):
     #     """ returns ((pose_key, object_key), box) | O(1)"""
     #     return list(self._boxes.items())[index]
+    
+    def items(self):
+        return list(self._boxes.items())
 
     def data(self):
         """ returns [boxes] | O(1)"""
@@ -209,11 +216,24 @@ class Boxes(object):
         """ returns a Boxes object of boxes at object_key | O(n)"""
         return Boxes({k:v for k,v in self._boxes.items() if k[1] == object_key})
 
-    def add_factors(self, graph, noisemodel, calibration, image_dimensions):
-        for (pose_key, object_key), box in self._boxes.items():
-            bbf = quadricslam.BoundingBoxFactor(box, calibration, image_dimensions, X(pose_key), Q(object_key), noisemodel)
-            bbf.addToGraph(graph)
-            # graph.add(bbf)
+    # def add_factors(self, graph, noisemodel, calibration, image_dimensions, valid_quadrics):
+    #     """ add bbf if q initialized and n > 3 """
+        
+    #     for object_key in np.unique(self.object_keys()):
+    #         if object_key not in valid_quadrics:
+    #             continue
+            
+    #         object_boxes = self.at_object(object_key)
+
+    #         if len(object_boxes) > 3:
+    #             for (pose_key, t), box in object_boxes.items():
+    #                 bbf = quadricslam.BoundingBoxFactor(box, calibration, image_dimensions, X(pose_key), Q(object_key), noisemodel)
+    #                 bbf.addToGraph(graph)
+        
+    #     # for (pose_key, object_key), box in self._boxes.items():
+    #     #     bbf = quadricslam.BoundingBoxFactor(box, calibration, image_dimensions, X(pose_key), Q(object_key), noisemodel)
+    #     #     bbf.addToGraph(graph)
+    #         # graph.add(bbf)
 
     def add_noise(self, mu, sd):
         """ compose noisevec onto relative poses """
@@ -229,3 +249,11 @@ class Boxes(object):
             # add box to collection
             noisy_boxes.add(noisy_box, pose_key, object_key)
         return noisy_boxes
+
+    def prints(self):
+        for object_key in np.unique(self.object_keys()):
+            object_boxes = self.at_object(object_key)
+
+            print('Object: q{} | {} views'.format(object_key, len(object_boxes)))
+            # for (pose_key, t), box in object_boxes.items():
+            #     print('    x{} -> q{}'.format(pose_key, object_key))
