@@ -16,6 +16,7 @@ import quadricslam
 
 # import custom python modules
 sys.dont_write_bytecode = True
+from simulated_dataset import ManualSequence
 from scenenet_dataset import SceneNetDataset
 from containers import *
 from drawing import Drawing
@@ -37,7 +38,7 @@ class System(object):
         graph, initial_estimate = System.build_graph(sequence)
 
         # draw factor graph 
-        # Drawing.draw_problem(graph, initial_estimate)
+        Drawing.draw_problem(graph, initial_estimate)
 
         # check graph + estimate
         System.check_problem(graph, initial_estimate)
@@ -94,7 +95,7 @@ class System(object):
         params.setVerbosityLM("SUMMARY")    # SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
         params.setMaxIterations(20)
         params.setlambdaInitial(1e-5)       # defaults to 1e5
-        params.setlambdaUpperBound(1e5)     # defaults to 1e5
+        params.setlambdaUpperBound(1e10)     # defaults to 1e5
         params.setlambdaLowerBound(1e-8)    # defaults to 0.0
         params.setRelativeErrorTol(1e-10)   # stop iterating when change in error between steps is less than this
         params.setAbsoluteErrorTol(1e-8)    # stop when cost-costchange < tol
@@ -115,9 +116,11 @@ class System(object):
     def build_graph(sequence):
         """
         Sequence contains:
-        * noisyOdometry
-        * noisyBoxes
-        * calibration 
+        * calibration
+        * image_dimensions
+        * true_trajectory 
+        * true_quadrics 
+        * true_boxes 
         """
 
         # set seed
@@ -129,7 +132,7 @@ class System(object):
 
         # declare noise models
         ODOM_SIGMA = 0.01; BOX_SIGMA = 3.0
-        ODOM_NOISE = 0.00; BOX_NOISE = 0.0
+        ODOM_NOISE = 0.01; BOX_NOISE = 0.0
         noise_zero = gtsam.noiseModel_Diagonal.Sigmas(np.array([1e-12]*6, dtype=np.float))
         odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([ODOM_SIGMA]*3 + [ODOM_SIGMA]*3, dtype=np.float))
         bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([BOX_SIGMA]*4, dtype=np.float))
@@ -327,13 +330,26 @@ class System(object):
 
 
 if __name__ == '__main__':
-    trainval = 'train'
-    dataset_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}'.format(trainval)
-    protobuf_folder = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}_protobufs'.format(trainval)
-    reader_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py'
-    dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path)
+    # trainval = 'train'
+    # dataset_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}'.format(trainval)
+    # protobuf_folder = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}_protobufs'.format(trainval)
+    # reader_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py'
+    # dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path)
+    # System.run(dataset[0])
 
-    System.run(dataset[0])
+
+    points = []
+    points.append(gtsam.Point3(10,0,0))
+    points.append(gtsam.Point3(0,-10,0))
+    points.append(gtsam.Point3(-10,0,0))
+    points.append(gtsam.Point3(0,10,0))
+    points.append(gtsam.Point3(10,0,0))
+
+    quadrics = []
+    quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(), np.array([0.2,0.3,0.4])))
+    sequence = ManualSequence(points, quadrics)
+    # print(sequence.true_boxes._boxes)
+    System.run(sequence)
 
 
 

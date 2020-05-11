@@ -19,6 +19,7 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/geometry/Pose3.h>
 
 #include <vector>
 #include <random>
@@ -41,6 +42,9 @@ class Noise {
      * Add noise to Values object
      */
     static Values perturbValues(const Values& values, double sd);
+
+    /** Interpolate poses */ 
+    static Pose3 interpolate(const Pose3& p1, const Pose3& p2, const double& percent);
 };
 
 }

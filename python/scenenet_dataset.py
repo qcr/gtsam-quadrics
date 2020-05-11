@@ -10,19 +10,24 @@ Author: Lachlan Nicholson (Python)
 """
 
 import os
+import cv2
 import sys
+import math
 import importlib
 import numpy as np
+from PIL import Image
+
 import gtsam
-import cv2
+import quadricslam
+
+sys.dont_write_bytecode = True
 from containers import Boxes
 from containers import Trajectory
 from containers import Odometry
 from containers import Quadrics
-import quadricslam
-
-sys.dont_write_bytecode = True
 from interactive_player import InteractivePlayer
+
+
 
 class SceneNetDataset(object):
     """
@@ -129,8 +134,6 @@ class SceneNetDataset(object):
 
 
 
-
-
 class cached_property(object):
     """A decorator that converts a function into a lazy property.  The
     function wrapped is called the first time to retrieve the result
@@ -162,7 +165,6 @@ class cached_property(object):
 
 
 import re
-
 def natural_sort(list_data):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
@@ -210,8 +212,11 @@ WNID_TO_NYU = {
 	'02992529':7, '03222722':12, '04373704':4, '02851099':13, '04061681':10, '04529681':7,}
 
 
-import math
-from PIL import Image
+
+
+
+
+
 
 class SceneNetSequence(object):
     """ 
@@ -525,7 +530,7 @@ class SceneNetPlayer(InteractivePlayer):
         current_pose = self.sequence.true_trajectory[self.image_index]
         image_boxes = self.sequence.true_boxes.at_pose(self.image_index)
 
-        for (pose_key, object_key), box in image_boxes:
+        for (pose_key, object_key), box in image_boxes.items():
             self.draw_box(image, box, text='{}'.format(object_key))
             # drawing.cv2_draw_box_and_text(image, det.box.vector, box_color=(0,255,0), text='{}'.format(det.object_key), text_color=(0,0,0))
 
