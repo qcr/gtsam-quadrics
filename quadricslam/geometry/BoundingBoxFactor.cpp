@@ -51,7 +51,8 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     Vector4 error = predictedBounds.vector() - measured_.vector();
     // cout << error.transpose() << endl;
     if (error.array().isInf().any() or error.array().isNaN().any()) {
-      cout << "\nWARNING: error inf/nan\nError: " << error.transpose() << endl << endl;  
+      throw std::runtime_error("Infinite error inside BBF");
+      // throw QuadricProjectionException("Infinite Error")
     }
 
     if (H1) {

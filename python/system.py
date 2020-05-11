@@ -53,6 +53,9 @@ class System(object):
         params.setRelativeErrorTol(1e-10)   # stop iterating when change in error between steps is less than this
         params.setAbsoluteErrorTol(1e-8)    # stop when cost-costchange < tol
   
+
+        # graph.print_("GRAPH")
+        # initial_estimate.print_("EST")
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)
 
         estimation = optimizer.optimize()
@@ -79,6 +82,7 @@ class System(object):
 
         # declare noise models
         ODOM_SIGMA = 0.01; BOX_SIGMA = 3.0
+        ODOM_NOISE = 0.00; BOX_NOISE = 0.0
         noise_zero = gtsam.noiseModel_Diagonal.Sigmas(np.array([1e-12]*6, dtype=np.float))
         odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([ODOM_SIGMA]*3 + [ODOM_SIGMA]*3, dtype=np.float))
         bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([BOX_SIGMA]*4, dtype=np.float))
@@ -87,13 +91,15 @@ class System(object):
 
         # get noisy odometry / boxes 
         true_odometry = sequence.true_trajectory.as_odometry()
-        noisy_odometry = true_odometry.add_noise(mu=0.0, sd=ODOM_SIGMA)
-        noisy_boxes = sequence.true_boxes.add_noise(mu=0.0, sd=BOX_SIGMA)
+        noisy_odometry = true_odometry.add_noise(mu=0.0, sd=ODOM_NOISE)
+        noisy_boxes = sequence.true_boxes.add_noise(mu=0.0, sd=BOX_NOISE)
 
         # initialize trajectory and quadrics 
         # TODO: ensure aligned in same reference frame
-        initial_trajectory = noisy_odometry.as_trajectory()
-        initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_boxes, sequence.calibration)
+        initial_trajectory = noisy_odometry.as_trajectory(sequence.true_trajectory.data()[0])
+        initial_trajectory = noisy_odometry.as_trajectory(sequence.true_trajectory.data()[0])
+        initial_quadrics = sequence.true_quadrics
+        # initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_boxes, sequence.calibration)
 
         # add prior pose
         initial_trajectory.add_prior(graph, noise_zero)
@@ -259,16 +265,26 @@ if __name__ == '__main__':
 
     # test graph
     # of = gtsam.BetweenFactorPose3(gtsam.symbol(ord('x'),3), gtsam.symbol(ord('x'),4), gtsam.Pose3(), gtsam.noiseModel_Diagonal.Sigmas(np.array([1.,2,3,4,5,6])))
-    # bbf = quadricslam.BoundingBoxFactor(quadricslam.AlignedBox2(0.,0.,0.,0.), gtsam.Cal3_S2(), np.array([320.,240.]), gtsam.symbol(ord('x'),3), gtsam.symbol(ord('q'),1), gtsam.noiseModel_Diagonal.Sigmas(np.array([1.]*4)))
+    # bbf = quadricslam.BoundingBoxFactor(quadricslam.AlignedBox2(0.,1.,2.,3.), gtsam.Cal3_S2(), np.array([320.,240.]), gtsam.symbol(ord('x'),3), gtsam.symbol(ord('q'),1), gtsam.noiseModel_Diagonal.Sigmas(np.array([1.]*4)))
     # graph = gtsam.NonlinearFactorGraph()
+
     # graph.add(of)
-    # bbf.addToGraph(graph)
     # # graph.add(bbf)
+    # bbf.addToGraph(graph)
     # graph.add(of)
+
+    # print(graph.at(0))
+    # print(graph.at(1))
+    # print(graph.at(2))
+
+    # print(quadricslam.BoundingBoxFactor.getFromGraph(graph, 0))
+    # print(quadricslam.BoundingBoxFactor.getFromGraph(graph, 1))
+    # print(quadricslam.BoundingBoxFactor.getFromGraph(graph, 2))
 
     # for i in range(3):
     #     print(graph.exists(i))
-    #     print(graph.at(i))
+    #     print(quadricslam.BoundingBoxFactor.getFromGraph(graph, 1))
+        # print(graph.at(i))
     
 
 

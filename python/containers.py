@@ -17,6 +17,8 @@ import quadricslam
 
 sys.dont_write_bytecode = True
 
+X = lambda i: int(gtsam.symbol(ord('x'), i))
+Q = lambda i: int(gtsam.symbol(ord('q'), i))
 
 class Trajectory(object):
     """ 
@@ -24,16 +26,19 @@ class Trajectory(object):
     Keys stored in index of pose.
     Cast to gtsamKey when converted to factor.
     """
-    X = lambda i: int(gtsam.symbol(ord('x'), i))
     def __init__(self, poses):
         self._poses = poses
 
-    def __len__(self):
-        return len(self._poses)
+    # def __len__(self):
+    #     return len(self._poses)
 
-    def __getitem__(self, index):
-        """ return in order with images[index] """
-        return self._poses[index]
+    # def __getitem__(self, index):
+    #     """ return in order with images[index] """
+    #     return self._poses[index]
+
+    def items(self):
+        """ [(key, pose)] """
+        return zip(range(len(self._poses)), self._poses)
 
     def data(self):
         """ returns list of poses """
@@ -49,13 +54,25 @@ class Trajectory(object):
 
     def add_prior(self, graph, noisemodel):
         """ add prior X(0) to graph """
-        prior_factor = gtsam.PriorFactorPose3(Trajectory.X(0), self._poses[0], noisemodel)
+        prior_factor = gtsam.PriorFactorPose3(X(0), self._poses[0], noisemodel)
         graph.add(prior_factor)
 
     def add_estimates(self, values):
         """ add poses X(i) to values """
         for index, pose in enumerate(self._poses):
-            values.insert(Trajectory.X(index), pose)
+            values.insert(X(index), pose)
+
+    @staticmethod
+    def from_values(values):
+        estimate_keys = [values.keys().at(i) for i in range(values.keys().size())]
+        pose_keys = [k for k in estimate_keys if chr(gtsam.symbolChr(k)) == 'x']
+        poses = [values.atPose3(k) for k in pose_keys]
+        return Trajectory(poses)
+
+
+            
+
+            
 
 
 class Odometry(object):
@@ -67,11 +84,11 @@ class Odometry(object):
     def __init__(self, rposes):
         self._rposes = rposes
 
-    def __len__(self):
-        return len(self._rposes)
+    # def __len__(self):
+    #     return len(self._rposes)
 
-    def __getitem__(self, index):
-        return self._rposes[index]
+    # def __getitem__(self, index):
+    #     return self._rposes[index]
 
     def data(self):
         return self._rposes
@@ -85,7 +102,7 @@ class Odometry(object):
     def add_factors(self, graph, noisemodel):
         """ add odom factors X(i) -> X(i+1) to graph """
         for index, rpose in enumerate(self._rposes):
-            odometry_factor = gtsam.BetweenFactorPose3(Trajectory.X(index), Trajectory.X(index+1), rpose, noisemodel)
+            odometry_factor = gtsam.BetweenFactorPose3(X(index), X(index+1), rpose, noisemodel)
             graph.add(odometry_factor)
 
     def add_noise(self, mu, sd):
@@ -111,19 +128,30 @@ class Quadrics(object):
     Keys stored as dictionary keys
     Mapped to gtsamKey when added to estimate.
     """
-    Q = lambda i: int(gtsam.symbol(ord('q'), i))
-    def __init__(self):
-        self._quadrics = dict()
+    def __init__(self, quadrics=None):
+        self._quadrics = quadrics
+        if quadrics is None:
+            self._quadrics = dict()
 
     def add(self, quadric, key):
         """ inline """
         self._quadrics[key] = quadric
 
+    def items(self):
+        return list(self._quadrics.items())
+
     def add_estimates(self, values):
         for key, quadric in self._quadrics.items():
-            quadric.addToValues(values, key)
-            # quadricslam.insertConstrainedDualQuadric(values, Quadrics.Q(key), quadric)
-            # values.insert(Quadrics.Q(key), quadric)
+            quadric.addToValues(values, Q(key))
+            # quadricslam.insertConstrainedDualQuadric(values, Q(key), quadric)
+            # values.insert(Q(key), quadric)
+
+    @staticmethod
+    def from_values(values):
+        estimate_keys = [values.keys().at(i) for i in range(values.keys().size())]
+        quadric_keys = [k for k in estimate_keys if chr(gtsam.symbolChr(k)) == 'q']
+        quadrics = {int(gtsam.symbolIndex(k)): quadricslam.ConstrainedDualQuadric.getFromValues(values, k) for k in quadric_keys}
+        return Quadrics(quadrics)
 
 
 
@@ -145,15 +173,15 @@ class Boxes(object):
 
     def add_boxes(self, boxes):
         """ inline add """
-        mashed_keys = len([keypair for keypair in self.keypairs() if keypair in boxes.keypairs()])
+        # mashed_keys = len([keypair for keypair in self.keypairs() if keypair in boxes.keypairs()])
         self._boxes.update(boxes._boxes)
 
-    def __len__(self):
-        return len(self._boxes.values())
+    # def __len__(self):
+    #     return len(self._boxes.values())
 
-    def __getitem__(self, index):
-        """ returns ((pose_key, object_key), box) | O(1)"""
-        return list(self._boxes.items())[index]
+    # def __getitem__(self, index):
+    #     """ returns ((pose_key, object_key), box) | O(1)"""
+    #     return list(self._boxes.items())[index]
 
     def data(self):
         """ returns [boxes] | O(1)"""
@@ -183,7 +211,7 @@ class Boxes(object):
 
     def add_factors(self, graph, noisemodel, calibration, image_dimensions):
         for (pose_key, object_key), box in self._boxes.items():
-            bbf = quadricslam.BoundingBoxFactor(box, calibration, image_dimensions, pose_key, object_key, noisemodel)
+            bbf = quadricslam.BoundingBoxFactor(box, calibration, image_dimensions, X(pose_key), Q(object_key), noisemodel)
             bbf.addToGraph(graph)
             # graph.add(bbf)
 
