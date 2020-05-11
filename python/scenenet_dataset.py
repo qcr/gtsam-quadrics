@@ -377,6 +377,101 @@ class SceneNetSequence(object):
     def normalize(self, vector):
         return vector / np.linalg.norm(vector)
 
+    ###############################################################
+    # Loading Objects
+    ###############################################################
+    @cached_property
+    def true_quadrics(self):
+        """ 
+        Can estimate each objects quadric,
+        either using the vertices bounds and inscribing a quadric,
+        or by calculating the quadric of best fit for each vertices set.
+        The problem with the latter is that vertices are not distributed evenly.
+        """
+        quadrics = Quadrics()
+        for instance in self.sequence_data.instances:
+
+            # only calculate for valid instances
+            if instance.instance_id not in self.valid_instances:
+                continue
+
+            # load local vertices and map to global
+            vertices = self.load_vertices(instance)
+
+            # calculate 3D bounds of vertices
+            bounds = self.vertices_bounds(vertices)
+
+            # convert bounds to quadric
+            quadric = self.bounds_to_quadric(bounds)
+
+            # add to quadrics
+            quadrics.add(quadric, int(instance.instance_id))
+        return quadrics
+
+    def bounds_to_quadric(self, bounds):
+        radii = bounds.dimensions() / 2.0
+        pose = gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(bounds.centroid()))
+        return quadricslam.ConstrainedDualQuadric(pose, radii)
+
+    def vertices_bounds(self, vertices):
+        min_x = min([v[0] for v in vertices])
+        max_x = max([v[0] for v in vertices])
+        min_y = min([v[1] for v in vertices])
+        max_y = max([v[1] for v in vertices])
+        min_z = min([v[2] for v in vertices])
+        max_z = max([v[2] for v in vertices])
+        xxyyzz = np.array([min_x, max_x, min_y, max_y, min_z, max_z])
+        box = quadricslam.AlignedBox3(xxyyzz)
+        return box
+
+    def load_vertices(self, instance):
+        # get object pose
+        op = instance.object_info.object_pose
+        object_pose = np.array([[op.rotation_mat11, op.rotation_mat12, op.rotation_mat13, op.translation_x],
+                                [op.rotation_mat21, op.rotation_mat22, op.rotation_mat23, op.translation_y],
+                                [op.rotation_mat31, op.rotation_mat32, op.rotation_mat33, op.translation_z],
+                                [0, 0, 0, 1]])
+        object_height = instance.object_info.height_meters
+        
+        # get local verticies from shapenet
+        object_path = os.path.join(self.shapenet_path, instance.object_info.shapenet_hash, 'models', 'model_normalized.obj')
+        local_vertices = self.load_local_vertices(object_path)
+
+        # convert to global vertices
+        global_vertices = self.local_to_global_vertices(local_vertices, object_pose[0:3,0:3], object_pose[0:3,3], object_height)
+        return global_vertices
+            
+    def load_local_vertices(self, object_path):
+        shapenet_obj_file = open(object_path, "r")
+        vertices = []
+        for l in shapenet_obj_file:
+            if l.startswith('v '):
+                s = l[2:].split()
+                x = float(s[0])
+                y = float(s[1])
+                z = float(s[2])
+                vertices.append([x, y, z])
+        return np.array(vertices, dtype=np.float)
+
+    def local_to_global_vertices(self, local_vertices, object_rotation, object_translation, object_height):
+        """As defined in pyscenenetrgbd/generate_scene_obj.py merge_scene_obj()"""
+        bb = self.vertices_bounds(local_vertices).vector()
+        centroid = np.array([bb[0] + ((bb[1] - bb[0]) / 2.0), bb[2] + ((bb[3] - bb[2]) / 2.0), bb[4] + ((bb[5] - bb[4]) / 2.0)])
+        # print('cent', centroid)
+        centroid[1] -= 0.6 * (bb[3] - bb[2])
+        # print('cent2', centroid)
+        global_vertices = []
+        for lv in local_vertices:
+            # print('lv', lv)
+            gv = (lv - centroid) * (object_height / (bb[3] - bb[2]))
+            # print('gv', gv)
+            gv = object_rotation.dot(gv) + object_translation
+            # print('gv2', gv)
+            global_vertices.append(gv)
+        return np.array(global_vertices)
+
+
+
 
 
 class SmartImages(object):
