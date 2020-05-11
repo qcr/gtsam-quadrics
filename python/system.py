@@ -43,7 +43,15 @@ class System(object):
         System.check_problem(graph, initial_estimate)
 
         # optimize using c++ back-end
-        quadrics, trajectory = System.optimize(graph, initial_estimate)
+        estimate = System.optimize(graph, initial_estimate)
+
+        # draw estimation
+        # Drawing.draw_problem(graph, estimate)
+
+        # extract quadrics / trajectory 
+        estimated_trajectory = Trajectory.from_values(estimate)
+        estimated_quadrics = Quadrics.from_values(estimate)
+
 
     @staticmethod
     def check_problem(graph, estimate):
@@ -77,8 +85,7 @@ class System(object):
                 if len(mkeys) < 3:
                     print(estimate_key, 'doesnt have 3 bbfs')
             
-
-
+    
     @staticmethod
     def optimize(graph, initial_estimate):
 
@@ -97,10 +104,11 @@ class System(object):
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)
 
         # run optimizer
-        estimation = optimizer.optimize()
+        print('starting optimization')
+        estimate = optimizer.optimize()
+        print('optimization finished')
 
-        # extract quadrics / trajectory 
-        # quadrics = Quadrics.from_values
+        return estimate
 
 
     @staticmethod

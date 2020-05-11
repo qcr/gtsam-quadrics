@@ -98,8 +98,9 @@ bool DualConic::isDegenerate(void) const {
 
 /* ************************************************************************* */
 bool DualConic::isEllipse(void) const {
-  if (!this->isDegenerate()) {
-    Matrix33 C = dC_.inverse();
+  Matrix33 C = dC_.inverse();
+  bool isDegenerate = ISCLOSE(C.determinant(), 0, 1e-9);
+  if (!isDegenerate) {
     Matrix22 A33 = C.block(0,0,2,2);
     return (A33.determinant() > 0);
   }

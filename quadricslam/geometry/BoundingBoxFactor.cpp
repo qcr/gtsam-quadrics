@@ -42,7 +42,8 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
     // evaluate error 
     Vector4 error = predictedBounds.vector() - measured_.vector();
-    // cout << error.transpose() << endl;
+
+    // ensure error is never invalid
     if (error.array().isInf().any() or error.array().isNaN().any()) {
       cout << "Infinite error inside BBF" << endl;
       cout << "Dual Conic:\n" << dC.matrix() << endl;
@@ -53,6 +54,7 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
       // throw QuadricProjectionException("Infinite Error")
     }
 
+    // calculate jacobians
     if (H1) {
       // boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
       // *H1 = numericalDerivative21(funPtr, pose, quadric, 1e-6);
@@ -92,11 +94,16 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     }
     return error;
 
+
+  // handle projection failures
   } catch(QuadricProjectionException& e) {
     
     cout << e.what() << ": Quadric " << DefaultKeyFormatter(this->key2());
-    cout << " moved behind camera " << DefaultKeyFormatter(this->key1()) << endl;
-    throw NotImplementedException();
+    cout << " and pose " << DefaultKeyFormatter(this->key1()) << endl;
+    Vector4 error = Vector4::Zero();
+    if (H1) {*H1 = Matrix::Zero(4,6);}
+    if (H2) {*H2 = Matrix::Zero(4,9);}
+    return error;
 
   }
 }

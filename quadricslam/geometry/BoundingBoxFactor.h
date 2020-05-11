@@ -63,7 +63,7 @@ namespace gtsam {
        * @param H2 the derivative of the error wrt quadric (4x9)
        */
       Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric,
-			  boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const;
+			  boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const;      
 
       /**
        * Returns an expression for the prediction wrt pose and quadric

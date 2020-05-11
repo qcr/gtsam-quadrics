@@ -41,6 +41,9 @@ namespace gtsam {
         : ThreadsafeException<QuadricProjectionException>("QuadricProjectionException"),
           j_(j) {}
 
+      QuadricProjectionException(const std::string& description)
+        : ThreadsafeException<QuadricProjectionException>(description) {}
+
       Key nearbyVariable() const {return j_;}
 
     private:
@@ -82,6 +85,14 @@ namespace gtsam {
       /** Static projection function */
       static DualConic project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
         OptionalJacobian<9,9> dc_dq = boost::none, OptionalJacobian<9,6> dc_dx = boost::none, OptionalJacobian<9,5> dc_dk = boost::none);
+      
+      /** 
+       * Evaluates whether a given pose-quadric pair will
+       * project correctly. Looks to see that:
+       * Quadric is infront of the camera
+       * The camera is not inside the quadric. 
+       */
+      static bool isValid(const Pose3& pose, const ConstrainedDualQuadric& quadric);
       
       /**
        * Project a quadric at the stored 3D pose and calibration
