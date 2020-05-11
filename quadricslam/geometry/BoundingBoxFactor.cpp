@@ -32,13 +32,6 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
   try {
 
-
-    // debugging
-    // QuadricCamera camera(pose, calibration_);
-    // Point2 p = camera.project2(quadric.centroid());
-    // cout << "projected quad point: " << p.vector().transpose() << endl;
-
-
     // project quadric taking into account partial derivatives 
     Eigen::Matrix<double, 9,6> dC_dx; Eigen::Matrix<double, 9,9> dC_dq;
     DualConic dC = QuadricCamera::project(quadric, pose, calibration_, H1?&dC_dq:0, H2?&dC_dx:0);
@@ -51,6 +44,11 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     Vector4 error = predictedBounds.vector() - measured_.vector();
     // cout << error.transpose() << endl;
     if (error.array().isInf().any() or error.array().isNaN().any()) {
+      cout << "Infinite error inside BBF" << endl;
+      cout << "Dual Conic:\n" << dC.matrix() << endl;
+      cout << "error: " << error.transpose() << endl;
+      pose.print("pose:\n");
+      quadric.print();
       throw std::runtime_error("Infinite error inside BBF");
       // throw QuadricProjectionException("Infinite Error")
     }
