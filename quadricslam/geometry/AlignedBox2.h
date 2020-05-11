@@ -19,6 +19,8 @@
 
 #include <gtsam/geometry/Pose3.h>
 
+#include <vector>
+
 namespace gtsam {
 
   /**
@@ -46,10 +48,13 @@ namespace gtsam {
        * Constructor from vector
        * @param tlbr vector of xmin,ymin,xmax,ymax (Vector4)
        */
-      AlignedBox2(Vector4 tlbr);
+      AlignedBox2(const Vector4& tlbr);
 
       /** Returns box in xmin,ymin,xmax,ymax vector */
       Vector4 vector() const;
+
+      /** Returns equation of boxes lines */
+      std::vector<Vector3> lines() const;
 
       /** 
        * Applies normally distributed noise
@@ -74,5 +79,9 @@ namespace gtsam {
   struct traits<AlignedBox2> {
     enum { dimension = 4 };
   };
+
+  // Add vector<> typedef for python wrapper
+  typedef std::vector<Vector3> Vector3Vector;
+
 
 } // namespace gtsam

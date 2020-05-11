@@ -24,8 +24,9 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/nonlinear/Expression.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
-#define CHECK_ANALYTICAL 1
+#define CHECK_ANALYTICAL 0
 
 namespace gtsam {
 
@@ -39,7 +40,7 @@ namespace gtsam {
     protected:
       AlignedBox2 measured_; ///< measured bounding box
       boost::shared_ptr<Cal3_S2> calibration_; ///< camera calibration
-      boost::shared_ptr<Vector2> imageDimensions_; ///< camera calibration
+      Vector2 imageDimensions_; ///< camera calibration
       typedef NoiseModelFactor2<Pose3, ConstrainedDualQuadric> Base; ///< base class has keys and noisemodel as private members
 
     public:
@@ -49,7 +50,7 @@ namespace gtsam {
 
       /** Constructor from measured box, calbration, dimensions and posekey, quadrickey, noisemodel */
       BoundingBoxFactor(const AlignedBox2& measured, const boost::shared_ptr<Cal3_S2>& calibration, 
-        const boost::shared_ptr<Vector2>& imageDimensions, const Key& poseKey, const Key& quadricKey, 
+        const Vector2& imageDimensions, const Key& poseKey, const Key& quadricKey, 
         const SharedNoiseModel& model) : 
           Base(model, poseKey, quadricKey), measured_(measured), 
           calibration_(calibration), imageDimensions_(imageDimensions) {};
@@ -62,13 +63,24 @@ namespace gtsam {
        * @param H2 the derivative of the error wrt quadric (4x9)
        */
       Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric,
-			  boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const;
+			  boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const;      
 
       /**
        * Returns an expression for the prediction wrt pose and quadric
        */
       Expression<AlignedBox2> expression(const Expression<Pose3>& pose, const Expression<ConstrainedDualQuadric>& quadric) const;
 
+      /** Add to graph */
+      void addToGraph(NonlinearFactorGraph& graph);
+
+      /** Get from graph */
+      static BoundingBoxFactor getFromGraph(const NonlinearFactorGraph& graph, size_t idx);
+
+      /** Prints the dual quadric with optional string */
+      void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+
+      /** Compares two ellipsoids */
+      // bool equals(const ConstrainedDualQuadric& other, double tol = 1e-9) const;
   };
 
   // declare dimensions of calibration pointer for expressions
@@ -76,6 +88,5 @@ namespace gtsam {
   struct traits<boost::shared_ptr<Cal3_S2>> {
     enum { dimension = 5};
   };
-
 
 } // namespace gtsam

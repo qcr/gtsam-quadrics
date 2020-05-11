@@ -19,6 +19,7 @@
 
 #include <gtsam/geometry/Pose3.h>
 #include <random>
+#include <gtsam/nonlinear/Values.h>
 
 namespace gtsam {
 
@@ -125,6 +126,11 @@ namespace gtsam {
        */
       Vector9 localCoordinates(const ConstrainedDualQuadric& other) const;
 
+      /** Add quadric to values */
+      void addToValues(Values &v, const Key& k);
+
+      static ConstrainedDualQuadric getFromValues(const Values &v, const Key& k);
+
       /// @}
       /// @name Testable group traits
       /// @{
@@ -137,11 +143,11 @@ namespace gtsam {
       /// @}
   };
 
-  // add ConstrainedDualQuadric to Manifold group
+  // Add ConstrainedDualQuadric to Manifold group
   template <>
   struct traits<ConstrainedDualQuadric> : public internal::Manifold<ConstrainedDualQuadric> {};
 
   template <>
   struct traits<const ConstrainedDualQuadric> : public internal::Manifold<ConstrainedDualQuadric> {};
-    
+
 } // namespace gtsam

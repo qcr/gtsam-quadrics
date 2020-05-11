@@ -65,6 +65,34 @@ Matrix3 QuadricCamera::project_(const ConstrainedDualQuadric& quadric, const Pos
 }
 
 /* ************************************************************************* */
+Matrix34 QuadricCamera::transformToImage(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration) {
+  Matrix3 image_T_camera = calibration->K();
+  Matrix4 camera_T_world = pose.inverse().matrix();
+  Matrix34 image_T_world = image_T_camera * (camera_T_world).block(0,0,3,4);
+  // Matrix34 image_T_world = image_T_camera * internal::I34 * camera_T_world;
+  return image_T_world;
+}
+
+/* ************************************************************************* */
+bool QuadricCamera::isValid(const Pose3& pose, const ConstrainedDualQuadric& quadric) {
+
+  // check quadric has positive depth
+  Pose3 rpose = pose.between(quadric.getPose());
+  if (rpose.z() < 0.0) {
+    throw QuadricProjectionException("Quadric is behind camera");
+  }
+
+  // check camera is not inside quadric
+  Vector4 cameraPoint = (Vector4() << pose.translation().vector(), 1.0).finished();
+  double pointError = cameraPoint.transpose() * quadric.matrix().inverse() * cameraPoint;
+  if (pointError < 0.0) {
+    throw QuadricProjectionException("Camera is inside Quadric");
+  }
+  
+  return true;
+}
+
+/* ************************************************************************* */
 // NOTE: requires updating jacobians if we normalize q/c
 // this wont happen if we split it into sub functions and just combine jacobians
 DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
@@ -73,12 +101,22 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
   using namespace internal;
   using namespace std;
 
+  // check quadric-pose pair valid
+  bool validPair = isValid(pose, quadric);
+
   // first retract quadric and pose to compute dX:/dx and dQ:/dq
   Matrix3 K = calibration->K();
   Matrix4 Xi = pose.inverse().matrix();
   Matrix34 P = K * I34 * Xi;
   Matrix4 Q = quadric.matrix();
   Matrix3 C = P * Q * P.transpose();
+  DualConic dualConic(C);
+
+  // check dual conic is valid for error function
+  bool validConic = dualConic.isEllipse();
+  if (!validConic) {
+    throw QuadricProjectionException("Projected Conic is non-ellipse");
+  }
 
 
   if (dc_dq || dc_dx) {
@@ -141,7 +179,7 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
     *dc_dk = Matrix::Zero(9,5);
   }
 
-  return DualConic(C);
+  return dualConic;
 }
     
 } // namespace gtsam

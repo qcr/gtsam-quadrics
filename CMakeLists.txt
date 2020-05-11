@@ -33,6 +33,7 @@ set(SOURCE_FILES
 	./quadricslam/base/Jacobians.cpp
 	./quadricslam/geometry/ConstrainedDualQuadric.cpp
 	./quadricslam/geometry/AlignedBox2.cpp
+	./quadricslam/geometry/AlignedBox3.cpp
 	./quadricslam/geometry/BoundingBoxFactor.cpp
 	./quadricslam/geometry/QuadricCamera.cpp
 	./quadricslam/geometry/DualConic.cpp

@@ -15,52 +15,45 @@
  * @brief an axis aligned 2D bounding box
  */
 
-#include <quadricslam/geometry/AlignedBox2.h>
-#include <quadricslam/base/NotImplementedException.h>
+#include <quadricslam/geometry/AlignedBox3.h>
 
 using namespace std;
 
 namespace gtsam {
 
 /* ************************************************************************* */
-AlignedBox2::AlignedBox2(const double& xmin, const double& ymin, const double& xmax, const double& ymax) {
-  tlbr_ = (Vector4() << xmin, ymin, xmax, ymax).finished();
+AlignedBox3::AlignedBox3(const double& xmin, const double& xmax, const double& ymin, const double& ymax, const double& zmin, const double& zmax) {
+  xxyyzz_ = (Vector6() << xmin, xmax, ymin, ymax, zmin, zmax).finished();
 }
 
 /* ************************************************************************* */
-// TODO: ensure correct dim order, box has width
-AlignedBox2::AlignedBox2(const Vector4& tlbr) {
-  tlbr_ = Vector4(tlbr);
+AlignedBox3::AlignedBox3(const Vector6& xxyyzz) {
+  xxyyzz_ = Vector6(xxyyzz);
 }
 
 /* ************************************************************************* */
-Vector4 AlignedBox2::vector() const {
-  return tlbr_;
+Vector6 AlignedBox3::vector() const {
+  return xxyyzz_;
 }
 
 /* ************************************************************************* */
-std::vector<Vector3> AlignedBox2::lines() const {
-  std::vector<Vector3> mLines; 
-  mLines.push_back(Vector3(1, 0, -tlbr_[0]));
-  mLines.push_back(Vector3(0, 1, -tlbr_[1]));
-  mLines.push_back(Vector3(1, 0, -tlbr_[2]));
-  mLines.push_back(Vector3(0, 1, -tlbr_[3]));
-  return mLines;
+Vector3 AlignedBox3::dimensions() const {
+  return (Vector3() << xmax()-xmin(), ymax()-ymin(), zmax()-zmin()).finished();
 }
 
 /* ************************************************************************* */
-AlignedBox2 AlignedBox2::addNoise(const Vector4& noiseVector) {
-  return AlignedBox2(tlbr_+noiseVector);
+Vector3 AlignedBox3::centroid() const {
+  return (Vector3() << xmin()+xmax(), ymin()+ymax(), zmin()+zmax()).finished()/2.0;
 }
 
 /* ************************************************************************* */
-void AlignedBox2::print(const std::string& s) const {
-  cout << s << " : " << this->vector().transpose() << endl;  
+void AlignedBox3::print(const std::string& s) const {
+  cout << s << this->vector().transpose() << endl;  
 }
 
 /* ************************************************************************* */
-bool AlignedBox2::equals(const AlignedBox2& other, double tol) const {
-  return tlbr_.isApprox(other.tlbr_, tol);
+bool AlignedBox3::equals(const AlignedBox3& other, double tol) const {
+  return xxyyzz_.isApprox(other.xxyyzz_, tol);
 }
 
 } // namespace gtsam

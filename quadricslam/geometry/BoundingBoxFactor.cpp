@@ -32,13 +32,6 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
   try {
 
-
-    // debugging
-    // QuadricCamera camera(pose, calibration_);
-    // Point2 p = camera.project2(quadric.centroid());
-    // cout << "projected quad point: " << p.vector().transpose() << endl;
-
-
     // project quadric taking into account partial derivatives 
     Eigen::Matrix<double, 9,6> dC_dx; Eigen::Matrix<double, 9,9> dC_dq;
     DualConic dC = QuadricCamera::project(quadric, pose, calibration_, H1?&dC_dq:0, H2?&dC_dx:0);
@@ -49,11 +42,19 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
     // evaluate error 
     Vector4 error = predictedBounds.vector() - measured_.vector();
-    // cout << error.transpose() << endl;
+
+    // ensure error is never invalid
     if (error.array().isInf().any() or error.array().isNaN().any()) {
-      cout << "\nWARNING: error inf/nan\nError: " << error.transpose() << endl << endl;  
+      cout << "Infinite error inside BBF" << endl;
+      cout << "Dual Conic:\n" << dC.matrix() << endl;
+      cout << "error: " << error.transpose() << endl;
+      pose.print("pose:\n");
+      quadric.print();
+      throw std::runtime_error("Infinite error inside BBF");
+      // throw QuadricProjectionException("Infinite Error")
     }
 
+    // calculate jacobians
     if (H1) {
       // boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
       // *H1 = numericalDerivative21(funPtr, pose, quadric, 1e-6);
@@ -93,11 +94,16 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     }
     return error;
 
+
+  // handle projection failures
   } catch(QuadricProjectionException& e) {
     
     cout << e.what() << ": Quadric " << DefaultKeyFormatter(this->key2());
-    cout << " moved behind camera " << DefaultKeyFormatter(this->key1()) << endl;
-    throw NotImplementedException();
+    cout << " and pose " << DefaultKeyFormatter(this->key1()) << endl;
+    Vector4 error = Vector4::Zero();
+    if (H1) {*H1 = Matrix::Zero(4,6);}
+    if (H2) {*H2 = Matrix::Zero(4,9);}
+    return error;
 
   }
 }
@@ -116,5 +122,26 @@ Expression<AlignedBox2> BoundingBoxFactor::expression(const Expression<Pose3>& p
   return predictedBounds;
 }
 
+/* ************************************************************************* */
+void BoundingBoxFactor::addToGraph(NonlinearFactorGraph& graph) { 
+  graph.add(*this);
+}
+
+/* ************************************************************************* */
+BoundingBoxFactor BoundingBoxFactor::getFromGraph(const NonlinearFactorGraph& graph, size_t idx) { 
+  return *boost::dynamic_pointer_cast<BoundingBoxFactor>(graph.at(idx)).get();
+}
+
+/* ************************************************************************* */
+void BoundingBoxFactor::print(const std::string& s, const KeyFormatter& keyFormatter) const {
+  cout << s << "BoundingBoxFactor(" << keyFormatter(key1()) << "," << keyFormatter(key2()) << ")" << endl;
+  measured_.print("    Measured");
+  cout << "    NoiseModel:"; noiseModel()->print(); cout << endl;
+}
+
+/* ************************************************************************* */
+// bool BoundingBoxFactor::equals(const BoundingBoxFactor& other, double tol) const {
+//   return this->matrix().isApprox(other.matrix(), tol);
+// }
 
 } // namespace gtsam
