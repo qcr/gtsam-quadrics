@@ -38,9 +38,7 @@ class Noise {
     /** Return a matrix of normal noise */
     static Matrix gaussianNoise(int n, int m, double mu, double sd);
 
-    /**
-     * Add noise to Values object
-     */
+    /** Add noise to Values object */
     static Values perturbValues(const Values& values, double sd);
 
     /** Interpolate poses */ 

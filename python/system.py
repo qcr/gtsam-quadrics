@@ -9,12 +9,15 @@ Description: System (front-end) interface
 Author: Lachlan Nicholson (Python)
 """
 
+# import standard libraries
 import sys
 import numpy as np
 
+# import gtsam and extension
 import gtsam
 import quadricslam
 
+# import custom python modules
 sys.dont_write_bytecode = True
 from simulated_dataset import ManualSequence
 from scenenet_dataset import SceneNetDataset
