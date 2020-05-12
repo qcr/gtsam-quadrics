@@ -52,6 +52,10 @@ class Trajectory(object):
         relative_poses = [self._poses[i].between(self._poses[i+1]) for i in range(len(self._poses)-1)]
         return Odometry(relative_poses)
 
+    def applyTransform(self, reference):
+        poses = [reference.transformPoseFrom(pose) for pose in self._poses]
+        return Trajectory(poses)
+
     def add_prior(self, graph, noisemodel):
         """ add prior X(0) to graph """
         prior_factor = gtsam.PriorFactorPose3(X(0), self._poses[0], noisemodel)

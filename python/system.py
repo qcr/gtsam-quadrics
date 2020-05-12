@@ -20,6 +20,7 @@ from simulated_dataset import ManualSequence
 from scenenet_dataset import SceneNetDataset
 from containers import *
 from drawing import Drawing
+from evaluation import Evaluation
 
 
 class System(object):
@@ -53,9 +54,15 @@ class System(object):
         estimated_trajectory = Trajectory.from_values(estimate)
         estimated_quadrics = Quadrics.from_values(estimate)
 
-        trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory, sequence.true_trajectory]
-        quadrics = [Quadrics.from_values(initial_estimate), estimated_quadrics, sequence.true_quadrics]
-        Drawing.draw_results(trajectories, quadrics, ['r','m','g'])
+        # plot results
+        # trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory, sequence.true_trajectory]
+        # quadrics = [Quadrics.from_values(initial_estimate), estimated_quadrics, sequence.true_quadrics]
+        # Drawing.draw_results(trajectories, quadrics, ['r','m','g'])
+
+        # evaluate results
+        Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory)
+
+        
 
 
     @staticmethod
@@ -350,10 +357,10 @@ if __name__ == '__main__':
     quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(), np.array([0.2,0.3,0.4])))
     quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(0.2,0.2,0.2)), np.array([0.2,0.3,0.4])))
     sequence = ManualSequence(points, quadrics)
-    # print(sequence.true_boxes._boxes)
+    System.run(sequence)
 
-    for i in range(10):
-        System.run(sequence)
+    # for i in range(10):
+    #     System.run(sequence)
 
 
 
