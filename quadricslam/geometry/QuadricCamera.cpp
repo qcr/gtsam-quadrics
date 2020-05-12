@@ -74,25 +74,6 @@ Matrix34 QuadricCamera::transformToImage(const Pose3& pose, const boost::shared_
 }
 
 /* ************************************************************************* */
-bool QuadricCamera::isValid(const Pose3& pose, const ConstrainedDualQuadric& quadric) {
-
-  // check quadric has positive depth
-  Pose3 rpose = pose.between(quadric.getPose());
-  if (rpose.z() < 0.0) {
-    throw QuadricProjectionException("Quadric is behind camera");
-  }
-
-  // check camera is not inside quadric
-  Vector4 cameraPoint = (Vector4() << pose.translation().vector(), 1.0).finished();
-  double pointError = cameraPoint.transpose() * quadric.matrix().inverse() * cameraPoint;
-  if (pointError < 0.0) {
-    throw QuadricProjectionException("Camera is inside Quadric");
-  }
-  
-  return true;
-}
-
-/* ************************************************************************* */
 // NOTE: requires updating jacobians if we normalize q/c
 // this wont happen if we split it into sub functions and just combine jacobians
 DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
@@ -101,9 +82,6 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
   using namespace internal;
   using namespace std;
 
-  // check quadric-pose pair valid
-  bool validPair = isValid(pose, quadric);
-
   // first retract quadric and pose to compute dX:/dx and dQ:/dq
   Matrix3 K = calibration->K();
   Matrix4 Xi = pose.inverse().matrix();
@@ -111,12 +89,6 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
   Matrix4 Q = quadric.matrix();
   Matrix3 C = P * Q * P.transpose();
   DualConic dualConic(C);
-
-  // check dual conic is valid for error function
-  bool validConic = dualConic.isEllipse();
-  if (!validConic) {
-    throw QuadricProjectionException("Projected Conic is non-ellipse");
-  }
 
   if (dc_dq) {
     Eigen::Matrix<double, 9,16> dC_dQ = kron(P, P);

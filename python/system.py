@@ -148,8 +148,8 @@ class System(object):
         initial_estimate = gtsam.Values()
 
         # declare noise models
-        ODOM_SIGMA = 0.01; BOX_SIGMA = 1.0
-        ODOM_NOISE = 0.01; BOX_NOISE = 0.0
+        ODOM_SIGMA = 0.1; BOX_SIGMA = 0.5
+        ODOM_NOISE = 0.1; BOX_NOISE = 0.0
         noise_zero = gtsam.noiseModel_Diagonal.Sigmas(np.array([System.ZERO]*6, dtype=np.float))
         odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([ODOM_SIGMA]*3 + [ODOM_SIGMA]*3, dtype=np.float))
         bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([BOX_SIGMA]*4, dtype=np.float))
@@ -167,18 +167,14 @@ class System(object):
         # initial_trajectory = noisy_odometry.as_trajectory()
 
         # initialize quadrics
-        # initial_quadrics = sequence.true_quadrics
-        initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_boxes, sequence.calibration)
+        initial_quadrics = sequence.true_quadrics
+        # initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_boxes, sequence.calibration)
 
         # add prior pose
         initial_trajectory.add_prior(graph, noise_zero)
 
         # add odometry measurements
         noisy_odometry.add_factors(graph, odometry_noise)
-
-        X = lambda i: int(gtsam.symbol(ord('x'), i))
-        Q = lambda i: int(gtsam.symbol(ord('q'), i))
-
 
         # add valid box measurements
         valid_objects = []
@@ -197,7 +193,7 @@ class System(object):
                     # add measurements
                     valid_objects.append(object_key)
                     for (pose_key, t), box in object_boxes.items():
-                        bbf = quadricslam.BoundingBoxFactor(box, sequence.calibration, sequence.image_dimensions, X(pose_key), Q(object_key), bbox_noise)
+                        bbf = quadricslam.BoundingBoxFactor(box, sequence.calibration, sequence.image_dimensions, System.X(pose_key), System.Q(object_key), bbox_noise)
                         bbf.addToGraph(graph)
 
         # add initial pose estimates
@@ -208,7 +204,7 @@ class System(object):
 
             # add if seen > 3 times
             if (object_key in valid_objects):
-                quadric.addToValues(initial_estimate, Q(object_key))
+                quadric.addToValues(initial_estimate, System.Q(object_key))
 
         return graph, initial_estimate
 
@@ -349,26 +345,26 @@ class System(object):
 if __name__ == '__main__':
     np.random.seed(121)
 
-    trainval = 'train'
-    dataset_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}'.format(trainval)
-    protobuf_folder = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}_protobufs'.format(trainval)
-    reader_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py'
-    dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path)
-    System.run(dataset[0])
+    # trainval = 'train'
+    # dataset_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}'.format(trainval)
+    # protobuf_folder = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}_protobufs'.format(trainval)
+    # reader_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py'
+    # dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path)
+    # System.run(dataset[0])
 
 
-    # points = []
-    # points.append(gtsam.Point3(10,0,0))
-    # points.append(gtsam.Point3(0,-10,0))
-    # points.append(gtsam.Point3(-10,0,0))
-    # points.append(gtsam.Point3(0,10,0))
-    # points.append(gtsam.Point3(10,0,0))
+    points = []
+    points.append(gtsam.Point3(10,0,0))
+    points.append(gtsam.Point3(0,-10,0))
+    points.append(gtsam.Point3(-10,0,0))
+    points.append(gtsam.Point3(0,10,0))
+    points.append(gtsam.Point3(10,0,0))
 
-    # quadrics = []
-    # quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(), np.array([0.2,0.3,0.4])))
-    # quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(0.2,0.2,0.2)), np.array([0.2,0.3,0.4])))
-    # sequence = ManualSequence(points, quadrics)
-    # System.run(sequence)
+    quadrics = []
+    quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(), np.array([0.2,0.3,0.4])))
+    quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(0.2,0.2,0.2)), np.array([0.2,0.3,0.4])))
+    sequence = ManualSequence(points, quadrics)
+    System.run(sequence)
 
     # for i in range(10):
     #     System.run(sequence)

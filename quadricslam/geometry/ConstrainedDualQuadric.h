@@ -101,6 +101,12 @@ namespace gtsam {
       /* Adds noise using noise vector */
       ConstrainedDualQuadric addNoise(const Vector9& noiseVector);
 
+      /** Returns true if quadric centroid has negative depth */
+      bool isBehind(const Pose3& cameraPose) const;
+
+      /** Returns true if quadric contains point */
+      bool contains(const Pose3& cameraPose) const;
+
       /// @}
       /// @name Manifold group traits
       /// @{

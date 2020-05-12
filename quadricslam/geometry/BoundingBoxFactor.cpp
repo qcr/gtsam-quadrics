@@ -31,13 +31,25 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
   try {
 
+    // check pose-quadric pair
+    if (quadric.isBehind(pose)) {
+      throw QuadricProjectionException("Quadric is behind camera");
+    } if (quadric.contains(pose)) {
+      throw QuadricProjectionException("Camera is inside quadric");
+    }
+
     // project quadric taking into account partial derivatives 
     Eigen::Matrix<double, 9,6> dC_dx; Eigen::Matrix<double, 9,9> dC_dq;
-    DualConic dC = QuadricCamera::project(quadric, pose, calibration_, H1?&dC_dq:0, H2?&dC_dx:0);
+    DualConic dualConic = QuadricCamera::project(quadric, pose, calibration_, H1?&dC_dq:0, H2?&dC_dx:0);
+
+    // check dual conic is valid for error function
+    if (!dualConic.isEllipse()) {
+      throw QuadricProjectionException("Projected Conic is non-ellipse");
+    }
 
     // calculate conic bounds with derivatives
     Eigen::Matrix<double, 4,9> db_dC;
-    AlignedBox2 predictedBounds = dC.bounds(H1||H2?&db_dC:0);
+    AlignedBox2 predictedBounds = dualConic.bounds(H1||H2?&db_dC:0);
 
     // evaluate error 
     Vector4 error = predictedBounds.vector() - measured_.vector();
@@ -45,7 +57,7 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     // ensure error is never invalid
     if (error.array().isInf().any() or error.array().isNaN().any()) {
       cout << "Infinite error inside BBF" << endl;
-      cout << "Dual Conic:\n" << dC.matrix() << endl;
+      cout << "Dual Conic:\n" << dualConic.matrix() << endl;
       cout << "error: " << error.transpose() << endl;
       pose.print("pose:\n");
       quadric.print();

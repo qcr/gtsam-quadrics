@@ -100,6 +100,21 @@ ConstrainedDualQuadric ConstrainedDualQuadric::addNoise(const Vector9& noiseVect
 }
 
 /* ************************************************************************* */
+bool ConstrainedDualQuadric::isBehind(const Pose3& cameraPose) const {
+  Pose3 rpose = cameraPose.between(this->getPose());
+  if (rpose.z() < 0.0) { return true;}
+  return false;
+}
+
+/* ************************************************************************* */
+bool ConstrainedDualQuadric::contains(const Pose3& cameraPose) const {
+  Vector4 cameraPoint = (Vector4() << cameraPose.translation().vector(), 1.0).finished();
+  double pointError = cameraPoint.transpose() * this->matrix().inverse() * cameraPoint;
+  if (pointError < 0.0) { return true;}
+  return false;
+}
+
+/* ************************************************************************* */
 ConstrainedDualQuadric ConstrainedDualQuadric::Retract(const Vector9& v) {
   Pose3 pose = Pose3::Retract(v.head<6>());
   Vector3 radii = v.tail<3>();
