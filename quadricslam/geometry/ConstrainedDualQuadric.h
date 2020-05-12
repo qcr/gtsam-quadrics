@@ -18,8 +18,9 @@
 #pragma once
 
 #include <gtsam/geometry/Pose3.h>
-#include <random>
 #include <gtsam/nonlinear/Values.h>
+
+#include <random>
 
 namespace gtsam {
 
@@ -65,6 +66,10 @@ namespace gtsam {
        */
       ConstrainedDualQuadric(const Rot3& R, const Point3& t, const Vector3& r);
 
+      /// @}
+      /// @name Class methods
+      /// @{
+
       /* get pose, avoid computation with it */
       Pose3 getPose(void) const {return pose_;}
 
@@ -101,16 +106,11 @@ namespace gtsam {
       /// @{
       enum { dimension = 9 };
 
-      /**
-       * The Retract at origin
-       */
+      /** The Retract at origin */
       static ConstrainedDualQuadric Retract(const Vector9& v);
 
-      /**
-       * The Local at origin
-       */
+      /** The Local at origin */
       static Vector9 LocalCoordinates(const ConstrainedDualQuadric& q);
-
 
       /**
        * The retract function
@@ -129,6 +129,7 @@ namespace gtsam {
       /** Add quadric to values */
       void addToValues(Values &v, const Key& k);
 
+      /** Get Quadric from values */
       static ConstrainedDualQuadric getFromValues(const Values &v, const Key& k);
 
       /// @}
@@ -139,7 +140,9 @@ namespace gtsam {
       void print(const std::string& s = "") const;
 
       /** Compares two ellipsoids */
+      /// TODO: account for scaling by normalizing quadric
       bool equals(const ConstrainedDualQuadric& other, double tol = 1e-9) const;
+
       /// @}
   };
 

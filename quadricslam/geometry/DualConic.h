@@ -48,6 +48,10 @@ namespace gtsam {
       /** Create ellipse from 2D pose and axis lengths */
       DualConic(const Pose2& pose, const Vector2& radii);
 
+      /// @}
+      /// @name Class methods
+      /// @{
+        
       /** Return 3x3 conic matrix */
       Matrix33 matrix(void) const;
 

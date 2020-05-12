@@ -60,12 +60,10 @@ Matrix44 ConstrainedDualQuadric::matrix(OptionalJacobian<16,9> dQ_dq) const {
     using namespace internal;
 
     // NOTE: this will recalculate pose.matrix
-    // NOTE: pose.matrix derivative will also cost an extra Local()
     Eigen::Matrix<double, 16,6> dZ_dx;
     internal::matrix(pose_, dZ_dx);
     Eigen::Matrix<double, 16,9> dZ_dq = Matrix::Zero(16,9);
     dZ_dq.block(0,0,16,6) = dZ_dx;
-
 
     Eigen::Matrix<double, 16,9> dQc_dq = Matrix::Zero(16,9);
     dQc_dq(0,6) = 2.0 * radii_(0);
@@ -73,9 +71,6 @@ Matrix44 ConstrainedDualQuadric::matrix(OptionalJacobian<16,9> dQ_dq) const {
     dQc_dq(10,8) = 2.0 * radii_(2);
     
     *dQ_dq = kron(I44, Z*Qc) * T44 * dZ_dq  +  kron(Z, I44) * (kron(I44, Z)*dQc_dq + kron(Qc, I44)*dZ_dq);
-
-    // cout << "DEBUG dZ_dq: \n" << dZ_dq << endl << endl;
-    // cout << "DEBUG dQc_dq: \n" << dQc_dq << endl << endl;
   }
   return Q;
 }
@@ -136,7 +131,7 @@ Vector9 ConstrainedDualQuadric::localCoordinates(const ConstrainedDualQuadric& o
 
 /* ************************************************************************* */
 void ConstrainedDualQuadric::print(const std::string& s) const {
-  cout << s << " : " << endl;
+  cout << s;
   cout << "QuadricPose\n" << pose_.matrix() << endl;
   cout << "QuadricRadii: " << radii_.transpose() << endl;
   cout << "QuadricMatrix\n" << this->matrix() << endl;

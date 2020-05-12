@@ -10,11 +10,11 @@ Author: Lachlan Nicholson (Python)
 """
 
 import sys
-import gtsam
 import numpy as np
+
+import gtsam
 import quadricslam
 
-# import custom python modules
 sys.dont_write_bytecode = True
 from simulated_dataset import ManualSequence
 from scenenet_dataset import SceneNetDataset

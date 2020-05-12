@@ -9,17 +9,21 @@ Description: Drawing interface
 Author: Lachlan Nicholson (Python)
 """
 
+# import standard libraries
 import sys
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
+
+# import gtsam and extension
+import gtsam
+
+# import custom python modules
+sys.dont_write_bytecode = True
 from containers import Trajectory
 from containers import Odometry
 from containers import Quadrics
 from containers import Boxes
-
-import matplotlib.pyplot as plt
-
-sys.dont_write_bytecode = True
 
 symbolChr = lambda i: chr(gtsam.symbolChr(i))
 

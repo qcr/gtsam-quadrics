@@ -9,17 +9,19 @@ Description: Simulated dataset interface
 Author: Lachlan Nicholson (Python)
 """
 
+# import standard libraries
 import sys
 import numpy as np
 
+# import gtsam and extension
 import gtsam
 import quadricslam
 
+# import custom python modules
 sys.dont_write_bytecode = True
 from containers import Trajectory
 from containers import Quadrics
 from containers import Boxes
-
 
 
 # TODO: ensure calibration / dimensions are linked correctly

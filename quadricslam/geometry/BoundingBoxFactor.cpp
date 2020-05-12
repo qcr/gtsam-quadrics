@@ -15,11 +15,10 @@
  * @brief factor between Pose3 and ConstrainedDualQuadric
  */
 
-
 #include <quadricslam/geometry/BoundingBoxFactor.h>
-
-#include <quadricslam/geometry/QuadricCamera.h>
 #include <quadricslam/base/NotImplementedException.h>
+#include <quadricslam/geometry/QuadricCamera.h>
+
 #include <gtsam/base/numericalDerivative.h>
 
 using namespace std;
@@ -51,17 +50,16 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
       pose.print("pose:\n");
       quadric.print();
       throw std::runtime_error("Infinite error inside BBF");
-      // throw QuadricProjectionException("Infinite Error")
     }
 
-    // calculate jacobians
+    // calculate derivative of error wrt pose
     if (H1) {
-      // boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
-      // *H1 = numericalDerivative21(funPtr, pose, quadric, 1e-6);
 
+      // combine partial derivatives 
       *H1 = db_dC * dC_dx;
       if ((*H1).array().isInf().any() or (*H1).array().isNaN().any()) {
         cout << "\nWARNING: (*H1) inf/nan\nH1:\n" << (*H1) << endl << endl;  
+        throw std::runtime_error("Infinite inside BBF H1");
       }
 
       if (CHECK_ANALYTICAL) {
@@ -73,13 +71,16 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
           cout << "Numerical db_dx_:\n" << db_dx_ << endl << endl;
         }
       }
-    } if (H2) {
-      // boost::function<Vector(const Pose3&,  const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
-      // *H2 = numericalDerivative22(funPtr, pose, quadric, 1e-6);
-      
+    } 
+    
+    // calculate derivative of error wrt quadric
+    if (H2) {
+
+      // combine partial derivatives 
       *H2 = db_dC * dC_dq; 
       if ((*H2).array().isInf().any() or (*H2).array().isNaN().any()) {
         cout << "\nWARNING: (*H2) inf/nan\nH1:\n" << (*H2) << endl << endl;  
+        throw std::runtime_error("Infinite inside BBF H2");
       }
       
       if (CHECK_ANALYTICAL) {
@@ -111,7 +112,8 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 /* ************************************************************************* */
 Expression<AlignedBox2> BoundingBoxFactor::expression(const Expression<Pose3>& pose, const Expression<ConstrainedDualQuadric>& quadric) const {
 
-  Expression<boost::shared_ptr<Cal3_S2>> calibration(calibration_); // constant calibration
+  // define constant camera calibration
+  Expression<boost::shared_ptr<Cal3_S2>> calibration(calibration_); 
 
   // declare pointer to overloaded static project function
   DualConic (*funPtr)(const ConstrainedDualQuadric&, const Pose3&, const boost::shared_ptr<Cal3_S2>&, 
@@ -140,8 +142,13 @@ void BoundingBoxFactor::print(const std::string& s, const KeyFormatter& keyForma
 }
 
 /* ************************************************************************* */
-// bool BoundingBoxFactor::equals(const BoundingBoxFactor& other, double tol) const {
-//   return this->matrix().isApprox(other.matrix(), tol);
-// }
+bool BoundingBoxFactor::equals(const BoundingBoxFactor& other, double tol) const {
+  bool equal = measured_.equals(other.measured_, tol)
+    && calibration_->equals(*other.calibration_, tol)
+    && imageDimensions_.isApprox(other.imageDimensions_, tol)
+    && noiseModel()->equals(*other.noiseModel(), tol)
+    && key1() == other.key1() && key2() == other.key2();
+  return equal;
+}
 
 } // namespace gtsam

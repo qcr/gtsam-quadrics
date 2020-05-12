@@ -9,12 +9,14 @@ Description: Evaluation interface
 Author: Lachlan Nicholson (Python)
 """
 
-
+# import standard libraries
 import sys
 import numpy as np
 
+# import gtsam and extension
 import gtsam
 
+# import custom python modules
 sys.dont_write_bytecode = True
 from drawing import Drawing
 

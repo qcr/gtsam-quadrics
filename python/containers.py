@@ -9,13 +9,17 @@ Description: Trajectory, Quadrics, Boxes, Odometry containers
 Author: Lachlan Nicholson (Python)
 """
 
+# import standard libraries
 import sys
-import gtsam
-from collections import defaultdict
 import numpy as np
+
+# import gtsam and extension
+import gtsam
 import quadricslam
 
+# import custom python modules
 sys.dont_write_bytecode = True
+from collections import defaultdict
 
 X = lambda i: int(gtsam.symbol(ord('x'), i))
 Q = lambda i: int(gtsam.symbol(ord('q'), i))

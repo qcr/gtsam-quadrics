@@ -1,9 +1,20 @@
+"""
+QuadricSLAM Copyright 2020, ARC Centre of Excellence for Robotic Vision, Queensland University of Technology (QUT)
+Brisbane, QLD 4000
+All Rights Reserved
+
+See LICENSE for the license information
+
+Description: Interactive media player
+Author: Lachlan Nicholson (Python)
+"""
+
 # import standard libraries
-from abc import ABC, abstractmethod
-import numpy as np
+import os
 import cv2
 import sys
-import os
+import numpy as np
+from abc import ABC, abstractmethod
 
 class InteractivePlayer(ABC):
     def __init__(self, player_name):

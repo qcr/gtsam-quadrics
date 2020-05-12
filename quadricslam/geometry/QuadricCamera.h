@@ -62,21 +62,27 @@ namespace gtsam {
       typedef PinholePose<Cal3_S2> Base; ///< base class has pose and calibration as private member
 
     public:
-    
+
+      /// @name Constructors and named constructors
+      /// @{
+        
       /** Default constructor */
       QuadricCamera() {};
 
       /** Constructor with pose and calibration */
       QuadricCamera(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K) : Base(pose, K) {};
 
-      /** Named static constructor for Expressions 
+      /** 
+       * Named static constructor for Expressions 
        * as found in PinholeCamera.h
       */
       static QuadricCamera Create(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K, OptionalJacobian<6,6> dCamera_dPose, OptionalJacobian<6,5> dCamera_dCalibration);
-      
-      /**
-       * Calculate the 3x4 projection matrix 
-       */
+
+      /// @}
+      /// @name Class methods
+      /// @{
+
+      /** Calculate the 3x4 projection matrix */
       Matrix34 transformToImage(OptionalJacobian<12,6> dP_dCamera = boost::none) const;
 
       /** Static projection matrix */
@@ -103,7 +109,8 @@ namespace gtsam {
 
       /** Matrix version of project for numerical differentiation */
       static Matrix3 project_(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
-
+      
+      /// @}
   };
 
   // Add dimensions for expressions

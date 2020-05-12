@@ -50,6 +50,10 @@ namespace gtsam {
        */
       AlignedBox2(const Vector4& tlbr);
 
+      /// @}
+      /// @name Class methods
+      /// @{
+
       /** Get xmin */
       double xmin() const { return tlbr_[0];}
 
@@ -76,9 +80,14 @@ namespace gtsam {
 
       /** 
        * Returns true if this contains the point 
-       * Points intersecting a line is considered containing
+       * Points intersecting a line are considered containing
        */
-      bool contains(const Point2& other) const;
+      bool contains(const Point2& point) const;
+
+      /** 
+       * Returns true if this completely contains or intersects other
+       */
+      bool contains(const AlignedBox2& other) const;
 
       /** 
        * Returns true if this completely contains other box 
@@ -86,18 +95,8 @@ namespace gtsam {
       */
       bool completelyContains(const AlignedBox2& other) const;
 
-      /** 
-       * Returns true if this completely contains or intersects other
-       */
-      bool contains(const AlignedBox2& other) const;
-
       /** Returns true if this intersects other box */
       bool intersects(const AlignedBox2& other) const;
-
-      /** 
-       * Applies normally distributed noise
-       */
-      AlignedBox2 addNoise(const Vector4& noiseVector);
 
       /// @}
       /// @name Testable group traits

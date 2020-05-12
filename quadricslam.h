@@ -130,7 +130,6 @@ class AlignedBox2 {
   bool contains(const AlignedBox2& other) const;
   bool intersects(const AlignedBox2& other) const;
   gtsam::Vector3Vector lines() const;
-  gtsam::AlignedBox2 addNoise(const Vector& noiseVector);
   void print(const string& s) const;
   void print() const;
   bool equals(const AlignedBox2& other, double tol) const;

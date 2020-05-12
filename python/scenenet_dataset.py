@@ -9,6 +9,7 @@ Description: Dataset interface
 Author: Lachlan Nicholson (Python)
 """
 
+# import standard libraries
 import os
 import cv2
 import sys
@@ -17,9 +18,11 @@ import importlib
 import numpy as np
 from PIL import Image
 
+# import gtsam and extension
 import gtsam
 import quadricslam
 
+# import custom python modules
 sys.dont_write_bytecode = True
 from containers import Boxes
 from containers import Trajectory

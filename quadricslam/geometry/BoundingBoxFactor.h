@@ -40,7 +40,7 @@ namespace gtsam {
     protected:
       AlignedBox2 measured_; ///< measured bounding box
       boost::shared_ptr<Cal3_S2> calibration_; ///< camera calibration
-      Vector2 imageDimensions_; ///< camera calibration
+      Vector2 imageDimensions_; ///< image dimensions (width, height)
       typedef NoiseModelFactor2<Pose3, ConstrainedDualQuadric> Base; ///< base class has keys and noisemodel as private members
 
     public:
@@ -80,7 +80,7 @@ namespace gtsam {
       void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
       /** Compares two ellipsoids */
-      // bool equals(const ConstrainedDualQuadric& other, double tol = 1e-9) const;
+      bool equals(const BoundingBoxFactor& other, double tol = 1e-9) const;
   };
 
   // declare dimensions of calibration pointer for expressions

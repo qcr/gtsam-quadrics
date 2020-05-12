@@ -30,7 +30,7 @@ namespace gtsam {
   class GTSAM_EXPORT AlignedBox3 {
 
     protected:
-      Vector6 xxyyzz_; ///< xmin,ymin,xmax,ymax
+      Vector6 xxyyzz_; ///< bounds vector 
 
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -46,6 +46,10 @@ namespace gtsam {
       
       /** Constructor from vector */
       AlignedBox3(const Vector6& xxyyzz);
+
+      /// @}
+      /// @name Class methods
+      /// @{
 
       /** Get xmin */
       double xmin() const {return xxyyzz_[0];}
@@ -64,7 +68,6 @@ namespace gtsam {
 
       /** Get zmax */
       double zmax() const {return xxyyzz_[5];}
-
 
       /** Returns box in xxyyzz vector */
       Vector6 vector() const;
