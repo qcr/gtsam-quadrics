@@ -29,7 +29,7 @@ class System(object):
     X = lambda i: int(gtsam.symbol(ord('x'), i))
     Q = lambda i: int(gtsam.symbol(ord('q'), i))
     L = lambda i: int(gtsam.symbol(ord('l'), i))
-    ZERO = 0.000001 
+    ZERO = 1e-8
 
     @staticmethod
     def run(sequence):
@@ -38,7 +38,7 @@ class System(object):
         graph, initial_estimate = System.build_graph(sequence)
 
         # draw factor graph 
-        Drawing.draw_problem(graph, initial_estimate)
+        # Drawing.draw_problem(graph, initial_estimate)
 
         # check graph + estimate
         System.check_problem(graph, initial_estimate)
@@ -52,6 +52,10 @@ class System(object):
         # extract quadrics / trajectory 
         estimated_trajectory = Trajectory.from_values(estimate)
         estimated_quadrics = Quadrics.from_values(estimate)
+
+        trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory, sequence.true_trajectory]
+        quadrics = [Quadrics.from_values(initial_estimate), estimated_quadrics, sequence.true_quadrics]
+        Drawing.draw_results(trajectories, quadrics, ['r','m','g'])
 
 
     @staticmethod
@@ -93,14 +97,13 @@ class System(object):
         # create optimizer parameters
         params = gtsam.LevenbergMarquardtParams()
         params.setVerbosityLM("SUMMARY")    # SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
-        params.setMaxIterations(20)
+        params.setMaxIterations(100)
         params.setlambdaInitial(1e-5)       # defaults to 1e5
         params.setlambdaUpperBound(1e10)     # defaults to 1e5
         params.setlambdaLowerBound(1e-8)    # defaults to 0.0
         params.setRelativeErrorTol(1e-10)   # stop iterating when change in error between steps is less than this
         params.setAbsoluteErrorTol(1e-8)    # stop when cost-costchange < tol
   
-
         # create optimizer
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)
 
@@ -123,17 +126,14 @@ class System(object):
         * true_boxes 
         """
 
-        # set seed
-        np.random.seed(121)
-
         # create empty graph / estimate
         graph = gtsam.NonlinearFactorGraph()
         initial_estimate = gtsam.Values()
 
         # declare noise models
-        ODOM_SIGMA = 0.01; BOX_SIGMA = 3.0
+        ODOM_SIGMA = 0.01; BOX_SIGMA = 1
         ODOM_NOISE = 0.01; BOX_NOISE = 0.0
-        noise_zero = gtsam.noiseModel_Diagonal.Sigmas(np.array([1e-12]*6, dtype=np.float))
+        noise_zero = gtsam.noiseModel_Diagonal.Sigmas(np.array([System.ZERO]*6, dtype=np.float))
         odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([ODOM_SIGMA]*3 + [ODOM_SIGMA]*3, dtype=np.float))
         bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([BOX_SIGMA]*4, dtype=np.float))
         X = lambda i: int(gtsam.symbol(ord('x'), i))
@@ -337,6 +337,7 @@ if __name__ == '__main__':
     # dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path)
     # System.run(dataset[0])
 
+    np.random.seed(121)
 
     points = []
     points.append(gtsam.Point3(10,0,0))
@@ -347,9 +348,12 @@ if __name__ == '__main__':
 
     quadrics = []
     quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(), np.array([0.2,0.3,0.4])))
+    quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(0.2,0.2,0.2)), np.array([0.2,0.3,0.4])))
     sequence = ManualSequence(points, quadrics)
     # print(sequence.true_boxes._boxes)
-    System.run(sequence)
+
+    for i in range(10):
+        System.run(sequence)
 
 
 

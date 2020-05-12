@@ -140,6 +140,9 @@ class Quadrics(object):
     def items(self):
         return list(self._quadrics.items())
 
+    def data(self):
+        return list(self._quadrics.values())
+
     def keys(self):
         return list(self._quadrics.keys())
 

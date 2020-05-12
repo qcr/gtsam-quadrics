@@ -53,3 +53,15 @@ class Drawing(object):
         # draw odometry factors
 
         # draw bbox factors
+
+    @staticmethod
+    def draw_results(trajectories, quadrics, colors):
+        for i, trajectory in enumerate(trajectories):
+            xy = np.array([[pose.x(), pose.y()] for pose in trajectory.data()])
+            plt.plot(xy[:,0], xy[:,1], marker='o', markersize=3, c=colors[i], label='traj {}'.format(i))
+        
+        for i, _quadrics in enumerate(quadrics):
+            for quadric in _quadrics.data():
+                plt.plot(quadric.getPose().x(), quadric.getPose().y(), marker='o', markersize=3, c=colors[i], label='quads {}'.format(i))
+
+        plt.show()
