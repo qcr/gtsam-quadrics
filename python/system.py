@@ -57,13 +57,20 @@ class System(object):
         estimated_trajectory = Trajectory.from_values(estimate)
         estimated_quadrics = Quadrics.from_values(estimate)
 
-        # plot results
-        # trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory, sequence.true_trajectory]
-        # quadrics = [Quadrics.from_values(initial_estimate), estimated_quadrics, sequence.true_quadrics]
-        # Drawing.draw_results(trajectories, quadrics, ['r','m','g'])
-
         # evaluate results
-        Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory)
+        initial_ATE = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), sequence.true_trajectory, horn=True)
+        estimate_ATE = Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory, horn=True)
+        print('Horn, initial_ATE: {}'.format(initial_ATE))
+        print('Horn, estimate_ATE: {}'.format(estimate_ATE))
+        initial_ATE = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), sequence.true_trajectory, horn=False)
+        estimate_ATE = Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory, horn=False)
+        print('initial_ATE: {}'.format(initial_ATE))
+        print('estimate_ATE: {}'.format(estimate_ATE))
+
+        # plot results
+        trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory, sequence.true_trajectory]
+        quadrics = [Quadrics.from_values(initial_estimate), estimated_quadrics, sequence.true_quadrics]
+        Drawing.draw_results(trajectories, quadrics, ['r','m','g'])
 
         
 
@@ -141,7 +148,7 @@ class System(object):
         initial_estimate = gtsam.Values()
 
         # declare noise models
-        ODOM_SIGMA = 0.01; BOX_SIGMA = 1
+        ODOM_SIGMA = 0.01; BOX_SIGMA = 1.0
         ODOM_NOISE = 0.01; BOX_NOISE = 0.0
         noise_zero = gtsam.noiseModel_Diagonal.Sigmas(np.array([System.ZERO]*6, dtype=np.float))
         odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([ODOM_SIGMA]*3 + [ODOM_SIGMA]*3, dtype=np.float))
@@ -160,8 +167,8 @@ class System(object):
         # initial_trajectory = noisy_odometry.as_trajectory()
 
         # initialize quadrics
-        initial_quadrics = sequence.true_quadrics
-        # initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_boxes, sequence.calibration)
+        # initial_quadrics = sequence.true_quadrics
+        initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_boxes, sequence.calibration)
 
         # add prior pose
         initial_trajectory.add_prior(graph, noise_zero)
@@ -340,27 +347,28 @@ class System(object):
 
 
 if __name__ == '__main__':
-    # trainval = 'train'
-    # dataset_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}'.format(trainval)
-    # protobuf_folder = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}_protobufs'.format(trainval)
-    # reader_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py'
-    # dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path)
-    # System.run(dataset[0])
-
     np.random.seed(121)
 
-    points = []
-    points.append(gtsam.Point3(10,0,0))
-    points.append(gtsam.Point3(0,-10,0))
-    points.append(gtsam.Point3(-10,0,0))
-    points.append(gtsam.Point3(0,10,0))
-    points.append(gtsam.Point3(10,0,0))
+    trainval = 'train'
+    dataset_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}'.format(trainval)
+    protobuf_folder = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}_protobufs'.format(trainval)
+    reader_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py'
+    dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path)
+    System.run(dataset[0])
 
-    quadrics = []
-    quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(), np.array([0.2,0.3,0.4])))
-    quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(0.2,0.2,0.2)), np.array([0.2,0.3,0.4])))
-    sequence = ManualSequence(points, quadrics)
-    System.run(sequence)
+
+    # points = []
+    # points.append(gtsam.Point3(10,0,0))
+    # points.append(gtsam.Point3(0,-10,0))
+    # points.append(gtsam.Point3(-10,0,0))
+    # points.append(gtsam.Point3(0,10,0))
+    # points.append(gtsam.Point3(10,0,0))
+
+    # quadrics = []
+    # quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(), np.array([0.2,0.3,0.4])))
+    # quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(0.2,0.2,0.2)), np.array([0.2,0.3,0.4])))
+    # sequence = ManualSequence(points, quadrics)
+    # System.run(sequence)
 
     # for i in range(10):
     #     System.run(sequence)
