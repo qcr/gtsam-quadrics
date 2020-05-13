@@ -48,29 +48,29 @@ class System(object):
         System.check_problem(graph, initial_estimate)
 
         # optimize using c++ back-end
-        estimate = System.optimize(graph, initial_estimate)
+        estimate = System.optimize(graph, initial_estimate, sequence.calibration)
 
         # draw estimation
         # Drawing.draw_problem(graph, estimate)
 
-        # extract quadrics / trajectory 
-        estimated_trajectory = Trajectory.from_values(estimate)
-        estimated_quadrics = Quadrics.from_values(estimate)
+        # # extract quadrics / trajectory 
+        # estimated_trajectory = Trajectory.from_values(estimate)
+        # estimated_quadrics = Quadrics.from_values(estimate)
 
-        # evaluate results
-        initial_ATE = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), sequence.true_trajectory, horn=True)
-        estimate_ATE = Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory, horn=True)
-        print('Horn, initial_ATE: {}'.format(initial_ATE))
-        print('Horn, estimate_ATE: {}'.format(estimate_ATE))
-        initial_ATE = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), sequence.true_trajectory, horn=False)
-        estimate_ATE = Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory, horn=False)
-        print('initial_ATE: {}'.format(initial_ATE))
-        print('estimate_ATE: {}'.format(estimate_ATE))
+        # # evaluate results
+        # initial_ATE = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), sequence.true_trajectory, horn=True)
+        # estimate_ATE = Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory, horn=True)
+        # print('Horn, initial_ATE: {}'.format(initial_ATE))
+        # print('Horn, estimate_ATE: {}'.format(estimate_ATE))
+        # initial_ATE = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), sequence.true_trajectory, horn=False)
+        # estimate_ATE = Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory, horn=False)
+        # print('initial_ATE: {}'.format(initial_ATE))
+        # print('estimate_ATE: {}'.format(estimate_ATE))
 
-        # plot results
-        trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory, sequence.true_trajectory]
-        quadrics = [Quadrics.from_values(initial_estimate), estimated_quadrics, sequence.true_quadrics]
-        Drawing.draw_results(trajectories, quadrics, ['r','m','g'])
+        # # plot results
+        # trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory, sequence.true_trajectory]
+        # quadrics = [Quadrics.from_values(initial_estimate), estimated_quadrics, sequence.true_quadrics]
+        # Drawing.draw_results(trajectories, quadrics, ['r','m','g'])
 
         
 
@@ -109,11 +109,11 @@ class System(object):
             
     
     @staticmethod
-    def optimize(graph, initial_estimate):
+    def optimize(graph, initial_estimate, calibration):
 
         # create optimizer parameters
         params = gtsam.LevenbergMarquardtParams()
-        params.setVerbosityLM("SUMMARY")    # SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
+        params.setVerbosityLM("SUMMARY")    # SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA : VALUES, ERROR 
         params.setMaxIterations(100)
         params.setlambdaInitial(1e-5)       # defaults to 1e5
         params.setlambdaUpperBound(1e10)     # defaults to 1e5
@@ -124,10 +124,22 @@ class System(object):
         # create optimizer
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)
 
+        # plot initial estimate
+        Drawing.plot_problem(graph, initial_estimate, calibration)
+
+        # iterate manually 
+        for i in range(100):
+            optimizer.iterate()
+
+            estimate = optimizer.values()
+
+            # draw current iteration
+            Drawing.plot_problem(graph, estimate, calibration)
+
         # run optimizer
-        print('starting optimization')
-        estimate = optimizer.optimize()
-        print('optimization finished')
+        # print('starting optimization')
+        # estimate = optimizer.optimize()
+        # print('optimization finished')
 
         return estimate
 
@@ -148,8 +160,8 @@ class System(object):
         initial_estimate = gtsam.Values()
 
         # declare noise models
-        ODOM_SIGMA = 0.1; BOX_SIGMA = 0.5
-        ODOM_NOISE = 0.1; BOX_NOISE = 0.0
+        ODOM_SIGMA = 0.01; BOX_SIGMA = 0.5
+        ODOM_NOISE = 0.01; BOX_NOISE = 0.0
         noise_zero = gtsam.noiseModel_Diagonal.Sigmas(np.array([System.ZERO]*6, dtype=np.float))
         odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([ODOM_SIGMA]*3 + [ODOM_SIGMA]*3, dtype=np.float))
         bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([BOX_SIGMA]*4, dtype=np.float))
@@ -167,8 +179,9 @@ class System(object):
         # initial_trajectory = noisy_odometry.as_trajectory()
 
         # initialize quadrics
-        initial_quadrics = sequence.true_quadrics
-        # initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_boxes, sequence.calibration)
+        # NOTE: careful initializing with true quadrics and noise traj as it may not make sense
+        # initial_quadrics = sequence.true_quadrics
+        initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_boxes, sequence.calibration)
 
         # add prior pose
         initial_trajectory.add_prior(graph, noise_zero)
@@ -385,6 +398,9 @@ if __name__ == '__main__':
     # print(graph.at(1))
     # print(graph.at(2))
 
+    # import code
+    # code.interact(local=locals())
+
     # print(quadricslam.BoundingBoxFactor.getFromGraph(graph, 0))
     # print(quadricslam.BoundingBoxFactor.getFromGraph(graph, 1))
     # print(quadricslam.BoundingBoxFactor.getFromGraph(graph, 2))
@@ -392,7 +408,7 @@ if __name__ == '__main__':
     # for i in range(3):
     #     print(graph.exists(i))
     #     print(quadricslam.BoundingBoxFactor.getFromGraph(graph, 1))
-        # print(graph.at(i))
+    #     print(graph.at(i))
     
 
 

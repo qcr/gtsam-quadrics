@@ -48,6 +48,12 @@ class Trajectory(object):
         """ returns list of poses """
         return self._poses
 
+    def keys(self):
+        return list(range(len(self._poses)))
+
+    def at(self, key):
+        return self._poses[key]
+
     def at_keys(self, keys):
         """ returns a new trajectory only with these keys """
         return Trajectory([self._poses[key] for key in keys])
@@ -153,6 +159,9 @@ class Quadrics(object):
 
     def keys(self):
         return list(self._quadrics.keys())
+
+    def at(self, key):
+        return self._quadrics[key]
 
     # def add_estimates(self, values):
     #     """ add q if n bbfs > 3 """
