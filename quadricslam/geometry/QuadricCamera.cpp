@@ -140,5 +140,16 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
 
   return dualConic;
 }
-    
+
+/* ************************************************************************* */
+std::vector<Vector4> QuadricCamera::project(const AlignedBox2& box, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration) {
+  std::vector<Vector4> planes;
+  for (auto line : box.lines()) {
+    Vector4 plane = QuadricCamera::transformToImage(pose, calibration).transpose() * line;
+    planes.push_back(plane);
+  }
+  return planes;
+}
+
+
 } // namespace gtsam
