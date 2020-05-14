@@ -55,6 +55,15 @@ namespace gtsam {
           Base(model, poseKey, quadricKey), measured_(measured), 
           calibration_(calibration), imageDimensions_(imageDimensions) {};
 
+      /** Get key1 from base */
+      AlignedBox2 measurement() const { return AlignedBox2(measured_.vector());}
+
+      /** Get key1 from base */
+      Key poseKey() const { return key1();}
+
+      /** Get key2 from base */
+      Key objectKey() const { return key2();}
+
       /**
        * Evaluate the error between a quadric and 3D pose
        * @param pose the 3D camera position

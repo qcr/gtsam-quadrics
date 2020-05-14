@@ -149,8 +149,8 @@ BoundingBoxFactor BoundingBoxFactor::getFromGraph(const NonlinearFactorGraph& gr
 /* ************************************************************************* */
 void BoundingBoxFactor::print(const std::string& s, const KeyFormatter& keyFormatter) const {
   cout << s << "BoundingBoxFactor(" << keyFormatter(key1()) << "," << keyFormatter(key2()) << ")" << endl;
-  measured_.print("    Measured");
-  cout << "    NoiseModel:"; noiseModel()->print(); cout << endl;
+  measured_.print("    Measured: ");
+  cout << "    NoiseModel: "; noiseModel()->print(); cout << endl;
 }
 
 /* ************************************************************************* */

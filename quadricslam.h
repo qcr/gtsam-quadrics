@@ -80,6 +80,8 @@ class ConstrainedDualQuadric {
   Matrix matrix() const;
   Vector bounds() const;
   gtsam::ConstrainedDualQuadric addNoise(const Vector& noiseVector);
+  bool isBehind(const Pose3& cameraPose) const;
+  bool contains(const Pose3& cameraPose) const;
   static ConstrainedDualQuadric Retract(const Vector& v);
   static Vector LocalCoordinates(const ConstrainedDualQuadric& q);
   gtsam::ConstrainedDualQuadric retract(const Vector& v) const;
@@ -99,6 +101,9 @@ virtual class BoundingBoxFactor : NoiseModelFactor {
   BoundingBoxFactor(const AlignedBox2& measured, const Cal3_S2* calibration, 
     const Vector& imageDimensions, const size_t& poseKey, const size_t& quadricKey, 
     const gtsam::noiseModel::Base* model);
+  gtsam::AlignedBox2 measurement() const;
+  size_t poseKey() const;
+  size_t objectKey() const;
   Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
   Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric,
     Matrix& H1, Matrix& H2) const;
@@ -157,22 +162,22 @@ class QuadricCamera {
 
 #include <quadricslam/geometry/AlignedBox3.h>
 class AlignedBox3 {
-      AlignedBox3();
-      AlignedBox3(const double& xmin, const double& xmax, const double& ymin, const double& ymax, const double& zmin, const double& zmax);
-      AlignedBox3(const Vector& xxyyzz);
-      double xmin() const;
-      double xmax() const;
-      double ymin() const;
-      double ymax() const;
-      double zmin() const;
-      double zmax() const;
-      Vector vector() const;
-      Vector dimensions() const;
-      Vector centroid() const;
-      void print(const string& s) const;
-      void print() const;
-      bool equals(const AlignedBox3& other, double tol) const;
-      bool equals(const AlignedBox3& other) const;
+  AlignedBox3();
+  AlignedBox3(const double& xmin, const double& xmax, const double& ymin, const double& ymax, const double& zmin, const double& zmax);
+  AlignedBox3(const Vector& xxyyzz);
+  double xmin() const;
+  double xmax() const;
+  double ymin() const;
+  double ymax() const;
+  double zmin() const;
+  double zmax() const;
+  Vector vector() const;
+  Vector dimensions() const;
+  Vector centroid() const;
+  void print(const string& s) const;
+  void print() const;
+  bool equals(const AlignedBox3& other, double tol) const;
+  bool equals(const AlignedBox3& other) const;
 };
 
 }
