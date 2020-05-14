@@ -21,6 +21,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Cal3_S2.h>
 
 namespace gtsam {
 
@@ -58,8 +59,17 @@ namespace gtsam {
       /** Return normalized dual conic */
       DualConic normalize(void) const;
 
-      /** Return 2D bounds on image plane */
+      /**
+       * Returns the standard 2D bounds on the image plane
+       * with no consideration for image dimensions
+       */
       AlignedBox2 bounds(OptionalJacobian<4,9> H = boost::none) const;
+
+      /**
+       * Returns the bounds as an object detector would see
+       * Carefully handling the intersection with the image boundaries
+       */ 
+      AlignedBox2 smartBounds(const boost::shared_ptr<Cal3_S2>& calibration, OptionalJacobian<4,9> H = boost::none) const;
 
       /** 
        * Classify conic section as generate/degenerate 
