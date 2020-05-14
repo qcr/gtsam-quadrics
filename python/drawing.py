@@ -130,7 +130,9 @@ class Drawing(object):
             # fig = plt.figure('FPV Conic')
             # fig.clf()
             # for quadric in quadrics.data():
-            #     Drawing.mpl_draw_conic(quadric, pose, calibration)
+                # dual_conic = quadricslam.QuadricCamera.project(quadric, pose, calibration).matrix()
+
+            #     Drawing.mpl_draw_conic(dual_conic)
             # plt.draw()
             # plt.pause(0.001)
             # # plt.waitforbuttonpress()
@@ -224,36 +226,35 @@ class Drawing(object):
         return points_2D
 
     @staticmethod
-    def mpl_draw_conic(quadric, pose, calibration):
-        dual_conic = quadricslam.QuadricCamera.project(quadric, pose, calibration).matrix()
-        # conic = np.linalg.inv(dual_conic)
+    def mpl_draw_conic(dual_conic):
+        conic = np.linalg.inv(dual_conic)
 
-        # irange = 1000.0
-        # x = np.linspace(-irange, irange, 1000)
-        # y = np.linspace(-irange, irange, 1000)
-        # x, y = np.meshgrid(x, y)
+        irange = 10
+        x = np.linspace(-irange, irange, 1000)
+        y = np.linspace(-irange, irange, 1000)
+        x, y = np.meshgrid(x, y)
 
-        # a = conic[0,0]; 
-        # b = conic[1,0]*2.0; 
-        # c = conic[1,1]
-        # d = conic[2,0]*2.0; 
-        # e = conic[2,1]*2.0; 
-        # f = conic[2,2]
+        a = conic[0,0]; 
+        b = conic[1,0]*2.0; 
+        c = conic[1,1]
+        d = conic[2,0]*2.0; 
+        e = conic[2,1]*2.0; 
+        f = conic[2,2]
 
-        # # conic_descriminant = b**2 - 4*a*c
-        # # print('conic_descriminant: {}'.format(conic_descriminant))
+        # conic_descriminant = b**2 - 4*a*c
+        # print('conic_descriminant: {}'.format(conic_descriminant))
 
-        # plt.contour(x, y, (a*x**2 + b*x*y + c*y**2 + d*x + e*y + f), [0], colors='r')
+        plt.contour(x, y, (a*x**2 + b*x*y + c*y**2 + d*x + e*y + f), [0], colors='r')
 
-        fig = plt.gcf()
-        ax = fig.gca()
-        ax.invert_yaxis()
-        rect = patches.Rectangle((0,0),320,240,linewidth=1,edgecolor='r',facecolor='none')
-        ax.add_patch(rect)
+        # fig = plt.gcf()
+        # ax = fig.gca()
+        # ax.invert_yaxis()
+        # rect = patches.Rectangle((0,0),320,240,linewidth=1,edgecolor='r',facecolor='none')
+        # ax.add_patch(rect)
 
-        dual_conic = dual_conic/dual_conic[-1,-1]
-        conic_point = [dual_conic[0,2], dual_conic[1,2]]
+        # dual_conic = dual_conic/dual_conic[-1,-1]
+        # conic_point = [dual_conic[0,2], dual_conic[1,2]]
 
-        plt.scatter(conic_point[0], conic_point[1], c='r')
+        # plt.scatter(conic_point[0], conic_point[1], c='r')
         # plt.xlim((0,320))
         # plt.ylim((0,240))
