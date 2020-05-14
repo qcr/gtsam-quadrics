@@ -19,6 +19,7 @@
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/geometry/Cal3_S2.h>
 
 #include <random>
 
@@ -100,6 +101,26 @@ namespace gtsam {
 
       /* Adds noise using noise vector */
       ConstrainedDualQuadric addNoise(const Vector9& noiseVector);
+
+      /** 
+       * Returns true if quadric intersects fov planes
+       * Remember that p.T * Q * p = 0
+       * For a normalized quadric, if the error is negative
+       * This indicates the plane intersects the quadric
+       */
+      bool partiallyVisible(const Pose3& cameraPose, const boost::shared_ptr<Cal3_S2>& calibration) const;
+
+      /**
+       * Returns true if quadric is fully within fov 
+       * Remember that p.T * X = 0
+       * For a set of field of view planes {p1,p2,p3,p4}
+       * The sign of the expected error for a point within the envolope
+       * is {+,+,-,-}. Deviation indicates a point outside the planes
+       */
+      bool fullyVisible(const Pose3& cameraPose, const boost::shared_ptr<Cal3_S2>& calibration) const;
+
+      /** Returns true if quadric is outside the fov planes */
+      bool notVisible(const Pose3& cameraPose, const boost::shared_ptr<Cal3_S2>& calibration) const;
 
       /** Returns true if quadric centroid has negative depth */
       bool isBehind(const Pose3& cameraPose) const;

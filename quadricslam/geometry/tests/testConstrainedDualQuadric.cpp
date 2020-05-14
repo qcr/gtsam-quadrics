@@ -19,6 +19,8 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <quadricslam/geometry/ConstrainedDualQuadric.h>
+#include <quadricslam/geometry/DualConic.h>
+#include <quadricslam/geometry/QuadricCamera.h>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/Vector.h>
@@ -47,6 +49,32 @@ TEST(ConstrainedDualQuadric, translation_bounds) {
   Vector6 actual = Q.bounds();
 
   EXPECT(assert_equal(expected, actual));
+}
+
+TEST(ConstrainedDualQuadric, visibility) {
+
+  Pose3 newFrame = Pose3::Retract((Vector6() << 1.,2.,3.,4.,5.,6.).finished());
+
+  Pose3 cameraPose(Rot3(), Point3(0,0,-5));
+  cameraPose = newFrame.compose(cameraPose);
+  double image_width = 320.0;
+  double image_height = 240.0;
+  boost::shared_ptr<Cal3_S2> calibration(new Cal3_S2(525.0, 525.0, 0.0, image_width/2.0, image_height/2.0));
+  ConstrainedDualQuadric qVisible(newFrame.compose(Pose3(Rot3(), Point3(0,0,0))), Vector3(0.3,0.3,0.3));
+  ConstrainedDualQuadric qPartial(newFrame.compose(Pose3(Rot3(), Point3(0,1.2,0))), Vector3(0.3,0.3,0.3));
+  ConstrainedDualQuadric qBehind(newFrame.compose(Pose3(Rot3(), Point3(0,0,-10))), Vector3(0.3,0.3,0.3));
+
+  EXPECT(true   == qVisible.fullyVisible(cameraPose, calibration));
+  EXPECT(false  == qPartial.fullyVisible(cameraPose, calibration));
+  EXPECT(false  == qBehind.fullyVisible(cameraPose, calibration));
+
+  EXPECT(false  == qVisible.partiallyVisible(cameraPose, calibration));
+  EXPECT(true   == qPartial.partiallyVisible(cameraPose, calibration));
+  EXPECT(false  == qBehind.partiallyVisible(cameraPose, calibration));
+
+  EXPECT(false  == qVisible.notVisible(cameraPose, calibration));
+  EXPECT(false  == qPartial.notVisible(cameraPose, calibration));
+  EXPECT(true   == qBehind.notVisible(cameraPose, calibration));
 }
 
 /* ************************************************************************* */
