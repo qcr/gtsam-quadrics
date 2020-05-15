@@ -17,13 +17,24 @@
 
 #include <quadricslam/base/Utilities.h>
 
+#include <iostream>
+
+#define ISCLOSE(a,b,e) (fabs(a - b) <= e)
+
 namespace gtsam {
 namespace utils {
+
+
   
 /* ************************************************************************* */
 Vector2 solvePolynomial(const double& a, const double& b, const double& c) {
   double disc = b*b - 4.0*a*c;
-  if (disc < 0.0) { throw std::runtime_error("complex values");}
+  // if disc ~ 0, return only the real components
+  if (ISCLOSE(disc, 0, 1e-9)) {disc = 0.0;}
+  if (disc < 0.0) { 
+    std::cout << "broken disc: " << disc << std::endl;
+    throw std::runtime_error("complex values");
+  }
   double root1 = (-b + std::sqrt(disc)) / (2.0*a);
   double root2 = (-b - std::sqrt(disc)) / (2.0*a);
   return Vector2(root1, root2);

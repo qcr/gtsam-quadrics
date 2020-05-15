@@ -26,6 +26,12 @@
 namespace gtsam {
 namespace utils {
 
+/** 
+ * Returns the real roots of the polynomial
+ * If disc > 0: 2 solutions
+ * If disc == 0: 1 real solution
+ * If disc < 0: 2 imaginary solutions
+ */
 Vector2 solvePolynomial(const double& a, const double& b, const double& c);
 
 Vector2 getConicPointsAtX(const Matrix3& pointConic, const double& x);
