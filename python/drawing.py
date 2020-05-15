@@ -229,7 +229,7 @@ class Drawing(object):
     def mpl_draw_conic(dual_conic):
         conic = np.linalg.inv(dual_conic)
 
-        irange = 10
+        irange = 1000
         x = np.linspace(-irange, irange, 1000)
         y = np.linspace(-irange, irange, 1000)
         x, y = np.meshgrid(x, y)
@@ -246,9 +246,9 @@ class Drawing(object):
 
         plt.contour(x, y, (a*x**2 + b*x*y + c*y**2 + d*x + e*y + f), [0], colors='r')
 
-        # fig = plt.gcf()
-        # ax = fig.gca()
-        # ax.invert_yaxis()
+        fig = plt.gcf()
+        ax = fig.gca()
+        ax.invert_yaxis()
         # rect = patches.Rectangle((0,0),320,240,linewidth=1,edgecolor='r',facecolor='none')
         # ax.add_patch(rect)
 

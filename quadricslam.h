@@ -148,6 +148,7 @@ class DualConic {
   DualConic(const Pose2& pose, const Vector& radii);
   Matrix matrix() const;
   gtsam::AlignedBox2 bounds() const;
+  gtsam::AlignedBox2 smartBounds(const Cal3_S2* calibration) const;
   bool isDegenerate() const;
   bool isEllipse() const;
 };

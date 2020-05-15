@@ -12,6 +12,7 @@ Author: Lachlan Nicholson (Python)
 # import standard libraries
 import sys
 import numpy as np
+import matplotlib.pyplot as plt
 
 # import gtsam and extension
 import gtsam
@@ -355,6 +356,70 @@ class System(object):
 
 
 
+def test_conic_bounds():
+
+    # c = quadricslam.DualConic(gtsam.Pose2(50.,50.,0.0), np.array([15.,15.]))
+    # bounds = c.smartBounds().vector()
+    # print(bounds)
+
+    calibration = gtsam.Cal3_S2(525.0, 525.0, 0.0, 160.0, 120.0)
+    dC = np.array([
+        [-1.02605e+06, -1.45094e+06,     -10709.8],
+        [-1.45094e+06,  1.56826e+06,     -11339.9],
+        [-10709.8,     -11339.9,     -82.2568]])
+    C = np.linalg.inv(dC)
+    C = C/C[-1,-1]
+    print("C1: ", C)
+    # C = np.array([[6.93513e-05, -5.64969e-07,   -0.0089516],
+    #                 [-5.64969e-07,  8.15752e-06,  -0.00105104],
+    #                 [-0.0089516,  -0.00105104,            1]])
+    # print("C2: ", C)
+    c = quadricslam.DualConic(dC)
+    print('bounds: ', c.bounds().vector())
+
+    # a = C[0,0]; b = C[1,0]*2.0; c = C[1,1]
+    # d = C[2,0]*2.0; e = C[2,1]*2.0; f = C[2,2]
+    # conic_det = C[0,0]*((C[1,1]*C[2,2]) - 
+	# 			 (C[2,1]*C[1,2])) -C[0,1]*(C[1,0]*C[2,2] - 
+	# 			  C[2,0]*C[1,2]) + C[0,2]*(C[1,0]*C[2,1] - C[2,0]*C[1,1])
+    # n = -1*(int(conic_det > 0.0) - int(conic_det < 0.0))
+    # ecc = np.sqrt((2.0*np.sqrt((a-c)**2+b**2))/(n*(a+c)+np.sqrt((a-c)**2+b**2)))
+    # print(conic_det, n, ecc)
+
+
+    def get_points_at_x(C, x):
+        poly = [C[1,1],
+                2*C[0,1]*x + 2*C[1,2],
+                C[0,0]*x*x + 2*C[0,2]*x + C[2,2]]
+        disc = poly[1]**2 - 4.0*poly[0]*poly[2]
+        print(disc)
+        roots = np.roots(poly)
+        return roots
+
+    def get_points_at_y(C, y):
+        poly = [C[0,0],
+                2*C[0,1]*y + 2*C[0,2],
+                C[1,1]*y*y + 2*C[1,2]*y + C[2,2]]
+        disc = poly[1]**2 - 4.0*poly[0]*poly[2]
+        print(disc)
+        roots = np.roots(poly)
+        return roots
+    
+    bounds = c.bounds().vector()
+    # p1ys = 
+    print(get_points_at_x(C, bounds[0]))
+    # p2xs = 
+    print(get_points_at_y(C, bounds[1]))
+    # p3ys = 
+    print(get_points_at_x(C, bounds[2]))
+    # p4xs = 
+    print(get_points_at_y(C, bounds[3]))
+
+    print(c.smartBounds(calibration).vector())
+    # Drawing.mpl_draw_conic(dC)
+    # plt.show()
+
+
 if __name__ == '__main__':
     np.random.seed(121)
 
@@ -365,6 +430,7 @@ if __name__ == '__main__':
     # dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path)
     # System.run(dataset[0])
 
+    # test_conic_bounds()
 
     sequence = ManualSequence.sequence1()
     System.run(sequence)

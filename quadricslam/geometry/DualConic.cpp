@@ -18,6 +18,8 @@
 #include <quadricslam/geometry/DualConic.h>
 #include <quadricslam/base/Utilities.h>
 
+#include <gtsam/base/numericalDerivative.h>
+
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -25,7 +27,8 @@
 using namespace std;
 
 #define SIGN2STR(n) (n >= 0 ? " + " : " - ")
-#define ISCLOSE(a,b,e) (fabs(a - b) <= ( (fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * e))
+// #define ISCLOSE(a,b,e) (fabs(a - b) <= ( (fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * e))
+#define ISCLOSE(a,b,e) (fabs(a - b) <= e)
 
 namespace gtsam {
 
@@ -96,9 +99,16 @@ AlignedBox2 DualConic::bounds(OptionalJacobian<4,9> H) const {
 AlignedBox2 DualConic::smartBounds(const boost::shared_ptr<Cal3_S2>& calibration, OptionalJacobian<4,9> H) const {
 
   // calculate point conic
-  Matrix3 C = dC_.inverse();
+  Matrix3 dC = dC_/dC_(2,2);
+  Matrix3 C = dC.inverse();
+
+  // normalize conic so polynomials behave 
+  C = C/C(2,2);
   
-  // get simple bounds
+  // get conic extrema points
+  /// NOTE: because using bounds to find corrosponding points
+  /// and inaccuracies in inversion, we solve the poly
+  /// with a tolerance for small negative discrimnants
   AlignedBox2 bounds = this->bounds();
   double p1_x = bounds.xmin();
   double p2_y = bounds.ymin();
@@ -107,10 +117,20 @@ AlignedBox2 DualConic::smartBounds(const boost::shared_ptr<Cal3_S2>& calibration
   
   // calculate corrosponding points of conic extrema
   /// NOTE: poly should return the same item twice
-  double p1_y = gtsam::utils::getConicPointsAtX(C, p1_x)[0];
-  double p3_y = gtsam::utils::getConicPointsAtX(C, p3_x)[0];
-  double p2_x = gtsam::utils::getConicPointsAtY(C, p2_y)[0];
-  double p4_x = gtsam::utils::getConicPointsAtY(C, p4_y)[0];
+  double p1_y, p3_y, p2_x, p4_x;
+  try {
+    p1_y = gtsam::utils::getConicPointsAtX(C, p1_x)[0];
+    p3_y = gtsam::utils::getConicPointsAtX(C, p3_x)[0];
+    p2_x = gtsam::utils::getConicPointsAtY(C, p2_y)[0];
+    p4_x = gtsam::utils::getConicPointsAtY(C, p4_y)[0];
+  } catch (std::runtime_error& e) {
+    // cout << dC_ << endl;
+    // cout << C << endl;
+    cout << "bounds: " << this->bounds().vector().transpose() << endl;
+    cout << "isEllipse: " << this->isEllipse() << endl;
+    cout << "isDegenerate: " << this->isDegenerate() << endl;
+    throw std::runtime_error("unable to get conic bound points, complex values");
+  }
 
   // append to set of points
   std::vector<Point2> points; 
@@ -157,15 +177,27 @@ AlignedBox2 DualConic::smartBounds(const boost::shared_ptr<Cal3_S2>& calibration
   for (auto point : points) {
     if (imageBounds.contains(point)) {
       validPoints.push_back(point);
+      cout << "validPoint: " << point.x() << ", " << point.y() << endl;
     }
   }
 
-  Matrix pointMatrix = Matrix::Zero(validPoints.size(), 2);
-  Vector maxValues = pointMatrix.colwise().maxCoeff();
-  Vector minValues = pointMatrix.colwise().maxCoeff();
+  // Matrix pointMatrix = Matrix::Zero(validPoints.size(), 2);
+  // Vector maxValues = pointMatrix.colwise().maxCoeff();
+  // Vector minValues = pointMatrix.colwise().maxCoeff();
+  auto minMaxX = std::minmax_element(validPoints.begin(), validPoints.end(), 
+    [] (const Point2& lhs, const Point2& rhs) {return lhs.x() < rhs.x();});
+  auto minMaxY = std::minmax_element(validPoints.begin(), validPoints.end(), 
+    [] (const Point2& lhs, const Point2& rhs) {return lhs.y() < rhs.y();});
 
   // take the max/min of remaining points
-  AlignedBox2 smartBounds(minValues[0], minValues[1], maxValues[0], maxValues[1]);
+  AlignedBox2 smartBounds(minMaxX.first->x(), minMaxY.first->y(), minMaxX.second->x(), minMaxY.second->y());
+
+  // calculate jacobians
+  if (H) {
+    // boost::function<Vector(const DualConic&)> funPtr(boost::bind(&DualConic::vectorSmartBounds, _1, calibration, boost::none));
+    // Eigen::Matrix<double, 4,9> db_dC = numericalDerivative11(funPtr, *this, 1e-6);
+    *H = Matrix::Zero(4,9);
+  }
   return smartBounds;
 }
 
