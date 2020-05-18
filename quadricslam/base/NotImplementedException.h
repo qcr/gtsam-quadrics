@@ -15,9 +15,11 @@
  * @brief a simple exception for not implemented functionality
  */
 
+#include <string>
 
 class NotImplementedException : public std::logic_error
 {
 public:
     NotImplementedException() : std::logic_error("Function not yet implemented") { };
+    NotImplementedException(const std::string& description) : std::logic_error(description) { };
 };
