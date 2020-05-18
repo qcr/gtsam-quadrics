@@ -21,7 +21,7 @@
 
 #include <gtsam/base/numericalDerivative.h>
 
-#define NUMERICAL_DERIVATIVE false
+#define NUMERICAL_DERIVATIVE true
 
 using namespace std;
 
@@ -40,6 +40,10 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
       throw QuadricProjectionException("Camera is inside quadric");
     }
 
+    // if (quadric.notVisible(pose, calibration_)) {
+    //   throw QuadricProjectionException("Quadric is fully outside fov w/ smartBounds on");
+    // }
+
     // project quadric taking into account partial derivatives 
     Eigen::Matrix<double, 9,6> dC_dx; Eigen::Matrix<double, 9,9> dC_dq;
     DualConic dualConic = QuadricCamera::project(quadric, pose, calibration_, H1?&dC_dq:0, H2?&dC_dx:0);
@@ -51,13 +55,16 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
     // calculate conic bounds with derivatives
     Eigen::Matrix<double, 4,9> db_dC;
-    AlignedBox2 predictedBounds = dualConic.bounds(H1||H2?&db_dC:0);
-    // AlignedBox2 predictedBounds = dualConic.smartBounds(calibration_, H1||H2?&db_dC:0);
+    AlignedBox2 predictedBounds;
 
-    // if (H1) {
-    //   cout << "simpleBounds: " << simpleBounds.vector().transpose() << endl;
-    //   cout << "smartBounds: " << predictedBounds.vector().transpose() << endl;
-    // }
+
+    try {
+      // predictedBounds = dualConic.bounds(H1||H2?&db_dC:0);
+      predictedBounds = dualConic.smartBounds(calibration_, H1||H2?&db_dC:0);
+
+    } catch (QuadricProjectionException& e) {
+      throw QuadricProjectionException("Quadric is fully outside fov w/ smartBounds on");
+    }
 
     // evaluate error 
     Vector4 error = predictedBounds.vector() - measured_.vector();
@@ -75,10 +82,13 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
     if (NUMERICAL_DERIVATIVE) {
       boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
-      Eigen::Matrix<double, 4,6> db_dx_ = numericalDerivative21(funPtr, pose, quadric, 1e-6);
-      Eigen::Matrix<double, 4,9> db_dq_ = numericalDerivative22(funPtr, pose, quadric, 1e-6);
-      *H1 = db_dx_;
-      *H2 = db_dq_;
+      if (H1) {
+        Eigen::Matrix<double, 4,6> db_dx_ = numericalDerivative21(funPtr, pose, quadric, 1e-6);
+        *H1 = db_dx_;
+      } if (H2) {
+        Eigen::Matrix<double, 4,9> db_dq_ = numericalDerivative22(funPtr, pose, quadric, 1e-6);
+        *H2 = db_dq_;
+      }
     } else {
 
       // calculate derivative of error wrt pose

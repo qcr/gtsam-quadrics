@@ -16,6 +16,7 @@
  */
 
 #include <quadricslam/geometry/DualConic.h>
+#include <quadricslam/geometry/QuadricCamera.h>
 #include <quadricslam/base/Utilities.h>
 
 #include <gtsam/base/numericalDerivative.h>
@@ -27,8 +28,6 @@
 using namespace std;
 
 #define SIGN2STR(n) (n >= 0 ? " + " : " - ")
-// #define ISCLOSE(a,b,e) (fabs(a - b) <= ( (fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * e))
-#define ISCLOSE(a,b,e) (fabs(a - b) <= e)
 
 namespace gtsam {
 
@@ -114,6 +113,11 @@ AlignedBox2 DualConic::smartBounds(const boost::shared_ptr<Cal3_S2>& calibration
   double p2_y = bounds.ymin();
   double p3_x = bounds.xmax();
   double p4_y = bounds.ymax();
+
+  AlignedBox2 fov_box(0, 0, 2.0*calibration->px(), 2.0*calibration->py());
+  if (!fov_box.contains(bounds)) {
+    throw QuadricProjectionException("no valid conic points inside screen dimensions, implies quadric not visible");
+  }
   
   // calculate corrosponding points of conic extrema
   /// NOTE: poly should return the same item twice
@@ -124,12 +128,10 @@ AlignedBox2 DualConic::smartBounds(const boost::shared_ptr<Cal3_S2>& calibration
     p2_x = gtsam::utils::getConicPointsAtY(C, p2_y)[0];
     p4_x = gtsam::utils::getConicPointsAtY(C, p4_y)[0];
   } catch (std::runtime_error& e) {
-    // cout << dC_ << endl;
-    // cout << C << endl;
     cout << "bounds: " << this->bounds().vector().transpose() << endl;
     cout << "isEllipse: " << this->isEllipse() << endl;
     cout << "isDegenerate: " << this->isDegenerate() << endl;
-    throw std::runtime_error("unable to get conic bound points, complex values");
+    throw std::runtime_error("unable to get conic bound points, complex values, implies inaccurate simple bounds");
   }
 
   // append to set of points
@@ -172,18 +174,19 @@ AlignedBox2 DualConic::smartBounds(const boost::shared_ptr<Cal3_S2>& calibration
   } catch(std::runtime_error& e) { }
 
   // only accept non-imaginary points within image boundaries
+  /// NOTE: it's important that contains includes points on the boundary
+  /// ^ such that the fov intersect points count as valid
   AlignedBox2 imageBounds(0.0, 0.0, image_width, image_height);
   std::vector<Point2> validPoints;
   for (auto point : points) {
     if (imageBounds.contains(point)) {
       validPoints.push_back(point);
-      cout << "validPoint: " << point.x() << ", " << point.y() << endl;
     }
   }
 
-  // Matrix pointMatrix = Matrix::Zero(validPoints.size(), 2);
-  // Vector maxValues = pointMatrix.colwise().maxCoeff();
-  // Vector minValues = pointMatrix.colwise().maxCoeff();
+  if (validPoints.size() < 1) {
+    throw std::runtime_error("no valid conic points inside image dimensions");
+  }
   auto minMaxX = std::minmax_element(validPoints.begin(), validPoints.end(), 
     [] (const Point2& lhs, const Point2& rhs) {return lhs.x() < rhs.x();});
   auto minMaxY = std::minmax_element(validPoints.begin(), validPoints.end(), 

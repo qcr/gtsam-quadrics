@@ -229,7 +229,7 @@ class Drawing(object):
     def mpl_draw_conic(dual_conic):
         conic = np.linalg.inv(dual_conic)
 
-        irange = 1000
+        irange = 2000
         x = np.linspace(-irange, irange, 1000)
         y = np.linspace(-irange, irange, 1000)
         x, y = np.meshgrid(x, y)
