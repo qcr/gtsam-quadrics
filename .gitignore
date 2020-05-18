@@ -1,10 +1,15 @@
 
 build/
 
-\.vscode/
+.vscode/
 
-graveyard\.txt
+graveyard.txt
+
+doc/html/
+
+doc/latex/
 
 *.m~
 
 *.pyc
+
