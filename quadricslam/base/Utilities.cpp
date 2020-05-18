@@ -19,22 +19,29 @@
 
 #include <iostream>
 
-#define ISCLOSE(a,b,e) (fabs(a - b) <= e)
+using namespace std;
 
 namespace gtsam {
 namespace utils {
 
-
-  
 /* ************************************************************************* */
+/// NOTE: for single value results disc usually, due to matrix inversion and 
+/// other inaccuracies, +- 1e-20. For dual value real/imag results
+/// disc is around +- 1e-5. Therefore, if disc 1e-15 or less we round to zero. 
+/// TODO: see if we can just improve dual_conic.inverse() and bounds() accuracy
 Vector2 solvePolynomial(const double& a, const double& b, const double& c) {
+  // calculate polynomial discrimenant 
   double disc = b*b - 4.0*a*c;
-  // if disc ~ 0, return only the real components
-  if (ISCLOSE(disc, 0, 1e-9)) {disc = 0.0;}
-  if (disc < 0.0) { 
-    std::cout << "broken disc: " << disc << std::endl;
+  
+  // round disc to account for inaccuracies
+  if (fabs(disc) < 1e-10) {disc = 0.0;}
+
+  // throw exception if imaginary results
+  if (disc < 0.0) {
     throw std::runtime_error("complex values");
   }
+
+  // calculate and return roots
   double root1 = (-b + std::sqrt(disc)) / (2.0*a);
   double root2 = (-b - std::sqrt(disc)) / (2.0*a);
   return Vector2(root1, root2);

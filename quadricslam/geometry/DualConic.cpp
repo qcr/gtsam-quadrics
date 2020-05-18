@@ -202,16 +202,19 @@ AlignedBox2 DualConic::smartBounds(const boost::shared_ptr<Cal3_S2>& calibration
 }
 
 /* ************************************************************************* */
-// TODO: float compare, what eps?
+/// TODO: float compare, what eps?
+/// ^ det should be exactly 0.0 in degenerate case
+/// ^ and is often 1e-15 unnormalized and 1e-10 normalized
 bool DualConic::isDegenerate(void) const {
   Matrix33 C = dC_.inverse();
-  return ISCLOSE(C.determinant(), 0, 1e-9);
+  return C.determinant() == 0.0;
 }
 
 /* ************************************************************************* */
 bool DualConic::isEllipse(void) const {
   Matrix33 C = dC_.inverse();
-  bool isDegenerate = ISCLOSE(C.determinant(), 0, 1e-9);
+  C = C/C(2,2);
+  bool isDegenerate = C.determinant() == 0.0;
   if (!isDegenerate) {
     Matrix22 A33 = C.block(0,0,2,2);
     return (A33.determinant() > 0);
