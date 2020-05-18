@@ -104,36 +104,38 @@ ConstrainedDualQuadric ConstrainedDualQuadric::addNoise(const Vector9& noiseVect
 /* ************************************************************************* */
 bool ConstrainedDualQuadric::partiallyVisible(const Pose3& cameraPose, const boost::shared_ptr<Cal3_S2>& calibration) const {
   
-  // project fov to planes
-  AlignedBox2 fov_box(0, 0, 2.0*calibration->px(), 2.0*calibration->py());
-  std::vector<Vector4> fov_planes = QuadricCamera::project(fov_box, cameraPose, calibration);
+  // // project fov to planes
+  // AlignedBox2 fov_box(0, 0, 2.0*calibration->px(), 2.0*calibration->py());
+  // std::vector<Vector4> fov_planes = QuadricCamera::project(fov_box, cameraPose, calibration);
 
-  // get normalized quadric matrix
-  Matrix44 quadricMatrix = this->matrix();
-  quadricMatrix = quadricMatrix / quadricMatrix(3,3);
+  // // get normalized quadric matrix
+  // Matrix44 quadricMatrix = this->matrix();
+  // quadricMatrix = quadricMatrix / quadricMatrix(3,3);
 
-  // calculate plane errors
-  Vector4 plane_errors = Vector4::Zero();
-  for (unsigned i = 0; i < fov_planes.size(); i++) {
-    // need to store the plane or we get a segfault..
-    Vector4 plane = fov_planes[i]; 
-    plane_errors[i] = plane.transpose() * quadricMatrix * plane;
-  }
+  // // calculate plane errors
+  // Vector4 plane_errors = Vector4::Zero();
+  // for (unsigned i = 0; i < fov_planes.size(); i++) {
+  //   // need to store the plane or we get a segfault..
+  //   Vector4 plane = fov_planes[i]; 
+  //   plane_errors[i] = plane.transpose() * quadricMatrix * plane;
+  // }
 
-  // check if quadric intersects planes
-  return (plane_errors.array() < 0.0).any();
+  // // check if quadric intersects planes
+  // return (plane_errors.array() < 0.0).any();
+  throw NotImplementedException("quadric.partiallyVisible() not implemented");
 }
 
 /* ************************************************************************* */
 bool ConstrainedDualQuadric::fullyVisible(const Pose3& cameraPose, const boost::shared_ptr<Cal3_S2>& calibration) const {
-  // check that quadric doesn't intersect planes
-  if (this->partiallyVisible(cameraPose, calibration)) { return false;} 
+  // get normalized quadric matrix
+  Matrix44 quadricMatrix = this->matrix();
+  quadricMatrix = quadricMatrix / quadricMatrix(3,3);
 
   // project fov to planes
   AlignedBox2 fov_box(0, 0, 2.0*calibration->px(), 2.0*calibration->py());
   std::vector<Vector4> fov_planes = QuadricCamera::project(fov_box, cameraPose, calibration);
 
-  // check quadric centroid within plane envelope 
+  // check that centroid is within image
   Vector4 hpoint = (Vector4() << this->getPose().translation().vector(), 1.0).finished();
   Vector4 point_errors = Vector4::Zero();
   for (unsigned i = 0; i < fov_planes.size(); i++) {
@@ -142,30 +144,39 @@ bool ConstrainedDualQuadric::fullyVisible(const Pose3& cameraPose, const boost::
   point_errors[2] = point_errors[2] * -1.0;
   point_errors[3] = point_errors[3] * -1.0;
 
-  // check if errors indicate point within planes
-  return (point_errors.array() >= 0.0).all();
+  // if not {+,+,-,-} point is outside fov and quadric is not fully visible
+  if (!(point_errors.array() >= 0.0).all()) { return false;}
+
+  // calculate quadric-plane errors
+  Vector4 plane_errors = Vector4::Zero();
+  for (unsigned i = 0; i < fov_planes.size(); i++) {
+    Vector4 plane = fov_planes[i]; 
+    plane_errors[i] = plane.transpose() * quadricMatrix * plane;
+  }
+
+  // if all planes are not intersecting, quadriv fully visible
+  return (plane_errors.array() >= 0.0).all();
 }
 
 /* ************************************************************************* */
 bool ConstrainedDualQuadric::notVisible(const Pose3& cameraPose, const boost::shared_ptr<Cal3_S2>& calibration) const {
-  // check that quadric doesn't intersect planes
-  if (this->partiallyVisible(cameraPose, calibration)) { return false;} 
+  // // project fov to planes
+  // AlignedBox2 fov_box(0, 0, 2.0*calibration->px(), 2.0*calibration->py());
+  // std::vector<Vector4> fov_planes = QuadricCamera::project(fov_box, cameraPose, calibration);
 
-  // project fov to planes
-  AlignedBox2 fov_box(0, 0, 2.0*calibration->px(), 2.0*calibration->py());
-  std::vector<Vector4> fov_planes = QuadricCamera::project(fov_box, cameraPose, calibration);
+  // // check that point is within fov and quadric 
+  // Vector4 hpoint = (Vector4() << this->getPose().translation().vector(), 1.0).finished();
+  // Vector4 point_errors = Vector4::Zero();
+  // for (unsigned i = 0; i < fov_planes.size(); i++) {
+  //   Vector4 plane = fov_planes[i]; 
+  //   point_errors[i] = (plane.transpose() * hpoint)(0,0);
+  // }
+  // point_errors[2] = point_errors[2] * -1.0;
+  // point_errors[3] = point_errors[3] * -1.0;
 
-  // check quadric centroid within plane envelope 
-  Vector4 hpoint = (Vector4() << this->getPose().translation().vector(), 1.0).finished();
-  Vector4 point_errors = Vector4::Zero();
-  for (unsigned i = 0; i < fov_planes.size(); i++) {
-    point_errors[i] = (fov_planes[i].transpose() * hpoint)(0,0);
-  }
-  point_errors[2] = point_errors[2] * -1.0;
-  point_errors[3] = point_errors[3] * -1.0;
-
-  // check if errors indicate point within planes
-  return (point_errors.array() < 0.0).any();
+  // // check if errors indicate point within planes
+  // return (point_errors.array() < 0.0).any();
+  throw NotImplementedException("quadric.notVisible() not implemented");
 }
 
 /* ************************************************************************* */

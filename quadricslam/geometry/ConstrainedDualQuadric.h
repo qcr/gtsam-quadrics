@@ -107,6 +107,7 @@ namespace gtsam {
        * Remember that p.T * Q * p = 0
        * For a normalized quadric, if the error is negative
        * This indicates the plane intersects the quadric
+       * If a plane intersects a quadric within the image dimensions, the quadric is partially visible.
        */
       bool partiallyVisible(const Pose3& cameraPose, const boost::shared_ptr<Cal3_S2>& calibration) const;
 
@@ -116,10 +117,14 @@ namespace gtsam {
        * For a set of field of view planes {p1,p2,p3,p4}
        * The sign of the expected error for a point within the envolope
        * is {+,+,-,-}. Deviation indicates a point outside the planes
+       * If the center point is on-screen, and there are no fov intersections, the quadric is fully visible.
        */
       bool fullyVisible(const Pose3& cameraPose, const boost::shared_ptr<Cal3_S2>& calibration) const;
 
-      /** Returns true if quadric is outside the fov planes */
+      /** 
+       * Returns true if quadric is outside the fov planes 
+       * If the center point os off-screen, and there are no fov intersections, the quadric is not visible. 
+       */
       bool notVisible(const Pose3& cameraPose, const boost::shared_ptr<Cal3_S2>& calibration) const;
 
       /** Returns true if quadric centroid has negative depth */
