@@ -29,7 +29,7 @@ namespace gtsam {
    * @class ConstrainedDualQuadric
    * A constrained dual quadric (r,t,s): see Nicholson et al. 2019 for details
    */
-  class GTSAM_EXPORT ConstrainedDualQuadric {
+  class ConstrainedDualQuadric {
 
     protected:
       Pose3 pose_; ///< 3D pose of ellipsoid
@@ -77,13 +77,13 @@ namespace gtsam {
       /// @name Class methods
       /// @{
 
-      /* get pose, avoid computation with it */
+      /** Get pose, avoid computation with it */
       Pose3 getPose(void) const {return pose_;}
 
-      /* get quadric radii, avoid computation with it */
+      /** Get quadric radii, avoid computation with it */
       Vector3 getRadii(void) const {return radii_;}
 
-      /* get quadric centroid */
+      /** Get quadric centroid */
       Point3 centroid(void) const {return pose_.translation();}
 
       /**

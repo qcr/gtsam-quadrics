@@ -29,7 +29,7 @@ namespace gtsam {
    * @class DualConic
    * A dual conic (Matrix33)
    */
-  class GTSAM_EXPORT DualConic {
+  class DualConic {
 
     protected:
       Matrix33 dC_; ///< 3x3 matrix of the quadratic equation

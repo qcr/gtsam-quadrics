@@ -36,10 +36,6 @@ namespace gtsam {
 
     public:
 
-      /// @}
-      /// @name Class methods
-      /// @{
-
       /** Static projection matrix */
       static Matrix34 transformToImage(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
 
@@ -54,7 +50,6 @@ namespace gtsam {
       /** Project box to planes */
       static std::vector<Vector4> project(const AlignedBox2& box, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
       
-      /// @}
   };
 
 } // namespace gtsam

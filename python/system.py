@@ -126,21 +126,21 @@ class System(object):
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)
 
         # plot initial estimate
-        Drawing.plot_problem(graph, initial_estimate, calibration)
+        # Drawing.plot_problem(graph, initial_estimate, calibration)
 
         # iterate manually 
-        for i in range(100):
-            optimizer.iterate()
+        # for i in range(100):
+        #     optimizer.iterate()
 
-            estimate = optimizer.values()
+        #     estimate = optimizer.values()
 
-            # draw current iteration
-            Drawing.plot_problem(graph, estimate, calibration)
+        #     # draw current iteration
+        #     Drawing.plot_problem(graph, estimate, calibration)
 
         # run optimizer
-        # print('starting optimization')
-        # estimate = optimizer.optimize()
-        # print('optimization finished')
+        print('starting optimization')
+        estimate = optimizer.optimize()
+        print('optimization finished')
 
         return estimate
 
@@ -242,7 +242,9 @@ class System(object):
 
             # initialize and constrain quadric
             quadric_matrix = System.initialize_quadric(poses, object_boxes, calibration)
-            quadric = System.constrain_quadric(quadric_matrix)
+            # quadric = System.constrain_quadric(quadric_matrix)
+            # quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
+            quadric = quadricslam.ConstrainedDualQuadric(quadric_matrix)
 
             # check quadric is okay
             if (System.is_okay(quadric, poses, calibration)):

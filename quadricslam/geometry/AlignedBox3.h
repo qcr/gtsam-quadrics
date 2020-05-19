@@ -27,7 +27,7 @@ namespace gtsam {
    * @class AlignedBox3
    * An axis aligned 3D bounding box
    */
-  class GTSAM_EXPORT AlignedBox3 {
+  class AlignedBox3 {
 
     protected:
       Vector6 xxyyzz_; ///< bounds vector 

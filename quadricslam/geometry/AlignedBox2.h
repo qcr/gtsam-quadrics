@@ -27,7 +27,7 @@ namespace gtsam {
    * @class AlignedBox2
    * An axis aligned 2D bounding box (xmin,ymin,xmax,ymax)
    */
-  class GTSAM_EXPORT AlignedBox2 {
+  class AlignedBox2 {
 
     protected:
       Vector4 tlbr_; ///< xmin,ymin,xmax,ymax
