@@ -18,7 +18,6 @@
 #include <quadricslam/geometry/AlignedBox2.h>
 #include <quadricslam/geometry/ConstrainedDualQuadric.h>
 #include <quadricslam/geometry/QuadricCamera.h>
-#include <quadricslam/base/NotImplementedException.h>
 #include <quadricslam/base/Jacobians.h>
 
 #include <iostream>
@@ -36,7 +35,7 @@ ConstrainedDualQuadric::ConstrainedDualQuadric() {
 /* ************************************************************************* */
 ConstrainedDualQuadric::ConstrainedDualQuadric(const Matrix44& dQ) {
   // TODO: implement
-  throw NotImplementedException();
+  throw std::runtime_error("Quadric(Matrix) not implemented");
 }
 
 /* ************************************************************************* */

@@ -16,7 +16,6 @@
  */
 
 #include <quadricslam/geometry/QuadricCamera.h>
-#include <quadricslam/base/NotImplementedException.h>
 #include <quadricslam/base/Jacobians.h>
 #include <quadricslam/geometry/BoundingBoxFactor.h> // for CHECK_ANALYTICAL
 

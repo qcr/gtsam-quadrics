@@ -16,7 +16,6 @@
  */
 
 #include <quadricslam/geometry/AlignedBox2.h>
-#include <quadricslam/base/NotImplementedException.h>
 
 using namespace std;
 
