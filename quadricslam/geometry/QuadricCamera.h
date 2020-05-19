@@ -81,8 +81,6 @@ namespace gtsam {
        */
       DualConic project(const ConstrainedDualQuadric& quadric) const;
 
-      /** Matrix version of project for numerical differentiation */
-      static Matrix3 project_(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
       
       /// @}
   };
