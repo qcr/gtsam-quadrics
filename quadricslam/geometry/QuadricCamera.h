@@ -29,66 +29,32 @@
 namespace gtsam {
 
   /**
-
-  /**
    * @class QuadricCamera
    * A camera that projects quadrics
    */
-  class GTSAM_EXPORT QuadricCamera : public PinholePose<Cal3_S2> {
-
-    private:
-
-      typedef PinholePose<Cal3_S2> Base; ///< base class has pose and calibration as private member
+  class QuadricCamera {
 
     public:
-
-      /// @name Constructors and named constructors
-      /// @{
-        
-      /** Default constructor */
-      QuadricCamera() {};
-
-      /** Constructor with pose and calibration */
-      QuadricCamera(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K) : Base(pose, K) {};
-
-      /** 
-       * Named static constructor for Expressions 
-       * as found in PinholeCamera.h
-      */
-      static QuadricCamera Create(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K, OptionalJacobian<6,6> dCamera_dPose, OptionalJacobian<6,5> dCamera_dCalibration);
 
       /// @}
       /// @name Class methods
       /// @{
 
-      /** Calculate the 3x4 projection matrix */
-      Matrix34 transformToImage(OptionalJacobian<12,6> dP_dCamera = boost::none) const;
-
       /** Static projection matrix */
       static Matrix34 transformToImage(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
 
-      /** Static projection function */
-      static DualConic project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
-        OptionalJacobian<9,9> dc_dq = boost::none, OptionalJacobian<9,6> dc_dx = boost::none, OptionalJacobian<9,5> dc_dk = boost::none);
-
-      /** Project box to planes */
-      static std::vector<Vector4> project(const AlignedBox2& box, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
-      
       /**
        * Project a quadric at the stored 3D pose and calibration
        * @param quadric the 3D quadric surface to be projected
        * @return the projected dual conic 
        */
-      DualConic project(const ConstrainedDualQuadric& quadric) const;
+      static DualConic project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
+        OptionalJacobian<9,9> dc_dq = boost::none, OptionalJacobian<9,6> dc_dx = boost::none);
 
+      /** Project box to planes */
+      static std::vector<Vector4> project(const AlignedBox2& box, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
       
       /// @}
   };
-
-  // Add dimensions for expressions
-  template<>
-  struct traits<QuadricCamera> {
-    enum { dimension = 6};
-  };  
 
 } // namespace gtsam

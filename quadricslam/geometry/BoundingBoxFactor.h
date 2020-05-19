@@ -74,11 +74,6 @@ namespace gtsam {
       Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric,
 			  boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const;      
 
-      /**
-       * Returns an expression for the prediction wrt pose and quadric
-       */
-      Expression<AlignedBox2> expression(const Expression<Pose3>& pose, const Expression<ConstrainedDualQuadric>& quadric) const;
-
       /** Add to graph */
       void addToGraph(NonlinearFactorGraph& graph);
 

@@ -151,21 +151,6 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 }
 
 /* ************************************************************************* */
-Expression<AlignedBox2> BoundingBoxFactor::expression(const Expression<Pose3>& pose, const Expression<ConstrainedDualQuadric>& quadric) const {
-
-  // define constant camera calibration
-  Expression<boost::shared_ptr<Cal3_S2>> calibration(calibration_); 
-
-  // declare pointer to overloaded static project function
-  DualConic (*funPtr)(const ConstrainedDualQuadric&, const Pose3&, const boost::shared_ptr<Cal3_S2>&, 
-        OptionalJacobian<9,9>, OptionalJacobian<9,6>, OptionalJacobian<9,5>) = &QuadricCamera::project;
-        
-  Expression<DualConic> dualConic(funPtr, quadric, pose, calibration); 
-  Expression<AlignedBox2> predictedBounds(dualConic, &DualConic::bounds);
-  return predictedBounds;
-}
-
-/* ************************************************************************* */
 void BoundingBoxFactor::addToGraph(NonlinearFactorGraph& graph) { 
   graph.add(*this);
 }

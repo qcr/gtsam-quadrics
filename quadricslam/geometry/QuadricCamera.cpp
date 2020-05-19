@@ -24,46 +24,6 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-QuadricCamera QuadricCamera::Create(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K, OptionalJacobian<6,6> dCamera_dPose, OptionalJacobian<6,5> dCamera_dCalibration) {
-  if (dCamera_dPose) {
-    *dCamera_dPose = Matrix66::Identity();
-  } if (dCamera_dCalibration) {
-    *dCamera_dCalibration = Matrix65::Zero();
-  }
-  return QuadricCamera(pose, K);
-}
-
-/* ************************************************************************* */
-// Note: will compute inverse camPose with jacobian regardless of OptionalJacobian
-Matrix34 QuadricCamera::transformToImage(OptionalJacobian<12,6> dP_dCamera) const {
-  
-  Matrix3 image_T_camera = calibration().K();
-  Matrix4 camera_T_world = pose().inverse().matrix();
-  Matrix34 image_T_world = image_T_camera * (camera_T_world).block(0,0,3,4);
-  
-  if (dP_dCamera) {
-    throw NotImplementedException();
-    // throw std::runtime_error("Rot3::CayleyChart::Local Derivative");
-  }
-  return image_T_world;
-}
-
-/* ************************************************************************* */
-DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric) const {
-  Matrix34 image_T_world = transformToImage(); 
-  Matrix4 dQ = quadric.matrix();
-  // dQ = dQ/dQ(3,3);
-  Matrix3 dC = image_T_world * dQ * image_T_world.transpose();
-  return DualConic(dC);
-}
-
-/* ************************************************************************* */
-Matrix3 QuadricCamera::project_(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration) {
-  Matrix3 C = project(quadric, pose, calibration).matrix();
-  return C;
-}
-
-/* ************************************************************************* */
 Matrix34 QuadricCamera::transformToImage(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration) {
   Matrix3 image_T_camera = calibration->K();
   Matrix4 camera_T_world = pose.inverse().matrix();
@@ -76,7 +36,7 @@ Matrix34 QuadricCamera::transformToImage(const Pose3& pose, const boost::shared_
 // NOTE: requires updating jacobians if we normalize q/c
 // this wont happen if we split it into sub functions and just combine jacobians
 DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
-  OptionalJacobian<9,9> dc_dq, OptionalJacobian<9,6> dc_dx, OptionalJacobian<9,5> dc_dk) {
+  OptionalJacobian<9,9> dc_dq, OptionalJacobian<9,6> dc_dx) {
   
   using namespace internal;
   using namespace std;
@@ -157,10 +117,6 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
         cout << "Numerical dX_dx:\n" << dX_dx_ << endl << endl;
       }
     }
-  }
-  
-  if (dc_dk) {
-    *dc_dk = Matrix::Zero(9,5);
   }
 
   return dualConic;
