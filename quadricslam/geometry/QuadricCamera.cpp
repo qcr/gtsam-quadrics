@@ -16,7 +16,7 @@
  */
 
 #include <quadricslam/geometry/QuadricCamera.h>
-#include <quadricslam/base/Jacobians.h>
+#include <quadricslam/base/Utilities.h>
 
 #include <gtsam/base/numericalDerivative.h>
 
@@ -37,19 +37,17 @@ Matrix34 QuadricCamera::transformToImage(const Pose3& pose, const boost::shared_
 DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
   OptionalJacobian<9,9> dC_dq, OptionalJacobian<9,6> dC_dx) {
   
-  using namespace internal;
-  using namespace std;
-
   // first retract quadric and pose to compute dX:/dx and dQ:/dq
   Matrix3 K = calibration->K();
   Matrix4 Xi = pose.inverse().matrix();
+  static Matrix34 I34 = Matrix::Identity(3,4);
   Matrix34 P = K * I34 * Xi;
   Matrix4 Q = quadric.matrix();
   Matrix3 C = P * Q * P.transpose();
   DualConic dualConic(C);
 
   if (dC_dq) {
-    Eigen::Matrix<double, 9,16> dC_dQ = kron(P, P);
+    Eigen::Matrix<double, 9,16> dC_dQ = utils::kron(P, P);
     Eigen::Matrix<double, 16,9> dQ_dq; quadric.matrix(dQ_dq); // NOTE: this recalculates quadric.matrix
     *dC_dq = dC_dQ * dQ_dq;
 
@@ -81,10 +79,13 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
   } 
     
   if (dC_dx) {
-    Eigen::Matrix<double, 9,12> dC_dP = kron(I33, P*Q) * TVEC(3,4) + kron(P*Q.transpose(), I33);
+    using utils::kron;
+    static Matrix33 I33 = Matrix::Identity(3,3);
+    static Matrix44 I44 = Matrix::Identity(4,4);
+    Eigen::Matrix<double, 9,12> dC_dP = kron(I33, P*Q) * utils::TVEC(3,4) + kron(P*Q.transpose(), I33);
     Eigen::Matrix<double, 12,16> dP_dXi = kron(I44, K*I34);
     Eigen::Matrix<double, 16,16> dXi_dX = -kron(Xi.transpose(), Xi);
-    Eigen::Matrix<double, 16,6> dX_dx; internal::matrix(pose, dX_dx);
+    Eigen::Matrix<double, 16,6> dX_dx; utils::matrix(pose, dX_dx);
     *dC_dx = dC_dP * dP_dXi * dXi_dX * dX_dx;
 
     if (TEST_ANALYTICAL) {
@@ -99,7 +100,7 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
       Eigen::Matrix<double, 9,6> dC_dx_ = numericalDerivative22(boost_funptr, quadric, pose, 1e-6);
 
       // get function pointer to pose.matrix() with no jacobians
-      boost::function<Matrix4(const Pose3&)> matrix_funptr(boost::bind(&internal::matrix, _1, boost::none));
+      boost::function<Matrix4(const Pose3&)> matrix_funptr(boost::bind(&utils::matrix, _1, boost::none));
 
       // calculate derivative of pose_matrix with respect to pose_vector
       Eigen::Matrix<double, 16,6> dX_dx_ = numericalDerivative11(matrix_funptr, pose, 1e-6);

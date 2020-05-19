@@ -18,7 +18,7 @@
 #include <quadricslam/geometry/AlignedBox2.h>
 #include <quadricslam/geometry/ConstrainedDualQuadric.h>
 #include <quadricslam/geometry/QuadricCamera.h>
-#include <quadricslam/base/Jacobians.h>
+#include <quadricslam/base/Utilities.h>
 
 #include <Eigen/Eigenvalues>
 #include <iostream>
@@ -97,11 +97,9 @@ Matrix44 ConstrainedDualQuadric::matrix(OptionalJacobian<16,9> dQ_dq) const {
   Matrix44 Q = Z * Qc * Z.transpose(); 
 
   if (dQ_dq) {
-    using namespace internal;
 
-    // NOTE: this will recalculate pose.matrix
     Eigen::Matrix<double, 16,6> dZ_dx;
-    internal::matrix(pose_, dZ_dx);
+    utils::matrix(pose_, dZ_dx); // NOTE: this will recalculate pose.matrix
     Eigen::Matrix<double, 16,9> dZ_dq = Matrix::Zero(16,9);
     dZ_dq.block(0,0,16,6) = dZ_dx;
 
@@ -110,6 +108,9 @@ Matrix44 ConstrainedDualQuadric::matrix(OptionalJacobian<16,9> dQ_dq) const {
     dQc_dq(5,7) = 2.0 * radii_(1);
     dQc_dq(10,8) = 2.0 * radii_(2);
     
+    using utils::kron;
+    static Matrix4 I44 = Matrix::Identity(4,4);
+    static Eigen::Matrix<double, 16,16> T44 = utils::TVEC(4,4);
     *dQ_dq = kron(I44, Z*Qc) * T44 * dZ_dq  +  kron(Z, I44) * (kron(I44, Z)*dQc_dq + kron(Qc, I44)*dZ_dq);
   }
   return Q;

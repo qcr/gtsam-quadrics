@@ -35,7 +35,6 @@ include_directories(BEFORE "${PROJECT_SOURCE_DIR}")
 set(SOURCE_FILES
 	./quadricslam/base/Noise.cpp
 	./quadricslam/base/TestClass.cpp
-	./quadricslam/base/Jacobians.cpp
 	./quadricslam/base/Utilities.cpp
 	./quadricslam/geometry/ConstrainedDualQuadric.cpp
 	./quadricslam/geometry/AlignedBox2.cpp
