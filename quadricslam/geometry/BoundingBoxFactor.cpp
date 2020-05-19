@@ -101,13 +101,11 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
           throw std::runtime_error("Infinite inside BBF H1");
         }
 
-        if (CHECK_ANALYTICAL) {
+        if (TEST_ANALYTICAL) {
           boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
           Eigen::Matrix<double, 4,6> db_dx_ = numericalDerivative21(funPtr, pose, quadric, 1e-6);
           if (!db_dx_.isApprox(*H1, 1e-06)) {
-            cout << "WARNING(bbf/db_dx): numerical != analytical" << endl;
-            cout << "Analytical db_dx_:\n" << *H1 << endl;
-            cout << "Numerical db_dx_:\n" << db_dx_ << endl << endl;
+            throw std::runtime_error("BoundingBoxFactor db_dx_ numerical != analytical");
           }
         }
       } 
@@ -122,13 +120,11 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
           throw std::runtime_error("Infinite inside BBF H2");
         }
         
-        if (CHECK_ANALYTICAL) {
+        if (TEST_ANALYTICAL) {
           boost::function<Vector(const Pose3&,  const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
           Eigen::Matrix<double, 4,9> db_dq_ = numericalDerivative22(funPtr, pose, quadric, 1e-6);
           if (!db_dq_.isApprox(*H2, 1e-06)) {
-            cout << "WARNING(bbf/db_dq): numerical != analytical" << endl;
-            cout << "Analytical db_dq_:\n" << *H2 << endl;
-            cout << "Numerical db_dq_:\n" << db_dq_ << endl << endl;
+            throw std::runtime_error("BoundingBoxFactor db_dq_ numerical != analytical");
           }
         }
       }

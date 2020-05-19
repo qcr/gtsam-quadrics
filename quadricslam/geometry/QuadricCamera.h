@@ -49,7 +49,7 @@ namespace gtsam {
        * @return the projected dual conic 
        */
       static DualConic project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
-        OptionalJacobian<9,9> dc_dq = boost::none, OptionalJacobian<9,6> dc_dx = boost::none);
+        OptionalJacobian<9,9> dC_dq = boost::none, OptionalJacobian<9,6> dC_dx = boost::none);
 
       /** Project box to planes */
       static std::vector<Vector4> project(const AlignedBox2& box, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);

@@ -26,8 +26,6 @@
 #include <gtsam/nonlinear/Expression.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
-#define CHECK_ANALYTICAL 0
-
 namespace gtsam {
 
   /**

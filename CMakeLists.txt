@@ -5,6 +5,13 @@ cmake_minimum_required(VERSION 3.0)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
 
 ###################################################################################
+# set up options
+option(TEST_ANALYTICAL "Calculate and compare both analytical and numerical jacobians" ON)
+if(TEST_ANALYTICAL)
+	add_definitions(-DTEST_ANALYTICAL=true)
+endif()
+
+###################################################################################
 # find GTSAM and GTSAM CMake tools
 find_package(GTSAM REQUIRED)
 find_package(GTSAMCMakeTools)

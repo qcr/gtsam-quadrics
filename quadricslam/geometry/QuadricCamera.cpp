@@ -17,7 +17,6 @@
 
 #include <quadricslam/geometry/QuadricCamera.h>
 #include <quadricslam/base/Jacobians.h>
-#include <quadricslam/geometry/BoundingBoxFactor.h> // for CHECK_ANALYTICAL
 
 #include <gtsam/base/numericalDerivative.h>
 
@@ -36,7 +35,7 @@ Matrix34 QuadricCamera::transformToImage(const Pose3& pose, const boost::shared_
 // NOTE: requires updating jacobians if we normalize q/c
 // this wont happen if we split it into sub functions and just combine jacobians
 DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
-  OptionalJacobian<9,9> dc_dq, OptionalJacobian<9,6> dc_dx) {
+  OptionalJacobian<9,9> dC_dq, OptionalJacobian<9,6> dC_dx) {
   
   using namespace internal;
   using namespace std;
@@ -49,12 +48,12 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
   Matrix3 C = P * Q * P.transpose();
   DualConic dualConic(C);
 
-  if (dc_dq) {
+  if (dC_dq) {
     Eigen::Matrix<double, 9,16> dC_dQ = kron(P, P);
     Eigen::Matrix<double, 16,9> dQ_dq; quadric.matrix(dQ_dq); // NOTE: this recalculates quadric.matrix
-    *dc_dq = dC_dQ * dQ_dq;
+    *dC_dq = dC_dQ * dQ_dq;
 
-    if (CHECK_ANALYTICAL) {
+    if (TEST_ANALYTICAL) {
 
       // we want to derive wrt the conic matrix 
       auto project_funptr = [&](const ConstrainedDualQuadric& q, const Pose3& x) -> Matrix33 { return QuadricCamera::project(q, x, calibration).matrix();};
@@ -72,25 +71,23 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
       Eigen::Matrix<double, 16,9> dQ_dq_ = numericalDerivative11(matrix_funptr, quadric, 1e-6);
 
       // confirm analytical == numerical
-      if (!dC_dq_.isApprox(*dc_dq, 1e-06)) {
-        cout << "WARNING(quadriccamera/dc_dq): numerical != analytical" << endl;
-        cout << "Analytical dc_dq:\n" << *dc_dq << endl;
-        cout << "Numerical dc_dq:\n" << dC_dq_ << endl << endl;
-
-        cout << "Analytical dQ_dq_:\n" << dQ_dq << endl;
-        cout << "Numerical dQ_dq:\n" << dQ_dq_ << endl << endl;
+      if (!dC_dq_.isApprox(*dC_dq, 1e-06)) {
+        throw std::runtime_error("QuadricCamera dC_dq numerical != analytical");
+      } 
+      if (!dQ_dq_.isApprox(dQ_dq, 1e-06)) {
+        throw std::runtime_error("QuadricCamera dQ_dq numerical != analytical");
       }
     }
   } 
     
-  if (dc_dx) {
+  if (dC_dx) {
     Eigen::Matrix<double, 9,12> dC_dP = kron(I33, P*Q) * TVEC(3,4) + kron(P*Q.transpose(), I33);
     Eigen::Matrix<double, 12,16> dP_dXi = kron(I44, K*I34);
     Eigen::Matrix<double, 16,16> dXi_dX = -kron(Xi.transpose(), Xi);
     Eigen::Matrix<double, 16,6> dX_dx; internal::matrix(pose, dX_dx);
-    *dc_dx = dC_dP * dP_dXi * dXi_dX * dX_dx;
+    *dC_dx = dC_dP * dP_dXi * dXi_dX * dX_dx;
 
-    if (CHECK_ANALYTICAL) {
+    if (TEST_ANALYTICAL) {
 
       // we want to derive wrt the conic matrix 
       auto project_funptr = [&](const ConstrainedDualQuadric& q, const Pose3& x) -> Matrix33 { return QuadricCamera::project(q, x, calibration).matrix();};
@@ -108,13 +105,11 @@ DualConic QuadricCamera::project(const ConstrainedDualQuadric& quadric, const Po
       Eigen::Matrix<double, 16,6> dX_dx_ = numericalDerivative11(matrix_funptr, pose, 1e-6);
 
       // confirm analytical == numerical
-      if (!dC_dx_.isApprox(*dc_dx, 1e-06)) {
-        cout << "WARNING(quadriccamera/dc_dx): numerical != analytical" << endl;
-        cout << "Analytical dc_dx:\n" << *dc_dx << endl;
-        cout << "Numerical dc_dx:\n" << dC_dx_ << endl << endl;
-
-        cout << "Analytical dX_dx:\n" << dX_dx << endl;
-        cout << "Numerical dX_dx:\n" << dX_dx_ << endl << endl;
+      if (!dC_dx_.isApprox(*dC_dx, 1e-06)) {
+        throw std::runtime_error("QuadricCamera dC_dx numerical != analytical");
+      }
+      if (!dX_dx_.isApprox(dX_dx, 1e-06)) {
+        throw std::runtime_error("QuadricCamera dX_dx numerical != analytical");
       }
     }
   }
