@@ -59,8 +59,8 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
 
     try {
-      // predictedBounds = dualConic.bounds(H1||H2?&db_dC:0);
-      predictedBounds = dualConic.smartBounds(calibration_, H1||H2?&db_dC:0);
+      predictedBounds = dualConic.bounds(H1||H2?&db_dC:0);
+      // predictedBounds = dualConic.smartBounds(calibration_, H1||H2?&db_dC:0);
 
     } catch (QuadricProjectionException& e) {
       throw QuadricProjectionException("Quadric is fully outside fov w/ smartBounds on");
