@@ -17,6 +17,7 @@
 
 #include <quadricslam/geometry/BoundingBoxFactor.h>
 #include <quadricslam/geometry/QuadricCamera.h>
+#include <quadricslam/base/QuadricProjectionException.h>
 
 #include <gtsam/base/numericalDerivative.h>
 

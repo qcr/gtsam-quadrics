@@ -29,27 +29,6 @@
 namespace gtsam {
 
   /**
-   * @class QuadricProjectionException
-   * Exception thrown when attemption to calculate quadric bounding box fails
-   */
-  class GTSAM_EXPORT QuadricProjectionException: public ThreadsafeException<QuadricProjectionException> {
-    public:
-      QuadricProjectionException()
-        : QuadricProjectionException(std::numeric_limits<Key>::max()) {}
-
-      QuadricProjectionException(Key j)
-        : ThreadsafeException<QuadricProjectionException>("QuadricProjectionException"),
-          j_(j) {}
-
-      QuadricProjectionException(const std::string& description)
-        : ThreadsafeException<QuadricProjectionException>(description) {}
-
-      Key nearbyVariable() const {return j_;}
-
-    private:
-      Key j_;
-  };
-
 
   /**
    * @class QuadricCamera
