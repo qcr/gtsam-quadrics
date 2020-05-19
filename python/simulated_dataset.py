@@ -82,7 +82,7 @@ class ManualSequence(object):
             # interpolate new poses
             for j in range(n_between):
                 percentage = (j+1) / (n_between+1)
-                ipose = quadricslam.Noise.interpolate(poses[i], poses[i+1], percentage)
+                ipose = quadricslam.interpolate(poses[i], poses[i+1], percentage)
                 new_poses.append(ipose)
 
         # add final pose

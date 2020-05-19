@@ -41,8 +41,6 @@ class Noise {
     /** Add noise to Values object */
     static Values perturbValues(const Values& values, double sd);
 
-    /** Interpolate poses */ 
-    static Pose3 interpolate(const Pose3& p1, const Pose3& p2, const double& percent);
 };
 
 }

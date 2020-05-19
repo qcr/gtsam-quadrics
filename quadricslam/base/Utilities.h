@@ -38,5 +38,8 @@ Vector2 getConicPointsAtX(const Matrix3& pointConic, const double& x);
 
 Vector2 getConicPointsAtY(const Matrix3& pointConic, const double& y);
 
+/** Interpolate poses */ 
+Pose3 interpolate(const Pose3& p1, const Pose3& p2, const double& percent);
+
 } // namespace utils
 } // namespace gtsam

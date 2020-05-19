@@ -35,17 +35,18 @@
   QUESTIONS:
     - how to wrap optional jacobians?
     - how to wrap operator[] ?
+    - how to wrap methods to belong inside a namespace?
  */
 
 
 
+virtual class NoiseModelFactor;
+class NonlinearFactorGraph;
+class Cal3_S2;
 class Point2;
-class Pose3;
 class Point3;
 class Values;
-class Cal3_S2;
-class NonlinearFactorGraph;
-virtual class NoiseModelFactor;
+class Pose3;
 
 class ConstrainedDualQuadric;
 class AlignedBox2;
@@ -55,10 +56,10 @@ class DualConic;
 
 namespace gtsam {
 
-#include <quadricslam/base/Noise.h>
-class Noise {
-  static Pose3 interpolate(const Pose3& p1, const Pose3& p2, const double& percent);  
-};
+#include <quadricslam/base/Utilities.h>
+namespace utils {
+  Pose3 interpolate(const Pose3& p1, const Pose3& p2, const double& percent);  
+}
 
 #include <quadricslam/base/TestClass.h>
 class TestClass {

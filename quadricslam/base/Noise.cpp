@@ -63,12 +63,4 @@ Values Noise::perturbValues(const Values& values, double sd) {
   return newValues;
 }
 
-/* ************************************************************************* */
-Pose3 Noise::interpolate(const Pose3& p1, const Pose3& p2, const double& percent) {
-  return gtsam::interpolate<Pose3>(p1, p2, percent);
-}
-
-
-
-
-}
+} // namespace gtsam
