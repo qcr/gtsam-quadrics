@@ -78,6 +78,7 @@ class ConstrainedDualQuadric {
   Vector getRadii() const;
   Point3 centroid() const;
   Matrix matrix() const;
+  static ConstrainedDualQuadric constrain(const Matrix& dual_quadric);
   Vector bounds() const;
   gtsam::ConstrainedDualQuadric addNoise(const Vector& noiseVector);
   bool isBehind(const Pose3& cameraPose) const;

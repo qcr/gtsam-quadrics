@@ -20,6 +20,7 @@
 #include <quadricslam/geometry/QuadricCamera.h>
 #include <quadricslam/base/Jacobians.h>
 
+#include <Eigen/Eigenvalues>
 #include <iostream>
 
 using namespace std;
@@ -34,8 +35,7 @@ ConstrainedDualQuadric::ConstrainedDualQuadric() {
 
 /* ************************************************************************* */
 ConstrainedDualQuadric::ConstrainedDualQuadric(const Matrix44& dQ) {
-  // TODO: implement
-  throw std::runtime_error("Quadric(Matrix) not implemented");
+  *this = ConstrainedDualQuadric::constrain(dQ);
 }
 
 /* ************************************************************************* */
@@ -49,6 +49,45 @@ ConstrainedDualQuadric::ConstrainedDualQuadric(const Pose3& pose, const Vector3&
 ConstrainedDualQuadric::ConstrainedDualQuadric(const Rot3& R, const Point3& t, const Vector3& r) {
   pose_ = Pose3(R, t);
   radii_ = r;
+}
+
+/* ************************************************************************* */
+ConstrainedDualQuadric ConstrainedDualQuadric::constrain(const Matrix4& dual_quadric) {
+
+  // normalize if required
+  Matrix4 normalized_dual_quadric(dual_quadric);
+  if (dual_quadric(3,3) != 1.0) {
+    normalized_dual_quadric = dual_quadric/dual_quadric(3,3);
+  }
+
+  // extract translation
+  Point3 translation(normalized_dual_quadric.block(0,3,3,1));
+
+  // calculate the point quadric matrix
+  Matrix4 point_quadric = normalized_dual_quadric.inverse();
+  Matrix4 normalized_point_quadric = point_quadric;
+  if (point_quadric(3,3) != 1.0) {
+    normalized_point_quadric = point_quadric/point_quadric(3,3);
+  }
+
+  // extract shape
+  auto lambdaa = normalized_point_quadric.block(0,0,3,3).eigenvalues();
+  Vector3 shape = Eigen::sqrt(
+    -1.0*normalized_point_quadric.determinant() \
+    / normalized_point_quadric.block(0,0,3,3).determinant() \
+    *  1.0/lambdaa.array()  ).abs();
+
+  // extract rotation 
+  Eigen::EigenSolver<Eigen::Matrix<double,3,3>> s(normalized_point_quadric.block(0,0,3,3));
+  Matrix3 rotation_matrix = s.eigenvectors().real();
+
+  // ensure rotation is right-handed
+  if (!(fabs(1.0-rotation_matrix.determinant()) < 1e-8)) {
+    rotation_matrix *= -1.0 * Matrix3::Identity();
+  }
+  Rot3 rotation(rotation_matrix);
+
+  return ConstrainedDualQuadric(rotation, translation, shape);
 }
 
 /* ************************************************************************* */

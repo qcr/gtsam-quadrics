@@ -67,6 +67,12 @@ namespace gtsam {
        */
       ConstrainedDualQuadric(const Rot3& R, const Point3& t, const Vector3& r);
 
+      /** 
+       * Constrains a generic dual quadric surface to be ellipsoidal
+       * @param dual_quadric 4x4 symmetric matrix (Matrix4)
+      */
+      static ConstrainedDualQuadric constrain(const Matrix4& dual_quadric);
+
       /// @}
       /// @name Class methods
       /// @{
