@@ -77,6 +77,13 @@ Matrix44 ConstrainedDualQuadric::matrix(OptionalJacobian<16,9> dQ_dq) const {
 }
 
 /* ************************************************************************* */
+Matrix44 ConstrainedDualQuadric::normalizedMatrix(void) const {
+  Matrix44 Q = this->matrix();
+  return Q/Q(3,3);
+}
+
+
+/* ************************************************************************* */
 // TODO: vectorize, use AlignedBox3
 Vector6 ConstrainedDualQuadric::bounds() const {
   Matrix44 dE = this->matrix();
@@ -155,7 +162,7 @@ void ConstrainedDualQuadric::print(const std::string& s) const {
 
 /* ************************************************************************* */
 bool ConstrainedDualQuadric::equals(const ConstrainedDualQuadric& other, double tol) const {
-  return this->matrix().isApprox(other.matrix(), tol);
+  return this->normalizedMatrix().isApprox(other.normalizedMatrix(), tol);
 }
 
 /* ************************************************************************* */

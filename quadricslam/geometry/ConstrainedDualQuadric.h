@@ -93,6 +93,9 @@ namespace gtsam {
        */
       Matrix44 matrix(OptionalJacobian<16,9> H = boost::none) const;
 
+      /** Returns the normalized dual quadric in matrix form */
+      Matrix44 normalizedMatrix(void) const;
+
       /**
        * Calculates the AlignedBox3 bounds of the ellipsoid
        * @return 3D axis aligned bounding box
