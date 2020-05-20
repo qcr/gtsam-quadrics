@@ -41,7 +41,17 @@ Vector2 getConicPointsAtY(const Matrix3& pointConic, const double& y);
 /** Interpolate poses */ 
 Pose3 interpolate(const Pose3& p1, const Pose3& p2, const double& percent);
 
-/** Converts Pose3 to Matrix and provides optional jacobians */
+/** 
+ * Converts Pose3 to Matrix and provides optional jacobians 
+ * https://atmos.washington.edu/~dennis/MatrixCalculus.pdf
+ * https://en.wikipedia.org/wiki/Kronecker_product
+ * https://www.math.uwaterloo.ca/~hwolkowi/matrixcookbook.pdf
+ * https://people.maths.ox.ac.uk/gilesm/files/NA-08-01.pdf
+ * Some Theorems on Matrix Differentiation with Special Reference to Kronecker Matrix Products (H. Neudecker, 1969)
+ * A tutorial on SE(3) transformation parameterizations and on-manifold optimization Jose-Luis Blanco (p.35)
+ * - https://jinyongjeong.github.io/Download/SE3/jlblanco2010geometry3d_techrep.pdf
+ * http://www.ee.ic.ac.uk/hp/staff/dmb/matrix/special.html#VecTranspose
+ */
 Matrix44 matrix(const Pose3& pose, OptionalJacobian<16,6> H = boost::none);
 
 /** 
