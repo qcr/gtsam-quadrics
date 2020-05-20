@@ -107,8 +107,6 @@ virtual class BoundingBoxFactor : NoiseModelFactor {
   size_t poseKey() const;
   size_t objectKey() const;
   Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
-  Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric,
-    Matrix& H1, Matrix& H2) const;
   void addToGraph(NonlinearFactorGraph& graph);
   static gtsam::BoundingBoxFactor getFromGraph(const NonlinearFactorGraph& graph, size_t idx);
 };
