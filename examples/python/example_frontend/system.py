@@ -19,9 +19,6 @@ import matplotlib.pyplot as plt
 import gtsam
 import quadricslam
 
-# modify system path so file will work when run directly or as a module
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-
 # import custom python modules
 sys.dont_write_bytecode = True
 from dataset_interfaces.simulated_dataset import ManualSequence
