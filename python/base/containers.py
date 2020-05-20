@@ -10,16 +10,18 @@ Author: Lachlan Nicholson (Python)
 """
 
 # import standard libraries
+import os
 import sys
 import numpy as np
+from collections import defaultdict
 
 # import gtsam and extension
 import gtsam
 import quadricslam
 
-# import custom python modules
-sys.dont_write_bytecode = True
-from collections import defaultdict
+# modify system path so file will work when run directly or as a module
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 
 X = lambda i: int(gtsam.symbol(ord('x'), i))
 Q = lambda i: int(gtsam.symbol(ord('q'), i))

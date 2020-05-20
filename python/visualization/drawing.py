@@ -10,6 +10,7 @@ Author: Lachlan Nicholson (Python)
 """
 
 # import standard libraries
+import os
 import sys
 import cv2
 import numpy as np
@@ -20,12 +21,15 @@ import matplotlib.patches as patches
 import gtsam
 import quadricslam
 
+# modify system path so file will work when run directly or as a module
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 # import custom python modules
 sys.dont_write_bytecode = True
-from containers import Trajectory
-from containers import Odometry
-from containers import Quadrics
-from containers import Boxes
+from base.containers import Trajectory
+from base.containers import Odometry
+from base.containers import Quadrics
+from base.containers import Boxes
 
 symbolChr = lambda i: chr(gtsam.symbolChr(i))
 

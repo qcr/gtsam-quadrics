@@ -10,15 +10,19 @@ Author: Lachlan Nicholson (Python)
 """
 
 # import standard libraries
+import os
 import sys
 import numpy as np
 
 # import gtsam and extension
 import gtsam
 
+# modify system path so file will work when run directly or as a module
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 # import custom python modules
 sys.dont_write_bytecode = True
-from drawing import Drawing
+from visualization.drawing import Drawing
 
 
 class Evaluation(object):

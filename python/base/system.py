@@ -10,6 +10,7 @@ Author: Lachlan Nicholson (Python)
 """
 
 # import standard libraries
+import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,13 +19,16 @@ import matplotlib.pyplot as plt
 import gtsam
 import quadricslam
 
+# modify system path so file will work when run directly or as a module
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 # import custom python modules
 sys.dont_write_bytecode = True
 from dataset_interfaces.simulated_dataset import ManualSequence
 from dataset_interfaces.scenenet_dataset import SceneNetDataset
-from containers import *
-from drawing import Drawing
-from evaluation import Evaluation
+from visualization.drawing import Drawing
+from base.evaluation import Evaluation
+from base.containers import *
 
 
 class System(object):

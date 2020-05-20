@@ -22,14 +22,16 @@ from PIL import Image
 import gtsam
 import quadricslam
 
+# modify system path so file will work when run directly or as a module
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 # import custom python modules
 sys.dont_write_bytecode = True
-from containers import Boxes
-from containers import Trajectory
-from containers import Odometry
-from containers import Quadrics
-from interactive_player import InteractivePlayer
-
+from base.containers import Boxes
+from base.containers import Trajectory
+from base.containers import Odometry
+from base.containers import Quadrics
+from visualization.interactive_player import InteractivePlayer
 
 
 class SceneNetDataset(object):
