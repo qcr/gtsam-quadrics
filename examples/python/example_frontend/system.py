@@ -129,19 +129,13 @@ class System(object):
         # plot initial estimate
         # Drawing.plot_problem(graph, initial_estimate, calibration)
 
-        # iterate manually 
-        # for i in range(100):
-        #     optimizer.iterate()
-
-        #     estimate = optimizer.values()
-
-        #     # draw current iteration
-        #     Drawing.plot_problem(graph, estimate, calibration)
-
         # run optimizer
         print('starting optimization')
         estimate = optimizer.optimize()
         print('optimization finished')
+
+        # plot final estimate
+        # Drawing.plot_problem(graph, estimate, calibration)
 
         return estimate
 
