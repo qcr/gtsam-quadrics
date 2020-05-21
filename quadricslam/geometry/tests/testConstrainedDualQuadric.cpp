@@ -26,6 +26,7 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/nonlinear/Values.h>
 
 using namespace std;
 using namespace gtsam;
@@ -49,6 +50,22 @@ TEST(ConstrainedDualQuadric, translation_bounds) {
   Vector6 actual = Q.bounds();
 
   EXPECT(assert_equal(expected, actual));
+}
+
+TEST(ConstrainedDualQuadric, AddGetFromValues) {
+  Values values;
+  ConstrainedDualQuadric Q(Pose3(Rot3(), Point3(2,3,-4.1)), Vector3(0.9,1.0,1.1));
+  values.insert(1, Q);
+  ConstrainedDualQuadric Q2 = values.at<ConstrainedDualQuadric>(1);
+  EXPECT(assert_equal(Q, Q2));
+}
+
+TEST(ConstrainedDualQuadric, ExplicitAddGetFromValues) {
+  Values values;
+  ConstrainedDualQuadric Q(Pose3(Rot3(), Point3(2,3,-4.1)), Vector3(0.9,1.0,1.1));
+  Q.addToValues(values, 1);
+  ConstrainedDualQuadric Q2 = ConstrainedDualQuadric::getFromValues(values, 1);
+  EXPECT(assert_equal(Q, Q2));
 }
 
 /* ************************************************************************* */
