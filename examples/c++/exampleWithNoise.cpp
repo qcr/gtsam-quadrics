@@ -158,7 +158,7 @@ int main(void) {
     Values initialEstimate;
 
     // add trajectory estimate
-    for (unsigned i = 0; i < trajectory.size(); i++) {
+    for (unsigned i = 0; i < noisyTrajectory.size(); i++) {
         Key poseKey(Symbol('x', i));
         initialEstimate.insert(poseKey, noisyTrajectory[i]);
     }
@@ -170,7 +170,7 @@ int main(void) {
     }
 
     // create and add box factors
-    for (unsigned i = 0; i < trajectory.size(); i++) {
+    for (unsigned i = 0; i < noisyTrajectory.size(); i++) {
         Key poseKey(Symbol('x', i));
             
         for (unsigned j = 0; j < noisyQuadrics.size(); j++) {
@@ -181,7 +181,7 @@ int main(void) {
     }
 
     // create odometry factors
-    for (unsigned i = 0; i < odometry.size(); i++) {
+    for (unsigned i = 0; i < noisyOdometry.size(); i++) {
         Key startKey(Symbol('x', i));
         Key endKey(Symbol('x', i+1));
         BetweenFactor<Pose3> bf(startKey, endKey, noisyOdometry[i]);

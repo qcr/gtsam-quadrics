@@ -15,6 +15,14 @@
  * @brief code to operate the quadric slam library on a dataset
  */
 
+/**
+ * A simple example with multiple camera positions and quadric landmarks
+ *  - graph provided with true box measurements, from projecting quadric into image at each frame
+ *  - graph provided with true odometry measurements
+ *  - initial estimate given perturbed trajectory
+ *  - initial estimate given true quadrics
+ */
+
 #include <quadricslam/geometry/ConstrainedDualQuadric.h>
 #include <quadricslam/geometry/AlignedBox2.h>
 #include <quadricslam/geometry/QuadricCamera.h>
@@ -41,153 +49,61 @@ using namespace std;
 
 int main(void) {
 
+    // create empty graph / estimate
+    NonlinearFactorGraph graph;
+    Values initialEstimate;
+
+    // define calibration
+    boost::shared_ptr<Cal3_S2> calibration(new Cal3_S2(525.0, 525.0, 0.0, 320.0, 240.0));
+
+    // define noise models 
+    boost::shared_ptr<noiseModel::Diagonal> odomNoiseModel = noiseModel::Diagonal::Sigmas(Vector6::Ones()*ODOM_SD);
+    boost::shared_ptr<noiseModel::Diagonal> boxNoiseModel = noiseModel::Diagonal::Sigmas(Vector4::Ones()*BOX_SD);
+
     // define key poses
-    vector<Pose3> poses;
-    poses.push_back(gtsam::CalibratedCamera::LookatPose(Point3(10,0,0), Point3(), Point3(0,0,1)));
-    poses.push_back(gtsam::CalibratedCamera::LookatPose(Point3(0,-10,0), Point3(), Point3(0,0,1)));
-    poses.push_back(gtsam::CalibratedCamera::LookatPose(Point3(-10,0,0), Point3(), Point3(0,0,1)));
-    poses.push_back(gtsam::CalibratedCamera::LookatPose(Point3(0,10,0), Point3(), Point3(0,0,1)));
-    poses.push_back(gtsam::CalibratedCamera::LookatPose(Point3(10,0,0), Point3(), Point3(0,0,1)));
+    vector<Pose3> trajectory;
+    trajectory.push_back(gtsam::CalibratedCamera::LookatPose(Point3(10,0,0), Point3(), Point3(0,0,1)));
+    trajectory.push_back(gtsam::CalibratedCamera::LookatPose(Point3(0,-10,0), Point3(), Point3(0,0,1)));
+    trajectory.push_back(gtsam::CalibratedCamera::LookatPose(Point3(-10,0,0), Point3(), Point3(0,0,1)));
+    trajectory.push_back(gtsam::CalibratedCamera::LookatPose(Point3(0,10,0), Point3(), Point3(0,0,1)));
+    trajectory.push_back(gtsam::CalibratedCamera::LookatPose(Point3(10,0,0), Point3(), Point3(0,0,1)));
 
     // define quadrics
     vector<ConstrainedDualQuadric> quadrics;
     quadrics.push_back(ConstrainedDualQuadric(Pose3(), Vector3(1.,2.,3.)));
     quadrics.push_back(ConstrainedDualQuadric(Pose3(Rot3(), Point3(0.1,0.1,0.1)), Vector3(1.,2.,3.)));
 
-    // define calibration
-    boost::shared_ptr<Cal3_S2> calibration(new Cal3_S2(525.0, 525.0, 0.0, 320.0, 240.0));
-
-    // create random number engine and normal distribution 
-    std::default_random_engine generator;
-    std::normal_distribution<double> odom_noise_distribution(0.0, ODOM_SD);    
-    std::normal_distribution<double> box_noise_distribution(0.0, BOX_SD);    
-    std::normal_distribution<double> quad_noise_distribution(0.0, QUAD_SD);    
-
-    // interpolate poses into a refined trajectory
-    int nBetween = 10;
-    vector<Pose3> trajectory;
-    for(unsigned i = 0; i < poses.size()-1; i++) {
-        trajectory.push_back(poses[i]);
-
-        for(int j = 0; j < nBetween; j++) {
-            double perc = (j+1) / (nBetween+1);
-            Pose3 newPose = gtsam::interpolate<Pose3>(poses[i], poses[i+1], perc);
-            trajectory.push_back(newPose);
-        }
-    }
-    trajectory.push_back(poses.back());
-    
-    // convert global trajectory to relative poses
-    vector<Pose3> odometry;
-    for (unsigned i = 0; i < trajectory.size()-1; i++) {
-        odometry.push_back(trajectory[i].between(trajectory[i+1]));
-    }
-
-
-    // add noise to relative poses
-    vector<Pose3> noisyOdometry;
-    for (auto pose : odometry) {
-        vector<double> noiseVector(6); 
-        std::generate(noiseVector.begin(), noiseVector.end(), [&]{return odom_noise_distribution(generator);});
-        Pose3 delta = Pose3::Retract(Vector6(noiseVector.data()));
-        noisyOdometry.push_back(pose.compose(delta));
-    }
-
-    // recompose trajectory from relative poses
-    vector<Pose3> noisyTrajectory;
-    noisyTrajectory.push_back(Pose3());
-    for (unsigned i = 0; i < noisyOdometry.size(); i++) {
-        noisyTrajectory.push_back(noisyTrajectory.back().compose(noisyOdometry[i]));
-    }
-
-    // add noise to quadrics 
-    vector<ConstrainedDualQuadric> noisyQuadrics;
-    for (auto quadric : quadrics) {
-        vector<double> noiseVector(9); 
-        std::generate(noiseVector.begin(), noiseVector.end(), [&]{return quad_noise_distribution(generator);});
-
-        Vector9 eigenNoise(noiseVector.data());
-        Pose3 delta = Pose3::Retract(eigenNoise.head<6>());
-        Pose3 noisyPose = quadric.getPose().compose(delta);
-        Vector3 noisyRadii = quadric.getRadii() + eigenNoise.tail<3>();
-
-        noisyQuadrics.push_back(ConstrainedDualQuadric(noisyPose, noisyRadii));
-    }
-
-    // reproject true quadrics into each true pose
-    vector<vector<AlignedBox2>> measurements; 
-    for (auto quadric : quadrics) {
-        vector<AlignedBox2> objectMeasurements;
-        for (auto pose : trajectory) {
-            DualConic conic = QuadricCamera::project(quadric, pose, calibration);
-            AlignedBox2 bounds = conic.bounds();
-            objectMeasurements.push_back(bounds);
-        }
-        measurements.push_back(objectMeasurements);
-    }
-
-    // add noise to bounding box measurements
-    vector<vector<AlignedBox2>> noisyMeasurements;
-    for (auto objectMeasurements : measurements) {
-        vector<AlignedBox2> noisyObjectMeasurements;
-        for (auto box : objectMeasurements) {
-            vector<double> noiseVector(4); 
-            std::generate(noiseVector.begin(), noiseVector.end(), [&]{return box_noise_distribution(generator);});
-            AlignedBox2 noisyBox = AlignedBox2(box.vector() + Vector4(noiseVector.data()));
-            noisyObjectMeasurements.push_back(noisyBox);
-        }
-        noisyMeasurements.push_back(noisyObjectMeasurements);
-    }
-    
-    // because noisyTrajectory is in a local reference frame
-    // we need to align it with our initial quadric estimate
-    // either by putting the trajectory in the global reference frame 
-    // or by transforming the quadric to the local frame
-    vector<Pose3> transformed;
-    for (auto pose : noisyTrajectory) {
-        transformed.push_back(trajectory[0].transformPoseFrom(pose));
-    }
-    noisyTrajectory = transformed;
-
-    // define noise models 
-    boost::shared_ptr<noiseModel::Diagonal> odomNoiseModel = noiseModel::Diagonal::Sigmas(Vector6::Ones()*ODOM_SD);
-    boost::shared_ptr<noiseModel::Diagonal> boxNoiseModel = noiseModel::Diagonal::Sigmas(Vector4::Ones()*BOX_SD);
-
-    // create empty graph / estimate
-    NonlinearFactorGraph graph;
-    Values initialEstimate;
-
     // add trajectory estimate
     for (unsigned i = 0; i < trajectory.size(); i++) {
-        Key poseKey(Symbol('x', i));
-        initialEstimate.insert(poseKey, noisyTrajectory[i]);
+
+        // add a perturbation to initial pose estimates to simulate noise
+        Pose3 perturbedPose = trajectory[i].compose(Pose3(Rot3().rodriguez(0.1,0.1,0.1), Point3(0.1,0.2,0.3)));
+        initialEstimate.insert(Symbol('x', i), perturbedPose);
     }
 
     // add quadric estimate
-    for (unsigned i = 0; i < noisyQuadrics.size(); i++) {
-        Key quadricKey(Symbol('q', i));
-        initialEstimate.insert(quadricKey, noisyQuadrics[i]);
+    for (unsigned i = 0; i < quadrics.size(); i++) {
+        initialEstimate.insert(Symbol('q', i), quadrics[i]);
+    }
+    
+    // add relative poses to graph as odometry
+    for (unsigned i = 0; i < trajectory.size()-1; i++) {
+        Pose3 relativePose = trajectory[i].between(trajectory[i+1]);
+        BetweenFactor<Pose3> bf(Symbol('x', i), Symbol('x', i+1), relativePose);
+        graph.add(bf);
     }
 
-    // create and add box factors
-    for (unsigned i = 0; i < trajectory.size(); i++) {
-        Key poseKey(Symbol('x', i));
-            
-        for (unsigned j = 0; j < noisyQuadrics.size(); j++) {
-            Key quadricKey(Symbol('q', j));
-            BoundingBoxFactor bbf(noisyMeasurements[j][i], calibration, poseKey, quadricKey, boxNoiseModel);
+    // reproject true quadrics into each true pose
+    for (unsigned j = 0; j < quadrics.size(); j++) {
+        for (unsigned i = 0; i < trajectory.size(); i++) {
+            DualConic conic = QuadricCamera::project(quadrics[j], trajectory[i], calibration);
+            AlignedBox2 bounds = conic.bounds();
+            BoundingBoxFactor bbf(bounds, calibration, Symbol('x', i), Symbol('q', j), boxNoiseModel);
             graph.add(bbf);
         }
     }
 
-    // create odometry factors
-    for (unsigned i = 0; i < odometry.size(); i++) {
-        Key startKey(Symbol('x', i));
-        Key endKey(Symbol('x', i+1));
-        BetweenFactor<Pose3> bf(startKey, endKey, noisyOdometry[i]);
-        graph.add(bf);
-    }
-
+    // define lm parameters
     LevenbergMarquardtParams parameters;
     parameters.setVerbosityLM("SUMMARY"); // SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
     parameters.setRelativeErrorTol(1e-10); ///< stop iterating when change in error between steps is less than this
