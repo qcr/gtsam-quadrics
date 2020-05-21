@@ -36,6 +36,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/PriorFactor.h>
 
 #include <random>
 #include <string>
@@ -159,12 +160,17 @@ int main(void) {
     noisyTrajectory = transformed;
 
     // define noise models 
+    boost::shared_ptr<noiseModel::Diagonal> priorNoiseModel = noiseModel::Diagonal::Sigmas(Vector6::Ones()*1e-1);
     boost::shared_ptr<noiseModel::Diagonal> odomNoiseModel = noiseModel::Diagonal::Sigmas(Vector6::Ones()*ODOM_SD);
     boost::shared_ptr<noiseModel::Diagonal> boxNoiseModel = noiseModel::Diagonal::Sigmas(Vector4::Ones()*BOX_SD);
 
     // create empty graph / estimate
     NonlinearFactorGraph graph;
     Values initialEstimate;
+
+    // add prior to first pose
+    PriorFactor<Pose3> priorFactor(Symbol('x',0), noisyTrajectory[0], priorNoiseModel);
+    graph.add(priorFactor);
 
     // add trajectory estimate
     for (unsigned i = 0; i < noisyTrajectory.size(); i++) {
@@ -193,7 +199,7 @@ int main(void) {
     for (unsigned i = 0; i < noisyOdometry.size(); i++) {
         Key startKey(Symbol('x', i));
         Key endKey(Symbol('x', i+1));
-        BetweenFactor<Pose3> bf(startKey, endKey, noisyOdometry[i]);
+        BetweenFactor<Pose3> bf(startKey, endKey, noisyOdometry[i], odomNoiseModel);
         graph.add(bf);
     }
 
