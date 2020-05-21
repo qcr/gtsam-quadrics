@@ -127,42 +127,10 @@ endif()
 ###################################################################################
 # Build Doxygen documentation 
 
-if (QUADRICSLAM_BUILD_DOCS)
+# find doxygen
+find_package(Doxygen)
 
-	# find doxygen
-	find_package(Doxygen REQUIRED)
-
-	# quadricslam core subfolders
-	set(quadricslam_doc_subdirs 
-		quadricslam/base
-		quadricslam/geometry
-	)
-
-	# set(doc_subdirs ${quadricslam_doc_subdirs})
-
-	# From subfolders, build a list with whitespace separation of paths
-	set(QUADRICSLAM_DOXYGEN_INPUT_PATHS "")
-	foreach(dir ${quadricslam_doc_subdirs})
-		set(QUADRICSLAM_DOXYGEN_INPUT_PATHS "${QUADRICSLAM_DOXYGEN_INPUT_PATHS} ${PROJECT_SOURCE_DIR}/${dir}")
-	endforeach()
-
-	# Generate Doxyfile
-	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/doc/Doxyfile @ONLY)
-
-	# Add target to actually build documentation as configured
-	add_custom_target(doc
-			${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/doc/Doxyfile
-			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc/
-			COMMENT "Generating API documentation with Doxygen" VERBATIM
-	)
-
-	# Clean target
-	add_custom_target(doc_clean
-			COMMAND
-					cmake -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/doc/latex
-			COMMAND
-					cmake -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/doc/html
-			COMMENT "Removing Doxygen documentation"
-	)
-
+# add subdirectory with custom make doc, doc_clean targets
+if (DOXYGEN_FOUND)
+	add_subdirectory(doc)
 endif()
