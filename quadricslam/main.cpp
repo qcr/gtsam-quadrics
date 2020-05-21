@@ -24,14 +24,20 @@
 
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 using namespace std;
 using namespace gtsam;
 
 int main() {
 
-  cout << TEST_ANALYTICAL << endl;
+  NonlinearFactorGraph graph;
+  BetweenFactor<Pose3> bf(Symbol('x', 0), Symbol('x', 1), Pose3());
+  graph.add(bf);
+
+  graph.print("GRAPH:\n");
 
   cout << "done" << endl;
   return 1;
