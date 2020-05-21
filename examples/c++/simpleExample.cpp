@@ -35,13 +35,13 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/PriorFactor.h>
 
 #include <random>
 #include <string>
 #include <iostream>
 
 #define ODOM_SD 0.01
-#define QUAD_SD 0.1
 #define BOX_SD 3
 
 using namespace gtsam;
@@ -57,6 +57,7 @@ int main(void) {
     boost::shared_ptr<Cal3_S2> calibration(new Cal3_S2(525.0, 525.0, 0.0, 320.0, 240.0));
 
     // define noise models 
+    boost::shared_ptr<noiseModel::Diagonal> priorNoiseModel = noiseModel::Diagonal::Sigmas(Vector6::Ones()*1e-1);
     boost::shared_ptr<noiseModel::Diagonal> odomNoiseModel = noiseModel::Diagonal::Sigmas(Vector6::Ones()*ODOM_SD);
     boost::shared_ptr<noiseModel::Diagonal> boxNoiseModel = noiseModel::Diagonal::Sigmas(Vector4::Ones()*BOX_SD);
 
@@ -73,11 +74,15 @@ int main(void) {
     quadrics.push_back(ConstrainedDualQuadric(Pose3(), Vector3(1.,2.,3.)));
     quadrics.push_back(ConstrainedDualQuadric(Pose3(Rot3(), Point3(0.1,0.1,0.1)), Vector3(1.,2.,3.)));
 
+    // add prior on first pose
+    PriorFactor<Pose3> priorFactor(Symbol('x',0), trajectory[0], priorNoiseModel);
+    graph.add(priorFactor);
+
     // add trajectory estimate
     for (unsigned i = 0; i < trajectory.size(); i++) {
 
         // add a perturbation to initial pose estimates to simulate noise
-        Pose3 perturbedPose = trajectory[i].compose(Pose3(Rot3().rodriguez(0.1,0.1,0.1), Point3(0.1,0.2,0.3)));
+        Pose3 perturbedPose = trajectory[i].compose(Pose3(Rot3::rodriguez(0.1,0.1,0.1), Point3(0.1,0.2,0.3)));
         initialEstimate.insert(Symbol('x', i), perturbedPose);
     }
 
@@ -89,7 +94,7 @@ int main(void) {
     // add relative poses to graph as odometry
     for (unsigned i = 0; i < trajectory.size()-1; i++) {
         Pose3 relativePose = trajectory[i].between(trajectory[i+1]);
-        BetweenFactor<Pose3> bf(Symbol('x', i), Symbol('x', i+1), relativePose);
+        BetweenFactor<Pose3> bf(Symbol('x', i), Symbol('x', i+1), relativePose, odomNoiseModel);
         graph.add(bf);
     }
 
@@ -115,6 +120,9 @@ int main(void) {
 
     // build optimiser
     LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, parameters);
+
+    graph.print("GRAPH\n");
+    initialEstimate.print("ESTIMATE\n");
 
     // optimise the graph
     Values result = optimizer.optimize();
