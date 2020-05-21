@@ -43,6 +43,7 @@ if(QSLAM_BUILD_PYTHON_WRAP)
 	include(GtsamMatlabWrap) # Automatic MATLAB wrapper generation
 	include(GtsamCythonWrap) # Automatic MATLAB wrapper generation
 endif()
+
 ###################################################################################
 # add quadricslam
 
@@ -74,17 +75,22 @@ target_link_libraries(${CONVENIENCE_LIB_NAME} gtsam)
 # install(TARGETS ${CONVENIENCE_LIB_NAME} LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
 
 ###################################################################################
-## Build executables and link to our shared library. NOTE: can't have two mains in source_files
+## Build executables and link to our shared library. 
 
 # compile .exe files
 add_executable(main ./quadricslam/main.cpp)
-add_executable(exampleWithNoise ./examples/c++/exampleWithNoise.cpp)
-add_executable(simpleExample ./examples/c++/simpleExample.cpp)
 
 # link with gtsam (or recieve undefined refrences)
 target_link_libraries(main gtsam;${CONVENIENCE_LIB_NAME})
-target_link_libraries(exampleWithNoise gtsam;${CONVENIENCE_LIB_NAME})
-target_link_libraries(simpleExample gtsam;${CONVENIENCE_LIB_NAME})
+
+
+###################################################################################
+# build examples if make examples
+# https://stackoverflow.com/questions/17765618/cmake-add-subdirectories-to-custom-target-and-adding-custom-target-to-vs-solut
+
+add_subdirectory(examples/c++)
+# add_custom_target(examples) <-- already exists from GtsamTesting
+add_dependencies(examples examples_folder)
 
 ###################################################################################
 # Build tests (CMake tracks the dependecy to link with GTSAM through our project's static library)
