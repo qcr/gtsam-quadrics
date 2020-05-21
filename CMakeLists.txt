@@ -78,9 +78,11 @@ target_link_libraries(${CONVENIENCE_LIB_NAME} gtsam)
 
 # compile .exe files
 add_executable(main ./quadricslam/main.cpp)
+add_executable(testSimpleExample ./examples/c++/simpleExample.cpp)
 
 # link with gtsam (or recieve undefined refrences)
 target_link_libraries(main gtsam;${CONVENIENCE_LIB_NAME})
+target_link_libraries(testSimpleExample gtsam;${CONVENIENCE_LIB_NAME})
 
 ###################################################################################
 # Build tests (CMake tracks the dependecy to link with GTSAM through our project's static library)
