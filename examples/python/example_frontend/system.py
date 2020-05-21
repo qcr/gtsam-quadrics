@@ -234,11 +234,11 @@ class System(object):
             if len(np.unique(pose_keys)) < 3:
                 continue
 
-            # initialize and constrain quadric
-            quadric_matrix = System.initialize_quadric(poses, object_boxes, calibration)
-            # quadric = System.constrain_quadric(quadric_matrix)
-            # quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
-            quadric = quadricslam.ConstrainedDualQuadric(quadric_matrix)
+            # initialize quadric fomr views using svd
+            quadric_matrix = System.quadric_SVD(poses, object_boxes, calibration)
+
+            # constrain generic dual quadric to be ellipsoidal 
+            quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
 
             # check quadric is okay
             if (System.is_okay(quadric, poses, calibration)):
@@ -247,7 +247,7 @@ class System(object):
         return quadrics
 
     @staticmethod
-    def initialize_quadric(poses, object_boxes, calibration):
+    def quadric_SVD(poses, object_boxes, calibration):
         """ calculates quadric_matrix using SVD """
 
         # iterate through box/pose data
@@ -283,57 +283,6 @@ class System(object):
                                 [q[3], q[6], q[8], q[9]]])
 
         return dual_quadric
-            
-    @staticmethod
-    def constrain_quadric(dual_quadric_matrix):
-        """ constrains quadric using method in paper """
-
-        # calculate point quadric
-        point_quadric = np.linalg.inv(dual_quadric_matrix)
-
-        # normalize point quadric
-        point_quadric = point_quadric/point_quadric[-1,-1]
-
-        # calculate shape
-        lambdaa = np.linalg.eigh(point_quadric[:3,:3])[0]
-        lambdaa = [complex(ele) for ele in lambdaa]
-        s = np.sqrt( -( np.linalg.det(point_quadric) / np.linalg.det(point_quadric[:3,:3]) ) *  1.0/lambdaa)
-        s = np.abs(s)
-
-        # calculate normal dual quadric for translation
-        Q = dual_quadric_matrix/dual_quadric_matrix[-1,-1]
-
-        # calculate translation
-        t = np.asarray([Q[0,3]/Q[-1,-1], Q[1,3]/Q[-1,-1], Q[2,3]/Q[-1,-1]])
-
-        # calculate rotation
-        r1 = np.linalg.eigh(point_quadric[:3,:3])[1]
-
-        # store as quadric
-        ellipsoid = quadricslam.ConstrainedDualQuadric(gtsam.Rot3(r1), gtsam.Point3(t), s)
-        ellipsoid_vector = quadricslam.ConstrainedDualQuadric.LocalCoordinates(ellipsoid)
-
-
-        # check if rotation valid
-        if np.isclose(np.linalg.det(r1), -1.0) or np.any(np.isinf(ellipsoid_vector)) or np.any(np.isnan(ellipsoid_vector)):
-
-            # identify bad rotation
-            # print('[SVD] estimated quadric rotation invalid, resolving by inverting axis')
-
-            # flip if rotation is improper
-            AxisFlip = np.eye(3); AxisFlip*=-1.0;
-            r2 = r1.dot(AxisFlip)
-            ellipsoid_2 = quadricslam.ConstrainedDualQuadric(gtsam.Rot3(r2), gtsam.Point3(t), s)
-            ellipsoid_vector_2 = quadricslam.ConstrainedDualQuadric.LocalCoordinates(ellipsoid_2)
-
-            # check if still broken
-            if np.isclose(np.linalg.det(r2), -1.0) or np.any(np.isinf(ellipsoid_vector_2)) or np.any(np.isnan(ellipsoid_vector_2)):
-                print('\n\n ~~~~~ STILL BROKEN ~~~~~~ \n\n')
-
-            # save result
-            ellipsoid = ellipsoid_2
-
-        return ellipsoid
 
     @staticmethod
     def is_okay(quadric, poses, calibration):
