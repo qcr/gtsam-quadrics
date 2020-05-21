@@ -31,23 +31,14 @@ static const DualConic conic1 = DualConic((Matrix33() << 2.181975e+06, 1.843200e
                                               1.843200e+06, 1.106775e+06, 5.760000e+03,
                                               7.680000e+03, 5.760000e+03, 2.400000e+01).finished());
 
-TEST(QuadricCamera, Constructors) {
-  QuadricCamera camera1;
-}
-
 TEST(QuadricCamera, ProjectQuadric) {
   Pose3 cameraPose(Rot3(), Point3(0,0,-5));
   boost::shared_ptr<Cal3_S2> K(new Cal3_S2(525.0,525.0,0.0,320.0,240.0));
-  QuadricCamera camera1(cameraPose, K);
-  Matrix34 P = camera1.transformToImage();
+  Matrix34 P = QuadricCamera::transformToImage(cameraPose, K);
   ConstrainedDualQuadric Q;
-  DualConic C = camera1.project(Q);
-
-  DualConic C2 = QuadricCamera::project(Q, cameraPose, K);
+  DualConic C = QuadricCamera::project(Q, cameraPose, K);
   EXPECT(assert_equal(conic1, C));
-  EXPECT(assert_equal(conic1, C2));
 }
-
 
 /* ************************************************************************* */
 int main() {
