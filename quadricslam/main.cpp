@@ -20,7 +20,6 @@
 #include <quadricslam/geometry/QuadricCamera.h>
 #include <quadricslam/geometry/AlignedBox2.h>
 #include <quadricslam/geometry/DualConic.h>
-#include <quadricslam/base/TestClass.h>
 
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/inference/Symbol.h>

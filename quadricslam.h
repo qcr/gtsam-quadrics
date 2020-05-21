@@ -61,14 +61,6 @@ namespace utils {
   Pose3 interpolate(const Pose3& p1, const Pose3& p2, const double& percent);  
 }
 
-#include <quadricslam/base/TestClass.h>
-class TestClass {
-  TestClass();
-  TestClass(double x);
-  double getx();
-  double doWork(double y);
-};
-
 #include <quadricslam/geometry/ConstrainedDualQuadric.h>
 class ConstrainedDualQuadric {
   ConstrainedDualQuadric();
