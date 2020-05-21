@@ -31,7 +31,6 @@ from base.containers import Boxes
 # TODO: ensure calibration / dimensions are linked correctly
 class ManualSequence(object):
     calibration = gtsam.Cal3_S2(525.0, 525.0, 0.0, 160.0, 120.0)
-    image_dimensions = np.array([320., 240.])
 
     def __init__(self, points, quadrics):
         """
@@ -53,7 +52,7 @@ class ManualSequence(object):
 
 
     def reproject_quadrics(self, quadrics, trajectory):
-        image_box = quadricslam.AlignedBox2(0,0,self.image_dimensions[0], self.image_dimensions[1])
+        image_box = quadricslam.AlignedBox2(0,0,self.calibration.px()*2.0, self.calibration.py()*2.0)
         boxes = Boxes()
         for pose_key, pose in trajectory.items():
             for object_key, quadric in quadrics.items():

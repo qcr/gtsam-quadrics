@@ -230,7 +230,6 @@ class SceneNetSequence(object):
     - 
     """
     calibration = SceneNetDataset.load_calibration()
-    image_dimensions = np.array([320., 240.])
     def __init__(self, sequence_path, sequence_data, sn):
         self.shapenet_path = '/media/feyre/DATA1/Datasets/ShapeNet/ShapeNetCore.v2'
         self.sequence_path = sequence_path

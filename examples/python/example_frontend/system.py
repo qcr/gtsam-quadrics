@@ -151,7 +151,6 @@ class System(object):
         """
         Sequence contains:
         * calibration
-        * image_dimensions
         * true_trajectory 
         * true_quadrics 
         * true_boxes 
@@ -208,7 +207,7 @@ class System(object):
                     # add measurements
                     valid_objects.append(object_key)
                     for (pose_key, t), box in object_boxes.items():
-                        bbf = quadricslam.BoundingBoxFactor(box, sequence.calibration, sequence.image_dimensions, System.X(pose_key), System.Q(object_key), bbox_noise)
+                        bbf = quadricslam.BoundingBoxFactor(box, sequence.calibration, System.X(pose_key), System.Q(object_key), bbox_noise)
                         bbf.addToGraph(graph)
 
         # add initial pose estimates

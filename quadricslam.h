@@ -100,9 +100,8 @@ class ConstrainedDualQuadric {
 #include <quadricslam/geometry/BoundingBoxFactor.h>
 virtual class BoundingBoxFactor : NoiseModelFactor {
   BoundingBoxFactor();
-  BoundingBoxFactor(const AlignedBox2& measured, const Cal3_S2* calibration, 
-    const Vector& imageDimensions, const size_t& poseKey, const size_t& quadricKey, 
-    const gtsam::noiseModel::Base* model);
+  BoundingBoxFactor(const AlignedBox2& measured, const Cal3_S2* calibration,
+    const size_t& poseKey, const size_t& quadricKey, const gtsam::noiseModel::Base* model);
   gtsam::AlignedBox2 measurement() const;
   size_t poseKey() const;
   size_t objectKey() const;

@@ -167,7 +167,6 @@ void BoundingBoxFactor::print(const std::string& s, const KeyFormatter& keyForma
 bool BoundingBoxFactor::equals(const BoundingBoxFactor& other, double tol) const {
   bool equal = measured_.equals(other.measured_, tol)
     && calibration_->equals(*other.calibration_, tol)
-    && imageDimensions_.isApprox(other.imageDimensions_, tol)
     && noiseModel()->equals(*other.noiseModel(), tol)
     && key1() == other.key1() && key2() == other.key2();
   return equal;
