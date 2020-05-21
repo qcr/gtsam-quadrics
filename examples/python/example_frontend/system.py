@@ -357,127 +357,19 @@ class System(object):
 
 
 
-
-def test_conic_bounds():
-
-    # # c = quadricslam.DualConic(gtsam.Pose2(50.,50.,0.0), np.array([15.,15.]))
-    # # bounds = c.smartBounds().vector()
-    # # print(bounds)
-
-    # calibration = gtsam.Cal3_S2(525.0, 525.0, 0.0, 160.0, 120.0)
-    # dC = np.array([
-    #     [-1.02605e+06, -1.45094e+06,     -10709.8],
-    #     [-1.45094e+06,  1.56826e+06,     -11339.9],
-    #     [-10709.8,     -11339.9,     -82.2568]])
-    # C = np.linalg.inv(dC)
-    # C = C/C[-1,-1]
-    # print("C1: ", C)
-    # # C = np.array([[6.93513e-05, -5.64969e-07,   -0.0089516],
-    # #                 [-5.64969e-07,  8.15752e-06,  -0.00105104],
-    # #                 [-0.0089516,  -0.00105104,            1]])
-    # # print("C2: ", C)
-    # c = quadricslam.DualConic(dC)
-    # print('bounds: ', c.bounds().vector())
-
-    # # a = C[0,0]; b = C[1,0]*2.0; c = C[1,1]
-    # # d = C[2,0]*2.0; e = C[2,1]*2.0; f = C[2,2]
-    # # conic_det = C[0,0]*((C[1,1]*C[2,2]) - 
-	# # 			 (C[2,1]*C[1,2])) -C[0,1]*(C[1,0]*C[2,2] - 
-	# # 			  C[2,0]*C[1,2]) + C[0,2]*(C[1,0]*C[2,1] - C[2,0]*C[1,1])
-    # # n = -1*(int(conic_det > 0.0) - int(conic_det < 0.0))
-    # # ecc = np.sqrt((2.0*np.sqrt((a-c)**2+b**2))/(n*(a+c)+np.sqrt((a-c)**2+b**2)))
-    # # print(conic_det, n, ecc)
-
-
-    # def get_points_at_x(C, x):
-    #     poly = [C[1,1],
-    #             2*C[0,1]*x + 2*C[1,2],
-    #             C[0,0]*x*x + 2*C[0,2]*x + C[2,2]]
-    #     disc = poly[1]**2 - 4.0*poly[0]*poly[2]
-    #     print(disc)
-    #     roots = np.roots(poly)
-    #     return roots
-
-    # def get_points_at_y(C, y):
-    #     poly = [C[0,0],
-    #             2*C[0,1]*y + 2*C[0,2],
-    #             C[1,1]*y*y + 2*C[1,2]*y + C[2,2]]
-    #     disc = poly[1]**2 - 4.0*poly[0]*poly[2]
-    #     print(disc)
-    #     roots = np.roots(poly)
-    #     return roots
-    
-    # bounds = c.bounds().vector()
-    # # p1ys = 
-    # print(get_points_at_x(C, bounds[0]))
-    # # p2xs = 
-    # print(get_points_at_y(C, bounds[1]))
-    # # p3ys = 
-    # print(get_points_at_x(C, bounds[2]))
-    # # p4xs = 
-    # print(get_points_at_y(C, bounds[3]))
-
-    # print(c.smartBounds(calibration).vector())
-
-    # dC = np.array([[-4.1379e+06, 2.13677e+07,    -12504.5],
-    #                 [2.13677e+07, -1.0932e+08,     63999.2],
-    #                 [-12504.5,     63999.2,     -37.455]])
-    # conic = quadricslam.DualConic(dC)
-
-    qv = np.array([-5.34054,    3.89165,   -8.37635,  -0.306262,   0.203986,  -0.010365,   0.544028,  0.0982984, -0.0842678])
-    quadric = quadricslam.ConstrainedDualQuadric(qv)
-    # quadric.fullyVisible()
-    # quadric.partiallyVisible()
-    # quadric.notVisible()
-    # Drawing.mpl_draw_conic(dC)
-    plt.show()
-
-
 if __name__ == '__main__':
     np.random.seed(121)
 
-    # trainval = 'train'
-    # dataset_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}'.format(trainval)
-    # protobuf_folder = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}_protobufs'.format(trainval)
-    # reader_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py'
-    # dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path)
-    # System.run(dataset[0])
-
-    # test_conic_bounds()
+    trainval = 'train'
+    dataset_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}'.format(trainval)
+    protobuf_folder = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}_protobufs'.format(trainval)
+    reader_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py'
+    dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path)
+    System.run(dataset[0])
 
     sequence = ManualSequence.sequence1()
     System.run(sequence)
 
-    # for i in range(10):
-    #     System.run(sequence)
 
-
-
-    # test graph
-    # of = gtsam.BetweenFactorPose3(gtsam.symbol(ord('x'),3), gtsam.symbol(ord('x'),4), gtsam.Pose3(), gtsam.noiseModel_Diagonal.Sigmas(np.array([1.,2,3,4,5,6])))
-    # bbf = quadricslam.BoundingBoxFactor(quadricslam.AlignedBox2(0.,1.,2.,3.), gtsam.Cal3_S2(), np.array([320.,240.]), gtsam.symbol(ord('x'),3), gtsam.symbol(ord('q'),1), gtsam.noiseModel_Diagonal.Sigmas(np.array([1.]*4)))
-    # graph = gtsam.NonlinearFactorGraph()
-
-    # graph.add(of)
-    # # graph.add(bbf)
-    # bbf.addToGraph(graph)
-    # graph.add(of)
-
-    # print(graph.at(0))
-    # print(graph.at(1))
-    # print(graph.at(2))
-
-    # import code
-    # code.interact(local=locals())
-
-    # print(quadricslam.BoundingBoxFactor.getFromGraph(graph, 0))
-    # print(quadricslam.BoundingBoxFactor.getFromGraph(graph, 1))
-    # print(quadricslam.BoundingBoxFactor.getFromGraph(graph, 2))
-
-    # for i in range(3):
-    #     print(graph.exists(i))
-    #     print(quadricslam.BoundingBoxFactor.getFromGraph(graph, 1))
-    #     print(graph.at(i))
-    
 
 
