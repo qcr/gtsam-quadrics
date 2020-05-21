@@ -127,7 +127,7 @@ class System(object):
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)
 
         # plot initial estimate
-        # Drawing.plot_problem(graph, initial_estimate, calibration)
+        Drawing.plot_problem(graph, initial_estimate, calibration)
 
         # run optimizer
         print('starting optimization')
@@ -301,6 +301,14 @@ class System(object):
 
 
 if __name__ == '__main__':
+    """
+    Options:
+    - manual / scenenet 
+    - seed 
+    - sigmas (odom, box)
+    - noise (odom, box, quadrics)
+    - quadric init (svd, dataset)
+    """
     np.random.seed(121)
 
     trainval = 'train'

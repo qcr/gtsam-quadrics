@@ -19,6 +19,14 @@ To enable the python interface:
 * Repeat the steps above to build the library
 * Add quadricslam/build/cython/ to PYTHONPATH or move
 
+## build targets ##
+
+* make
+* make clean
+* make check
+* make examples
+* make doc
+* make doc_clean
 
 ## Dependencies ##
 Core C++ 
