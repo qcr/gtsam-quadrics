@@ -17,9 +17,8 @@
 
 #pragma once
 
-#include <quadricslam/base/Noise.h>
-
 #include <gtsam/base/Matrix.h>
+#include <gtsam/geometry/Pose3.h>
 
 #include <vector>
 
