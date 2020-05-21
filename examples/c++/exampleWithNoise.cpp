@@ -15,6 +15,15 @@
  * @brief code to operate the quadric slam library on a dataset
  */
 
+/**
+ * A simple example with multiple camera positions and quadric landmarks
+ *  - The robot moves in a circle around two objects
+ *  - We have the noisy object detections from each pose 
+ *  - We have the noisy odometry from the IMU
+ *  - We can calculate an initial trajectory estimate
+ *  - We have some way of gaining an initial estimate for each quadric
+ */
+
 #include <quadricslam/geometry/ConstrainedDualQuadric.h>
 #include <quadricslam/geometry/AlignedBox2.h>
 #include <quadricslam/geometry/QuadricCamera.h>
