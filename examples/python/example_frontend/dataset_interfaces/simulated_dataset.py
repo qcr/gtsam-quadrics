@@ -63,7 +63,7 @@ class ManualSequence(object):
                 # print(raw_box.vector())
 
                 # only add boxes that project inside fov completely
-                if image_box.completelyContains(raw_box):
+                if image_box.contains(raw_box):
                     boxes.add(raw_box, pose_key, object_key)
 
                 # correctly project partials to screen dimensions

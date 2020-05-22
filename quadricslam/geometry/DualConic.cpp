@@ -116,7 +116,7 @@ AlignedBox2 DualConic::smartBounds(const boost::shared_ptr<Cal3_S2>& calibration
   double p4_y = bounds.ymax();
 
   AlignedBox2 fov_box(0, 0, 2.0*calibration->px(), 2.0*calibration->py());
-  if (!fov_box.contains(bounds)) {
+  if (!fov_box.containsOrIntersects(bounds)) {
     throw QuadricProjectionException("no valid conic points inside screen dimensions, implies quadric not visible");
   }
   

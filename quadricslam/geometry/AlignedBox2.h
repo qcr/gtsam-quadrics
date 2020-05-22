@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/base/Testable.h>
 
 #include <vector>
 
@@ -41,17 +42,23 @@ namespace gtsam {
       /** Default constructor */
       AlignedBox2() : tlbr_(0,0,0,0) {};
       
-      /** Constructor from bounds */
-      AlignedBox2(const double& xmin, const double& ymin, const double& xmax, const double& ymax);
+      /** Constructor from doubles */
+      AlignedBox2(const double& xmin, const double& ymin, const double& xmax, const double& ymax) :
+        tlbr_(xmin, ymin, xmax, ymax) {};
 
       /**
        * Constructor from vector
        * @param tlbr vector of xmin,ymin,xmax,ymax (Vector4)
        */
-      AlignedBox2(const Vector4& tlbr);
+      AlignedBox2(const Vector4& tlbr) : 
+        tlbr_(tlbr) {};
+
+      /** Copy constructor */
+      AlignedBox2(const AlignedBox2& other) :
+        tlbr_(other.vector()) {};
 
       /// @}
-      /// @name Class methods
+      /// @name Class accessors
       /// @{
 
       /** Get xmin */
@@ -75,6 +82,10 @@ namespace gtsam {
       /** Returns Point2(xmax, ymax) */
       Point2 maxPoint() const {return Vector2(xmax(), ymax());}
 
+      /// @}
+      /// @name Class methods
+      /// @{
+
       /** Returns equation of boxes lines */
       std::vector<Vector3> lines() const;
 
@@ -84,19 +95,14 @@ namespace gtsam {
        */
       bool contains(const Point2& point) const;
 
-      /** 
-       * Returns true if this completely contains or intersects other
-       */
+      /** Returns true if this completely contains other box */
       bool contains(const AlignedBox2& other) const;
-
-      /** 
-       * Returns true if this completely contains other box 
-       * Lines ontop of eachother are considered containing
-      */
-      bool completelyContains(const AlignedBox2& other) const;
 
       /** Returns true if this intersects other box */
       bool intersects(const AlignedBox2& other) const;
+
+      /** Returns true if this completely or partially contains other */
+      bool containsOrIntersects(const AlignedBox2& other) const;
 
       /// @}
       /// @name Testable group traits
@@ -111,11 +117,9 @@ namespace gtsam {
       /// @}
   };
 
-  // Add dimensions for expressions
+  // Add to testable group 
   template <>
-  struct traits<AlignedBox2> {
-    enum { dimension = 4 };
-  };
+  struct traits<AlignedBox2> : public Testable<AlignedBox2> {};
 
   // Add vector<> typedef for python wrapper
   typedef std::vector<Vector3> Vector3Vector;

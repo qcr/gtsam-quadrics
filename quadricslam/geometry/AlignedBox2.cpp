@@ -22,17 +22,6 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-AlignedBox2::AlignedBox2(const double& xmin, const double& ymin, const double& xmax, const double& ymax) {
-  tlbr_ = (Vector4() << xmin, ymin, xmax, ymax).finished();
-}
-
-/* ************************************************************************* */
-// TODO: ensure correct dim order, box has width
-AlignedBox2::AlignedBox2(const Vector4& tlbr) {
-  tlbr_ = Vector4(tlbr);
-}
-
-/* ************************************************************************* */
 Vector4 AlignedBox2::vector() const {
   return tlbr_;
 }
@@ -57,19 +46,8 @@ bool AlignedBox2::contains(const Point2& point) const {
 }
 
 /* ************************************************************************* */
-bool AlignedBox2::completelyContains(const AlignedBox2& other) const {
-  if (this->contains(other.minPoint()) && this->contains(other.maxPoint())) {
-    return true;
-  }
-  return false;
-}
-
-/* ************************************************************************* */
 bool AlignedBox2::contains(const AlignedBox2& other) const {
-  int n_corners = 0;
-  if (this->contains(other.minPoint())) { n_corners++;}
-  if (this->contains(other.maxPoint())) { n_corners++;}
-  if (n_corners > 0) {
+  if (this->contains(other.minPoint()) && this->contains(other.maxPoint())) {
     return true;
   }
   return false;
@@ -81,6 +59,17 @@ bool AlignedBox2::intersects(const AlignedBox2& other) const {
   if (this->contains(other.minPoint())) { n_corners++;}
   if (this->contains(other.maxPoint())) { n_corners++;}
   if (n_corners == 1) {
+    return true;
+  }
+  return false;
+}
+
+/* ************************************************************************* */
+bool AlignedBox2::containsOrIntersects(const AlignedBox2& other) const {
+  int n_corners = 0;
+  if (this->contains(other.minPoint())) { n_corners++;}
+  if (this->contains(other.maxPoint())) { n_corners++;}
+  if (n_corners > 0) {
     return true;
   }
   return false;
