@@ -27,16 +27,6 @@ AlignedBox3::AlignedBox3(const double& xmin, const double& xmax, const double& y
 }
 
 /* ************************************************************************* */
-AlignedBox3::AlignedBox3(const Vector6& xxyyzz) {
-  xxyyzz_ = Vector6(xxyyzz);
-}
-
-/* ************************************************************************* */
-Vector6 AlignedBox3::vector() const {
-  return xxyyzz_;
-}
-
-/* ************************************************************************* */
 Vector3 AlignedBox3::dimensions() const {
   return (Vector3() << xmax()-xmin(), ymax()-ymin(), zmax()-zmin()).finished();
 }
