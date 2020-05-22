@@ -30,8 +30,10 @@ namespace gtsam {
 
   /**
    * @class BoundingBoxFactor
-   * AlignedBox3 factor between pose3 and ConstrainedDualQuadric, constrains quadric by 
-   * projecting quadric into image plane at each view
+   * AlignedBox3 factor between Pose3 and ConstrainedDualQuadric
+   * Projects the quadric at the current pose estimates,
+   * Calculates the bounds of the dual conic, 
+   * and compares this to the measured bounding box.
    */
   class BoundingBoxFactor : public NoiseModelFactor2<Pose3, ConstrainedDualQuadric> {
 
@@ -42,50 +44,73 @@ namespace gtsam {
 
     public:
 
+      /// @name Constructors and named constructors
+      /// @{
+
       /** Default constructor */
-      BoundingBoxFactor() {};
+      BoundingBoxFactor() :
+        measured_(0.,0.,0.,0.) {};
 
       /** Constructor from measured box, calbration, dimensions and posekey, quadrickey, noisemodel */
       BoundingBoxFactor(const AlignedBox2& measured, const boost::shared_ptr<Cal3_S2>& calibration, 
       const Key& poseKey, const Key& quadricKey, const SharedNoiseModel& model) : 
           Base(model, poseKey, quadricKey), measured_(measured), calibration_(calibration) {};
 
-      /** Get key1 from base */
+      /** Copy constructor */
+      BoundingBoxFactor(const BoundingBoxFactor& other) :
+        Base(other.noiseModel(), other.poseKey(), other.objectKey()), 
+        measured_(other.measured_), calibration_(other.calibration_) {};
+
+      /// @}
+      /// @name Class accessors
+      /// @{
+
+      /** Returns the measured bounding box */
       AlignedBox2 measurement() const { return AlignedBox2(measured_.vector());}
 
-      /** Get key1 from base */
+      /** Returns the pose key */
       Key poseKey() const { return key1();}
 
-      /** Get key2 from base */
+      /** Returns the object/landmark key */
       Key objectKey() const { return key2();}
+
+      /// @}
+      /// @name Class methods
+      /// @{
 
       /**
        * Evaluate the error between a quadric and 3D pose
-       * @param pose the 3D camera position
-       * @param quadric the quadric
-       * @param H1 the derivative of the error wrt pose (4x6)
+       * @param pose the 6DOF camera position
+       * @param quadric the constrained dual quadric
+       * @param H1 the derivative of the error wrt camera pose (4x6)
        * @param H2 the derivative of the error wrt quadric (4x9)
        */
       Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric,
 			  boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const;      
 
-      /** Add to graph */
+      /** 
+       * Add this factor to given graph 
+       */
       void addToGraph(NonlinearFactorGraph& graph);
 
-      /** Get from graph */
+      /** 
+       * Retrieve factor from graph at index
+       */
       static BoundingBoxFactor getFromGraph(const NonlinearFactorGraph& graph, size_t idx);
 
-      /** Prints the dual quadric with optional string */
+      /// @}
+      /// @name Testable group traits
+      /// @{
+
+      /** Prints the boundingbox factor with optional string */
       void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
-      /** Compares two ellipsoids */
+      /** Returns true if equal keys, measurement, noisemodel and calibration */
       bool equals(const BoundingBoxFactor& other, double tol = 1e-9) const;
   };
 
-  // declare dimensions of calibration pointer for expressions
+  // Add to testable group 
   template <>
-  struct traits<boost::shared_ptr<Cal3_S2>> {
-    enum { dimension = 5};
-  };
+  struct traits<BoundingBoxFactor> : public Testable<BoundingBoxFactor> {};
 
 } // namespace gtsam
