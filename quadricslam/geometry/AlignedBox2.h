@@ -74,7 +74,7 @@ namespace gtsam {
       double ymax() const { return tlbr_[3];}
 
       /** Returns box in xmin,ymin,xmax,ymax vector */
-      Vector4 vector() const;
+      Vector4 vector() const { return tlbr_;};
 
       /** Returns Point2(xmin, ymin) */
       Point2 minPoint() const {return Vector2(xmin(), ymin());}

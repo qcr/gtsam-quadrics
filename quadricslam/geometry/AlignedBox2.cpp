@@ -22,11 +22,6 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Vector4 AlignedBox2::vector() const {
-  return tlbr_;
-}
-
-/* ************************************************************************* */
 std::vector<Vector3> AlignedBox2::lines() const {
   std::vector<Vector3> mLines; 
   mLines.push_back(Vector3(1, 0, -tlbr_[0]));
