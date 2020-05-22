@@ -40,11 +40,6 @@ DualConic::DualConic() {
 }
 
 /* ************************************************************************* */
-DualConic::DualConic(const Matrix33& dC) {
-  dC_ = dC;
-}
-
-/* ************************************************************************* */
 DualConic::DualConic(const Pose2& pose, const Vector2& radii) {
   Matrix33 Z = pose.matrix();
   Matrix33 Cc = (Vector3() << (radii).array().pow(2), -1.0).finished().asDiagonal();
@@ -53,19 +48,14 @@ DualConic::DualConic(const Pose2& pose, const Vector2& radii) {
 }
 
 /* ************************************************************************* */
-Matrix33 DualConic::matrix(void) const {
-  return dC_;
-}
-
-/* ************************************************************************* */
 DualConic DualConic::normalize(void) const {
   return DualConic(dC_/dC_(2,2));
 }
 
 /* ************************************************************************* */
-// TODO: assert conic is closed (eccentricity)
-// assert bounds are real-valued
-// normalize conic
+/// TODO: assert conic is closed (eccentricity)
+/// assert bounds are real-valued
+/// normalize conic
 AlignedBox2 DualConic::bounds(OptionalJacobian<4,9> H) const {
   double xmin = (dC_(0,2) + sqrt(dC_(0,2)*dC_(0,2)-dC_(2,2)*dC_(0,0))) / dC_(2,2);
   double xmax = (dC_(0,2) - sqrt(dC_(0,2)*dC_(0,2)-dC_(2,2)*dC_(0,0))) / dC_(2,2);
@@ -206,12 +196,12 @@ AlignedBox2 DualConic::smartBounds(const boost::shared_ptr<Cal3_S2>& calibration
 }
 
 /* ************************************************************************* */
-/// TODO: float compare, what eps?
-/// ^ det should be exactly 0.0 in degenerate case
-/// ^ and is often 1e-15 unnormalized and 1e-10 normalized
 bool DualConic::isDegenerate(void) const {
   Matrix33 C = dC_.inverse();
-  return C.determinant() == 0.0;
+  if (C.determinant() == 0.0 || C.array().isInf().any() || C.array().isNaN().any()) {
+    return true;
+  }
+  return false;
 }
 
 /* ************************************************************************* */
