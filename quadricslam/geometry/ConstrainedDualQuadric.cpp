@@ -171,9 +171,7 @@ Vector9 ConstrainedDualQuadric::localCoordinates(const ConstrainedDualQuadric& o
 /* ************************************************************************* */
 void ConstrainedDualQuadric::print(const std::string& s) const {
   cout << s;
-  cout << "QuadricPose\n" << pose_.matrix() << endl;
-  cout << "QuadricRadii: " << radii_.transpose() << endl;
-  cout << "QuadricMatrix\n" << this->matrix() << endl;
+  cout << this->matrix() << endl;
 }
 
 /* ************************************************************************* */
