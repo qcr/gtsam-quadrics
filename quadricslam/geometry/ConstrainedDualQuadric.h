@@ -135,15 +135,15 @@ namespace gtsam {
       static Vector9 LocalCoordinates(const ConstrainedDualQuadric& q);
 
       /**
-       * The retract function
-       * @param v vector in tangent space (change in latent dims)
-       * @return dual ellipsoid on the manifold
+       * Moves from this by v in tangent space, then retracts back to a quadric
+       * @param v displacement vector in tangent space
+       * @return ConstrainedDualQuadric on the manifold 
        */
       ConstrainedDualQuadric retract(const Vector9& v) const;
 
       /**
-       * The local function
-       * @param dE dual ellipsoid on the manifold
+       * Calculates the distance in tanget space between two quadrics on the manifold
+       * @param other another ConstrainedDualQuadric
        * @return vector between ellipsoids in tangent space
        */
       Vector9 localCoordinates(const ConstrainedDualQuadric& other) const;
@@ -161,7 +161,7 @@ namespace gtsam {
       /** Prints the dual quadric with optional string */
       void print(const std::string& s = "") const;
 
-      /** Compares two ellipsoids */
+      /** Compares two ConstrainedDualQuadrics */
       /// TODO: account for scaling by normalizing quadric
       bool equals(const ConstrainedDualQuadric& other, double tol = 1e-9) const;
 
