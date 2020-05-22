@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <quadricslam/geometry/AlignedBox3.h>
+
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/geometry/Cal3_S2.h>
@@ -57,7 +59,8 @@ namespace gtsam {
        * @param pose quadric pose (Pose3)
        * @param radii quadric radii (Vector3)
        */
-      ConstrainedDualQuadric(const Pose3& pose, const Vector3& radii);
+      ConstrainedDualQuadric(const Pose3& pose, const Vector3& radii) : 
+        pose_(pose), radii_(radii) {};
 
       /**
        * Constructor from rotation, translation and shape
@@ -65,7 +68,8 @@ namespace gtsam {
        * @param t quadric translation (Point3)
        * @param r quadric radii (Vector3)
        */
-      ConstrainedDualQuadric(const Rot3& R, const Point3& t, const Vector3& r);
+      ConstrainedDualQuadric(const Rot3& R, const Point3& t, const Vector3& r) :
+        pose_(Pose3(R,t)), radii_(r) {};
 
       /** 
        * Constrains a generic dual quadric surface to be ellipsoidal
@@ -74,26 +78,28 @@ namespace gtsam {
       static ConstrainedDualQuadric constrain(const Matrix4& dual_quadric);
 
       /// @}
-      /// @name Class methods
+      /// @name Class accessors
       /// @{
 
       /** Get pose, avoid computation with it */
-      Pose3 getPose(void) const {return pose_;}
+      Pose3 pose(void) const {return pose_;}
 
       /** Get quadric radii, avoid computation with it */
-      Vector3 getRadii(void) const {return radii_;}
+      Vector3 radii(void) const {return radii_;}
 
       /** Get quadric centroid */
       Point3 centroid(void) const {return pose_.translation();}
+
+      /// @}
+      /// @name Class methods
+      /// @{
 
       /**
        * Constructs 4x4 quadric matrix from pose & radii
        * Q = Z * Qc * Z.T
        * Z = quadric pose in global frame
-       * Qc = centered dualquadric
-       *     diagonal matrix of shape (s1^2, s2^2, s3^2, -1)
+       * Qc = centered dualquadric diagonal matrix of shape (s1^2, s2^2, s3^2, -1)
        * where s1,s2,s3 are the radius of each axis on the ellipse
-       * hence (s1,s2,s3) = (r1,r2,r3) 
        * see Nicholson et. al 2019 QuadricSLAM for full details
        * @return 4x4 constrained quadric
        */
@@ -106,12 +112,15 @@ namespace gtsam {
        * Calculates the AlignedBox3 bounds of the ellipsoid
        * @return 3D axis aligned bounding box
        */ 
-      Vector6 bounds() const;
+      AlignedBox3 bounds() const;
 
       /** Returns true if quadric centroid has negative depth */
       bool isBehind(const Pose3& cameraPose) const;
 
-      /** Returns true if quadric contains point */
+      /** 
+       * Returns true if quadric contains point 
+       * Points on the edge of the quadric are considered contained
+       */
       bool contains(const Pose3& cameraPose) const;
 
       /// @}

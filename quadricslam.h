@@ -67,12 +67,12 @@ class ConstrainedDualQuadric {
   ConstrainedDualQuadric(const Matrix& dQ);
   ConstrainedDualQuadric(const Pose3& pose, const Vector& radii);
   ConstrainedDualQuadric(const Rot3& R, const Point3& t, const Vector& r);
-  Pose3 getPose() const;
-  Vector getRadii() const;
+  Pose3 pose() const;
+  Vector radii() const;
   Point3 centroid() const;
   Matrix matrix() const;
   static ConstrainedDualQuadric constrain(const Matrix& dual_quadric);
-  Vector bounds() const;
+  gtsam::AlignedBox3 bounds() const;
   bool isBehind(const Pose3& cameraPose) const;
   bool contains(const Pose3& cameraPose) const;
   static ConstrainedDualQuadric Retract(const Vector& v);

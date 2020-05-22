@@ -39,19 +39,6 @@ ConstrainedDualQuadric::ConstrainedDualQuadric(const Matrix44& dQ) {
 }
 
 /* ************************************************************************* */
-// TODO: check dims > 0
-ConstrainedDualQuadric::ConstrainedDualQuadric(const Pose3& pose, const Vector3& radii) {
-  pose_ = pose;
-  radii_ = radii;
-}
-
-/* ************************************************************************* */
-ConstrainedDualQuadric::ConstrainedDualQuadric(const Rot3& R, const Point3& t, const Vector3& r) {
-  pose_ = Pose3(R, t);
-  radii_ = r;
-}
-
-/* ************************************************************************* */
 ConstrainedDualQuadric ConstrainedDualQuadric::constrain(const Matrix4& dual_quadric) {
 
   // normalize if required
@@ -124,8 +111,8 @@ Matrix44 ConstrainedDualQuadric::normalizedMatrix(void) const {
 
 
 /* ************************************************************************* */
-// TODO: vectorize, use AlignedBox3
-Vector6 ConstrainedDualQuadric::bounds() const {
+// TODO: vectorize
+AlignedBox3 ConstrainedDualQuadric::bounds() const {
   Matrix44 dE = this->matrix();
   double x_min = (dE(0,3) + std::sqrt(dE(0,3) * dE(0,3) - (dE(0,0) * dE(3,3)))) / dE(3,3);
   double y_min = (dE(1,3) + std::sqrt(dE(1,3) * dE(1,3) - (dE(1,1) * dE(3,3)))) / dE(3,3);
@@ -133,12 +120,12 @@ Vector6 ConstrainedDualQuadric::bounds() const {
   double x_max = (dE(0,3) - std::sqrt(dE(0,3) * dE(0,3) - (dE(0,0) * dE(3,3)))) / dE(3,3);
   double y_max = (dE(1,3) - std::sqrt(dE(1,3) * dE(1,3) - (dE(1,1) * dE(3,3)))) / dE(3,3);
   double z_max = (dE(2,3) - std::sqrt(dE(2,3) * dE(2,3) - (dE(2,2) * dE(3,3)))) / dE(3,3);
-  return (Vector6() << x_min, y_min, z_min, x_max, y_max, z_max).finished();
+  return AlignedBox3((Vector6() << x_min, y_min, z_min, x_max, y_max, z_max).finished());
 }
 
 /* ************************************************************************* */
 bool ConstrainedDualQuadric::isBehind(const Pose3& cameraPose) const {
-  Pose3 rpose = cameraPose.between(this->getPose());
+  Pose3 rpose = cameraPose.between(this->pose());
   if (rpose.z() < 0.0) { return true;}
   return false;
 }
@@ -147,7 +134,7 @@ bool ConstrainedDualQuadric::isBehind(const Pose3& cameraPose) const {
 bool ConstrainedDualQuadric::contains(const Pose3& cameraPose) const {
   Vector4 cameraPoint = (Vector4() << cameraPose.translation().vector(), 1.0).finished();
   double pointError = cameraPoint.transpose() * this->matrix().inverse() * cameraPoint;
-  if (pointError < 0.0) { return true;}
+  if (pointError <= 0.0) { return true;}
   return false;
 }
 

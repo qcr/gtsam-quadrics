@@ -118,8 +118,8 @@ int main(void) {
 
         Vector9 eigenNoise(noiseVector.data());
         Pose3 delta = Pose3::Retract(eigenNoise.head<6>());
-        Pose3 noisyPose = quadric.getPose().compose(delta);
-        Vector3 noisyRadii = quadric.getRadii() + eigenNoise.tail<3>();
+        Pose3 noisyPose = quadric.pose().compose(delta);
+        Vector3 noisyRadii = quadric.radii() + eigenNoise.tail<3>();
 
         noisyQuadrics.push_back(ConstrainedDualQuadric(noisyPose, noisyRadii));
     }

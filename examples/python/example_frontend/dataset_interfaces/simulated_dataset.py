@@ -38,7 +38,7 @@ class ManualSequence(object):
         """
 
         # generate camera poses looking at a quadric 
-        target = quadrics[0].getPose().translation()
+        target = quadrics[0].pose().translation()
         poses = [gtsam.SimpleCamera.Lookat(point, target, gtsam.Point3(0,0,1)).pose() for point in points]
 
         # interpolate poses into trajectory

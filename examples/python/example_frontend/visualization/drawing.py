@@ -49,8 +49,8 @@ class Drawing(object):
             plt.text(pose.x(), pose.y(), 'x{}'.format(pose_key))
 
         for object_key, quadric in estimated_quadrics.items():
-            plt.plot(quadric.getPose().x(), quadric.getPose().y(), marker='o', markersize=3, color='m')
-            plt.text(quadric.getPose().x(), quadric.getPose().y(), 'q{}'.format(object_key))
+            plt.plot(quadric.pose().x(), quadric.pose().y(), marker='o', markersize=3, color='m')
+            plt.text(quadric.pose().x(), quadric.pose().y(), 'q{}'.format(object_key))
 
         plt.show()
 
@@ -72,7 +72,7 @@ class Drawing(object):
         
         for i, _quadrics in enumerate(quadrics):
             for quadric in _quadrics.data():
-                plt.plot(quadric.getPose().x(), quadric.getPose().y(), marker='o', markersize=3, c=colors[i], label='quads {}'.format(i))
+                plt.plot(quadric.pose().x(), quadric.pose().y(), marker='o', markersize=3, c=colors[i], label='quads {}'.format(i))
 
         plt.show()
 
@@ -119,8 +119,8 @@ class Drawing(object):
             
             # plot quadrics
             for quadric in quadrics.data():
-                plt.plot(quadric.getPose().x(), quadric.getPose().y(), marker='o', markersize=5, c='m', fillstyle='none')
-                plt.plot(quadric.getPose().x(), quadric.getPose().y(), marker='o', markersize=5, c='m', alpha=0.5)
+                plt.plot(quadric.pose().x(), quadric.pose().y(), marker='o', markersize=5, c='m', fillstyle='none')
+                plt.plot(quadric.pose().x(), quadric.pose().y(), marker='o', markersize=5, c='m', alpha=0.5)
 
             # highlight specific pose
             # pose = trajectory.at(pose_key)
@@ -194,11 +194,11 @@ class Drawing(object):
 
     @staticmethod
     def generate_uv_spherical(quadric, pose, calibration, theta_points=30, phi_points=30):
-        rotation = quadric.getPose().rotation().matrix()
-        translation = quadric.getPose().translation().vector()
+        rotation = quadric.pose().rotation().matrix()
+        translation = quadric.pose().translation().vector()
 
         # Radii corresponding to the coefficients:
-        rx, ry, rz = quadric.getRadii()
+        rx, ry, rz = quadric.radii()
 
         # Set of all spherical angles:
         u = np.linspace(0, 2 * np.pi, theta_points)
