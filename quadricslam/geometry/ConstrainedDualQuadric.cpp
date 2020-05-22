@@ -137,17 +137,6 @@ Vector6 ConstrainedDualQuadric::bounds() const {
 }
 
 /* ************************************************************************* */
-ConstrainedDualQuadric ConstrainedDualQuadric::addNoise(const Vector9& noiseVector) {
-  Pose3 poseDelta = Pose3::Retract(noiseVector.head<6>());
-  Vector3 radiiDelta = Vector3(noiseVector.tail<3>());
-
-  Pose3 noisyPose = pose_.compose(poseDelta);
-  Vector3 noisyRadii = radii_ + radiiDelta;
-
-  return ConstrainedDualQuadric(noisyPose, noisyRadii);    
-}
-
-/* ************************************************************************* */
 bool ConstrainedDualQuadric::isBehind(const Pose3& cameraPose) const {
   Pose3 rpose = cameraPose.between(this->getPose());
   if (rpose.z() < 0.0) { return true;}

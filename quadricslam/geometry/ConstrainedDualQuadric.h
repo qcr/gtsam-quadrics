@@ -108,9 +108,6 @@ namespace gtsam {
        */ 
       Vector6 bounds() const;
 
-      /* Adds noise using noise vector */
-      ConstrainedDualQuadric addNoise(const Vector9& noiseVector);
-
       /** Returns true if quadric centroid has negative depth */
       bool isBehind(const Pose3& cameraPose) const;
 

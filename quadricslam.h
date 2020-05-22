@@ -73,7 +73,6 @@ class ConstrainedDualQuadric {
   Matrix matrix() const;
   static ConstrainedDualQuadric constrain(const Matrix& dual_quadric);
   Vector bounds() const;
-  gtsam::ConstrainedDualQuadric addNoise(const Vector& noiseVector);
   bool isBehind(const Pose3& cameraPose) const;
   bool contains(const Pose3& cameraPose) const;
   static ConstrainedDualQuadric Retract(const Vector& v);
