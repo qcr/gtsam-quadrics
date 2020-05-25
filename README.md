@@ -3,6 +3,23 @@
 ## Description ##
 At it's core, quadricslam extends gtsam to provide support for optimizing quadric landmarks. We introduce constrained quadric landmarks on a manifold and the ability to optimize these landmarks when seen from multiple views using boundingbox measurements. We also provide a python interface and a number of c++ and python examples, including an [example python front-end](examples/python/README.md) which can load and run sequences from the SceneNetRGBD dataset (using ground truth data-association). 
 
+**Related Paper:**
+
+L. Nicholson, M. Milford and N. Sünderhauf, "QuadricSLAM: Dual Quadrics From Object Detections as Landmarks in Object-Oriented SLAM," in IEEE Robotics and Automation Letters, vol. 4, no. 1, pp. 1-8, Jan. 2019, doi: 10.1109/LRA.2018.2866205. [PDF](https://arxiv.org/abs/1804.04011).
+
+If you are using this library in academic work, please cite the [publication](https://ieeexplore.ieee.org/document/8440105):
+
+    @ARTICLE{8440105,
+      author={L. {Nicholson} and M. {Milford} and N. {Sünderhauf}},
+      journal={IEEE Robotics and Automation Letters}, 
+      title={QuadricSLAM: Dual Quadrics From Object Detections as Landmarks in Object-Oriented SLAM}, 
+      year={2019},
+      volume={4},
+      number={1},
+      pages={1-8},
+    }
+
+
 ### Bounding Box Factor ###
 We provide an implementation of a simple error function between quadric landmark and camera pose, although we plan to release the error function described in the paper in future. The key difference is that the simple error function calculates the bounds of the dual conic with no consideration for the image dimensions. Measurements where the objects bounds extend beyond the image boundaries generate a significant error even if the quadric is correctly fitting the object. In practice this means that the noise estimate for the boundingboxfactors should be overestimated. 
 
@@ -24,6 +41,13 @@ To enable the python interface:
 * Enable QSLAM_BUILD_PYTHON_WRAP in the CMakeLists.txt
 * Repeat the steps above to build the library
 * Add quadricslam/build/cython/ to PYTHONPATH or move to a location on your path
+
+The provided tests can be run using `make check`
+
+The provided examples can be compiled using `make examples`
+
+The doxygen generated documentation can be build using `make doc` and removed with `make doc_clean`
+
 
 ## Dependencies ##
 Core C++ 
@@ -54,17 +78,10 @@ Required to build Docs
 * Doxygen (`sudo apt-get install doxygen`)
 * epstopdf (`sudo apt-get install textlive-font-utils`)
 
-## Tests ##
+Required to test the example_frontend on SceneNetRGBD:
 
-The provided tests can be run using `make check`
-
-## Building C++ Examples ##
-
-The provided examples can be compiled using `make examples`
-
-## Generating Documentation ##
-
-The doxygen generated documentation can be build using `make doc` and removed with `make doc_clean`
+* [pySceneNetRGBD](https://github.com/jmccormac/pySceneNetRGBD)
+* [SceneNetRGBD Data](https://robotvault.bitbucket.io/scenenet-rgbd.html)
 
 ## Adding Variables and Factors to Graph / Values in Python ##
 
