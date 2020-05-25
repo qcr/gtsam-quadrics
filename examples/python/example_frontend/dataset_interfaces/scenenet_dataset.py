@@ -37,20 +37,22 @@ from visualization.interactive_player import InteractivePlayer
 
 class SceneNetDataset(object):
     """
-    Train: 16,000 videos
-    Val: 1,000 videos
+    This class is responsible for loading individual videos,
+    as well as the associated protobuf information. 
 
-    NOTE: VAL has bad light positions...
-    NOTE: VAL object vertices and boxes look okay..
+    
     """
-
-    def __init__(self, dataset_path, protobuf_folder, reader_path):
+    def __init__(self, dataset_path, protobuf_folder, reader_path, shapenet_path=None):
         """
-        :param - dataset_path - path to val or train data
-        :param - protobuf_folder - path to .pb protobufs
-        :param - reader_path - path to scenenet_pb2.py file
+        NOTE: assumes 'train' / 'val' in dataset_path folder name 
+
+        dataset_path = path/to/data/train
+        protobuf_folder = path/to/train_protobufs
+        reader_path = path/to/scenenet_pbt.py
+        shapenet_path = path/to/ShapeNetCode.v2/
         """
         self.dataset_path = dataset_path
+        self.shapenet_path = shapenet_path
     
         # load path to each video
         self.sequence_paths = self.load_sequence_paths(dataset_path)
@@ -74,7 +76,7 @@ class SceneNetDataset(object):
         """ load videos path and protofbuf data """
         sequence_path = self.sequence_paths[index]
         sequence_data = self.load_sequence_data(sequence_path)
-        sequence = SceneNetSequence(sequence_path, sequence_data, self.sn)
+        sequence = SceneNetSequence(sequence_path, sequence_data, self.sn, self.shapenet_path)
         return sequence
 
     def load_sequence_paths(self, dataset_path):
@@ -120,7 +122,6 @@ class SceneNetDataset(object):
 
     def load_sequence_data(self, sequence_path):
         """ pulls sequence data from storage or loads from file """
-        # load protobuf if required
         if (sequence_path not in self.sequences_data):
             self.load_protobuf(sequence_path)
         sequence_data = self.sequences_data[sequence_path]
@@ -128,6 +129,7 @@ class SceneNetDataset(object):
 
     @staticmethod
     def load_calibration():
+        """ calculates the intrinsic camera calibration """
         pixel_width = 320; pixel_height = 240
         vfov = 45; hfov = 60
         fx = (pixel_width/2.0)/math.tan(math.radians(hfov/2.0))
@@ -227,12 +229,16 @@ WNID_TO_NYU = {
 class SceneNetSequence(object):
     """ 
     Holds video information
-    Loads as required:
-    - 
+    sequence.image_paths -> list
+    sequence.images -> SmartImages
+    sequence.true_boxes -> Boxes
+    sequence.true_trajectory -> Trajectory
+    sequence.true_quadrics -> Quadrics
+    sequence.true_3D_bounds -> dict
     """
     calibration = SceneNetDataset.load_calibration()
-    def __init__(self, sequence_path, sequence_data, sn):
-        self.shapenet_path = '/media/feyre/DATA1/Datasets/ShapeNet/ShapeNetCore.v2'
+    def __init__(self, sequence_path, sequence_data, sn, shapenet_path):
+        self.shapenet_path = shapenet_path
         self.sequence_path = sequence_path
         self.sequence_data = sequence_data
         self.sn = sn
@@ -411,6 +417,10 @@ class SceneNetSequence(object):
     @cached_property
     def true_3D_bounds(self):
         """ Returns {object_key: AlignedBox3} for each object """
+        if self.shapenet_path is None:
+            raise RuntimeError("Attempted to retrieve true_3D_bounds when shapeNet path is not set." +
+                 " Ensure shapenet is installed and the path is provided to SceneNetDataset.")
+        
         boxes = {}
         for instance in self.sequence_data.instances:
 
@@ -495,6 +505,10 @@ class SceneNetSequence(object):
 
 
 class SmartImages(object):
+    """ 
+    Acts similarly to a list of cv2 images 
+    With the advantage that images are only loaded when accessed. 
+    """
     def __init__(self, image_paths):
         self.image_paths = image_paths
         
@@ -508,7 +522,20 @@ class SmartImages(object):
 
 
 
+
+
+
 class SceneNetPlayer(InteractivePlayer):
+    """ An interactive player that shows each video sequence 
+    By default, 3D boxes are drawn for all objects at each pose. 
+    
+    Controls: 
+        'a': previous pose
+        'd': next pose
+        'q': previous sequence
+        'e': next sequence 
+        'esc': close viewer
+    """
     def __init__(self, dataset, player_name='map_player'):
         super(SceneNetPlayer, self).__init__(player_name)
         self.dataset = dataset
@@ -544,13 +571,16 @@ class SceneNetPlayer(InteractivePlayer):
         # for (pose_key, object_key), box in image_boxes.items():
         #     drawing.box_and_text(box, (255,0,255), '{}'.format(object_key), (255,255,255))
 
-        # draw quadrics if visible
-        for object_key, quadric in quadrics.items():
-            if quadric.isBehind(current_pose):
-                continue
-            if quadric.contains(current_pose):
-                continue
-            drawing.quadric(current_pose, quadric, calibration)
+        # draw quadrics if:
+        # - infront of camera
+        # - camera not inside quadric
+        # - projected conic is visible
+        # for object_key, quadric in quadrics.items():
+        #     if quadric.isBehind(current_pose):
+        #         continue
+        #     if quadric.contains(current_pose):
+        #         continue
+        #     drawing.quadric(current_pose, quadric, calibration)
 
         # draw object 3D bounds
         for object_key, box3D in boxes_3D.items():
@@ -558,43 +588,6 @@ class SceneNetPlayer(InteractivePlayer):
 
         # show image
         cv2.imshow(self.player_name, image)
-
-    def draw_box(self, image, box, text):
-        box = box.vector()
-        color = (255,0,255)
-        thickness = 2
-        cv2.rectangle(image, (int(box[0]),int(box[1])), (int(box[2]),int(box[3])), color, thickness)
-        self.cv2_draw_text(image, text, (box[0]-thickness,box[1]-thickness), (255,255,255), True, (0,0,255), 3)
-
-    def cv2_draw_text(self, image, text, lower_left, color=(255,255,255), thickness=1, background=False, background_color=(0,0,255), background_margin=3):
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        font_scale = 0.5
-
-        lower_left = [lower_left[0]+background_margin, lower_left[1]-background_margin]
-        text_size = cv2.getTextSize(text, font, font_scale, thickness)
-        text_width = text_size[0][0] + background_margin * 2
-        text_height = text_size[0][1] + background_margin * 2
-        image_width = image.shape[1]
-        image_height = image.shape[0]
-
-        # lower_left = [upper_left[0], upper_left[1]+text_width]
-        final_position = list(lower_left)
-        final_position[1] = int(np.clip(lower_left[1], text_height, image_height))
-        final_position[0] = int(np.clip(lower_left[0], 0, image_width-text_width))
-        final_position = tuple(final_position)
-
-        if (background):
-            upper_left = [final_position[0], final_position[1]-text_height]
-            xmin = upper_left[0]-background_margin+1
-            ymin = upper_left[1]-background_margin+4
-            xmax = upper_left[0]+text_width+background_margin
-            ymax = upper_left[1]+text_height+background_margin+1
-            cv2.rectangle(image, (int(xmin), int(ymin)), (int(xmax), int(ymax)), background_color, cv2.FILLED)
-        cv2.putText(image, text, final_position, font, font_scale, color, thickness, cv2.LINE_AA)
-
-
-
-
 
 
 
@@ -609,7 +602,8 @@ if __name__ == '__main__':
     dataset_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}'.format(trainval)
     protobuf_folder = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}_protobufs'.format(trainval)
     reader_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py'
-    dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path)
+    shapenet_path = '/media/feyre/DATA1/Datasets/ShapeNet/ShapeNetCore.v2'
+    dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path, shapenet_path)
 
     player = SceneNetPlayer(dataset)
     player.start()
