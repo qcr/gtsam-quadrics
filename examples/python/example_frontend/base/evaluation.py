@@ -17,14 +17,6 @@ import numpy as np
 # import gtsam and extension
 import gtsam
 
-# modify system path so file will work when run directly or as a module
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-
-# import custom python modules
-sys.dont_write_bytecode = True
-from visualization.drawing import Drawing
-
-
 class Evaluation(object):
     @staticmethod
     def evaluate_trajectory(estimated_trajectory, true_trajectory, horn=True):
@@ -34,19 +26,10 @@ class Evaluation(object):
         else:
             aligned_trajectory = Evaluation.weak_align(estimated_trajectory, true_trajectory)
         
-        # Drawing.draw_results([estimated_trajectory, aligned_trajectory, true_trajectory], [], ['m', 'c', 'g'])
-
         # evaluate metrics
         rmse_ATE = Evaluation.ATE(aligned_trajectory, true_trajectory)
         rmse_RPE = Evaluation.RPE(aligned_trajectory, true_trajectory)
-        # print('         rmse_ATE:  {:.4f}m'.format(rmse_ATE))
-        # print('         rmse_RPE:  {:.4f}m'.format(rmse_RPE))
-        # for i in range(len(true_trajectory)):
-        #     r = Evaluation.window(aligned_trajectory, true_trajectory, i)
-        #     print('         rmse_WIN{}: {:.4f}m'.format(i, r))
         return [rmse_ATE, rmse_RPE]
-
-
 
     @staticmethod
     def ATE(trajectory1, trajectory2):
