@@ -66,17 +66,6 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     // evaluate error 
     Vector4 error = predictedBounds.vector() - measured_.vector();
 
-    // ensure error is never invalid
-    if (error.array().isInf().any() or error.array().isNaN().any()) {
-      cout << "Infinite error inside BBF" << endl;
-      cout << "Dual Conic:\n" << dualConic.matrix() << endl;
-      cout << "error: " << error.transpose() << endl;
-      pose.print("pose:\n");
-      quadric.print();
-      throw std::runtime_error("Infinite error inside BBF");
-    }
-
-
     if (NUMERICAL_DERIVATIVE) {
       boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
       if (H1) {
@@ -93,10 +82,6 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
         // combine partial derivatives 
         *H1 = db_dC * dC_dx;
-        if ((*H1).array().isInf().any() or (*H1).array().isNaN().any()) {
-          cout << "\nWARNING: (*H1) inf/nan\nH1:\n" << (*H1) << endl << endl;  
-          throw std::runtime_error("Infinite inside BBF H1");
-        }
       } 
       
       // calculate derivative of error wrt quadric
@@ -104,10 +89,6 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
         // combine partial derivatives 
         *H2 = db_dC * dC_dq; 
-        if ((*H2).array().isInf().any() or (*H2).array().isNaN().any()) {
-          cout << "\nWARNING: (*H2) inf/nan\nH1:\n" << (*H2) << endl << endl;  
-          throw std::runtime_error("Infinite inside BBF H2");
-        }
       }
 
     }
