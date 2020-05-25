@@ -42,7 +42,12 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
     // project quadric taking into account partial derivatives 
     Eigen::Matrix<double, 9,6> dC_dx; Eigen::Matrix<double, 9,9> dC_dq;
-    DualConic dualConic = QuadricCamera::project(quadric, pose, calibration_, H1?&dC_dq:0, H2?&dC_dx:0);
+    DualConic dualConic;
+    if (!NUMERICAL_DERIVATIVE) {
+      dualConic = QuadricCamera::project(quadric, pose, calibration_, H1?&dC_dq:0, H2?&dC_dx:0);
+    } else {
+      dualConic = QuadricCamera::project(quadric, pose, calibration_);
+    }
 
     // check dual conic is valid for error function
     if (!dualConic.isEllipse()) {
@@ -51,7 +56,12 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
     // calculate conic bounds with derivatives
     Eigen::Matrix<double, 4,9> db_dC;
-    AlignedBox2 predictedBounds = dualConic.bounds(H1||H2?&db_dC:0);
+    AlignedBox2 predictedBounds; 
+    if (!NUMERICAL_DERIVATIVE) {
+      predictedBounds = dualConic.bounds(H1||H2?&db_dC:0);
+    } else {
+      predictedBounds = dualConic.bounds();
+    }
 
     // evaluate error 
     Vector4 error = predictedBounds.vector() - measured_.vector();
