@@ -59,16 +59,6 @@ target_link_libraries(${CONVENIENCE_LIB_NAME} gtsam)
 # install(TARGETS ${CONVENIENCE_LIB_NAME} LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
 
 ###################################################################################
-## Build executables and link to our shared library. 
-
-# compile .exe files
-add_executable(main ./quadricslam/main.cpp)
-
-# link with gtsam (or recieve undefined refrences)
-target_link_libraries(main gtsam;${CONVENIENCE_LIB_NAME})
-
-
-###################################################################################
 # build examples if make examples
 # https://stackoverflow.com/questions/17765618/cmake-add-subdirectories-to-custom-target-and-adding-custom-target-to-vs-solut
 
