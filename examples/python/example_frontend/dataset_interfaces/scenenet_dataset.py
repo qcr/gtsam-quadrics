@@ -9,20 +9,31 @@ Description: Dataset interface
 Author: Lachlan Nicholson (Python)
 """
 
+# import standard libraries
 import os
+import cv2
 import sys
+import math
 import importlib
 import numpy as np
+from PIL import Image
+
+# import gtsam and extension
 import gtsam
-import cv2
-from containers import Boxes
-from containers import Trajectory
-from containers import Odometry
-from containers import Quadrics
 import quadricslam
 
+# modify system path so file will work when run directly or as a module
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+# import custom python modules
 sys.dont_write_bytecode = True
-from interactive_player import InteractivePlayer
+from base.containers import Boxes
+from base.containers import Trajectory
+from base.containers import Odometry
+from base.containers import Quadrics
+from visualization.drawing import CV2Drawing
+from visualization.interactive_player import InteractivePlayer
+
 
 class SceneNetDataset(object):
     """
@@ -129,8 +140,6 @@ class SceneNetDataset(object):
 
 
 
-
-
 class cached_property(object):
     """A decorator that converts a function into a lazy property.  The
     function wrapped is called the first time to retrieve the result
@@ -162,7 +171,6 @@ class cached_property(object):
 
 
 import re
-
 def natural_sort(list_data):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
@@ -210,8 +218,11 @@ WNID_TO_NYU = {
 	'02992529':7, '03222722':12, '04373704':4, '02851099':13, '04061681':10, '04529681':7,}
 
 
-import math
-from PIL import Image
+
+
+
+
+
 
 class SceneNetSequence(object):
     """ 
@@ -220,7 +231,6 @@ class SceneNetSequence(object):
     - 
     """
     calibration = SceneNetDataset.load_calibration()
-    image_dimensions = np.array([320., 240.])
     def __init__(self, sequence_path, sequence_data, sn):
         self.shapenet_path = '/media/feyre/DATA1/Datasets/ShapeNet/ShapeNetCore.v2'
         self.sequence_path = sequence_path
@@ -389,6 +399,19 @@ class SceneNetSequence(object):
         The problem with the latter is that vertices are not distributed evenly.
         """
         quadrics = Quadrics()
+        for object_key, box3D in self.true_3D_bounds.items():
+
+            # convert bounds to quadric
+            quadric = self.bounds_to_quadric(box3D)
+
+            # add to quadrics
+            quadrics.add(quadric, object_key)
+        return quadrics
+
+    @cached_property
+    def true_3D_bounds(self):
+        """ Returns {object_key: AlignedBox3} for each object """
+        boxes = {}
         for instance in self.sequence_data.instances:
 
             # only calculate for valid instances
@@ -401,12 +424,9 @@ class SceneNetSequence(object):
             # calculate 3D bounds of vertices
             bounds = self.vertices_bounds(vertices)
 
-            # convert bounds to quadric
-            quadric = self.bounds_to_quadric(bounds)
-
-            # add to quadrics
-            quadrics.add(quadric, int(instance.instance_id))
-        return quadrics
+            # add 3D bounds to dict
+            boxes[int(instance.instance_id)] = bounds
+        return boxes
 
     def bounds_to_quadric(self, bounds):
         radii = bounds.dimensions() / 2.0
@@ -496,15 +516,6 @@ class SceneNetPlayer(InteractivePlayer):
         self.image_index = 0
         self.sequence = self.dataset[self.video_index]
 
-    # def load_sequence(self, video_index):
-    #     self.sequence = self.dataset[self.video_index]
-    #     self.images = self.sequence.images
-    #     self.calibration = self.sequence.camera_intrinsics
-    #     self.trajectory = self.sequence.true_trajectory
-    #     self.object_bounds = self.sequence.instance_cuboids
-    #     self.object_verticies = self.sequence.instance_vertices
-    #     self.true_instances = self.sequence.true_instances
-
     def handle_input(self, key):
         if (key == 'a'):
             self.image_index = np.clip(self.image_index - 1, 0, len(self.sequence.images)-1)
@@ -524,10 +535,26 @@ class SceneNetPlayer(InteractivePlayer):
         image = self.sequence.images[self.image_index]
         current_pose = self.sequence.true_trajectory[self.image_index]
         image_boxes = self.sequence.true_boxes.at_pose(self.image_index)
+        quadrics = self.sequence.true_quadrics
+        calibration = self.sequence.calibration
+        boxes_3D = self.sequence.true_3D_bounds
+        drawing = CV2Drawing(image)
 
-        for (pose_key, object_key), box in image_boxes:
-            self.draw_box(image, box, text='{}'.format(object_key))
-            # drawing.cv2_draw_box_and_text(image, det.box.vector, box_color=(0,255,0), text='{}'.format(det.object_key), text_color=(0,0,0))
+        # draw boxes
+        # for (pose_key, object_key), box in image_boxes.items():
+        #     drawing.box_and_text(box, (255,0,255), '{}'.format(object_key), (255,255,255))
+
+        # draw quadrics if visible
+        for object_key, quadric in quadrics.items():
+            if quadric.isBehind(current_pose):
+                continue
+            if quadric.contains(current_pose):
+                continue
+            drawing.quadric(current_pose, quadric, calibration)
+
+        # draw object 3D bounds
+        for object_key, box3D in boxes_3D.items():
+            drawing.bounds_3D(box3D, current_pose, calibration)
 
         # show image
         cv2.imshow(self.player_name, image)

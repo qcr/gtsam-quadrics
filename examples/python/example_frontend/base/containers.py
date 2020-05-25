@@ -9,13 +9,19 @@ Description: Trajectory, Quadrics, Boxes, Odometry containers
 Author: Lachlan Nicholson (Python)
 """
 
+# import standard libraries
+import os
 import sys
-import gtsam
-from collections import defaultdict
 import numpy as np
+from collections import defaultdict
+
+# import gtsam and extension
+import gtsam
 import quadricslam
 
-sys.dont_write_bytecode = True
+# modify system path so file will work when run directly or as a module
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 
 X = lambda i: int(gtsam.symbol(ord('x'), i))
 Q = lambda i: int(gtsam.symbol(ord('q'), i))
@@ -44,6 +50,12 @@ class Trajectory(object):
         """ returns list of poses """
         return self._poses
 
+    def keys(self):
+        return list(range(len(self._poses)))
+
+    def at(self, key):
+        return self._poses[key]
+
     def at_keys(self, keys):
         """ returns a new trajectory only with these keys """
         return Trajectory([self._poses[key] for key in keys])
@@ -51,6 +63,10 @@ class Trajectory(object):
     def as_odometry(self):
         relative_poses = [self._poses[i].between(self._poses[i+1]) for i in range(len(self._poses)-1)]
         return Odometry(relative_poses)
+
+    def applyTransform(self, reference):
+        poses = [reference.transformPoseFrom(pose) for pose in self._poses]
+        return Trajectory(poses)
 
     def add_prior(self, graph, noisemodel):
         """ add prior X(0) to graph """
@@ -140,8 +156,14 @@ class Quadrics(object):
     def items(self):
         return list(self._quadrics.items())
 
+    def data(self):
+        return list(self._quadrics.values())
+
     def keys(self):
         return list(self._quadrics.keys())
+
+    def at(self, key):
+        return self._quadrics[key]
 
     # def add_estimates(self, values):
     #     """ add q if n bbfs > 3 """

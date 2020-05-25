@@ -17,9 +17,13 @@
 
 #pragma once
 
+#include <quadricslam/geometry/AlignedBox3.h>
+
 #include <gtsam/geometry/Pose3.h>
-#include <random>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/geometry/Cal3_S2.h>
+
+#include <random>
 
 namespace gtsam {
 
@@ -27,7 +31,7 @@ namespace gtsam {
    * @class ConstrainedDualQuadric
    * A constrained dual quadric (r,t,s): see Nicholson et al. 2019 for details
    */
-  class GTSAM_EXPORT ConstrainedDualQuadric {
+  class ConstrainedDualQuadric {
 
     protected:
       Pose3 pose_; ///< 3D pose of ellipsoid
@@ -55,7 +59,8 @@ namespace gtsam {
        * @param pose quadric pose (Pose3)
        * @param radii quadric radii (Vector3)
        */
-      ConstrainedDualQuadric(const Pose3& pose, const Vector3& radii);
+      ConstrainedDualQuadric(const Pose3& pose, const Vector3& radii) : 
+        pose_(pose), radii_(radii) {};
 
       /**
        * Constructor from rotation, translation and shape
@@ -63,65 +68,82 @@ namespace gtsam {
        * @param t quadric translation (Point3)
        * @param r quadric radii (Vector3)
        */
-      ConstrainedDualQuadric(const Rot3& R, const Point3& t, const Vector3& r);
+      ConstrainedDualQuadric(const Rot3& R, const Point3& t, const Vector3& r) :
+        pose_(Pose3(R,t)), radii_(r) {};
 
-      /* get pose, avoid computation with it */
-      Pose3 getPose(void) const {return pose_;}
+      /** 
+       * Constrains a generic dual quadric surface to be ellipsoidal
+       * @param dual_quadric 4x4 symmetric matrix (Matrix4)
+      */
+      static ConstrainedDualQuadric constrain(const Matrix4& dual_quadric);
 
-      /* get quadric radii, avoid computation with it */
-      Vector3 getRadii(void) const {return radii_;}
+      /// @}
+      /// @name Class accessors
+      /// @{
 
-      /* get quadric centroid */
+      /** Get pose, avoid computation with it */
+      Pose3 pose(void) const {return pose_;}
+
+      /** Get quadric radii, avoid computation with it */
+      Vector3 radii(void) const {return radii_;}
+
+      /** Get quadric centroid */
       Point3 centroid(void) const {return pose_.translation();}
+
+      /// @}
+      /// @name Class methods
+      /// @{
 
       /**
        * Constructs 4x4 quadric matrix from pose & radii
        * Q = Z * Qc * Z.T
        * Z = quadric pose in global frame
-       * Qc = centered dualquadric
-       *     diagonal matrix of shape (s1^2, s2^2, s3^2, -1)
+       * Qc = centered dualquadric diagonal matrix of shape (s1^2, s2^2, s3^2, -1)
        * where s1,s2,s3 are the radius of each axis on the ellipse
-       * hence (s1,s2,s3) = (r1,r2,r3) 
        * see Nicholson et. al 2019 QuadricSLAM for full details
        * @return 4x4 constrained quadric
        */
       Matrix44 matrix(OptionalJacobian<16,9> H = boost::none) const;
 
+      /** Returns the normalized dual quadric in matrix form */
+      Matrix44 normalizedMatrix(void) const;
+
       /**
        * Calculates the AlignedBox3 bounds of the ellipsoid
        * @return 3D axis aligned bounding box
        */ 
-      Vector6 bounds() const;
+      AlignedBox3 bounds() const;
 
-      /* Adds noise using noise vector */
-      ConstrainedDualQuadric addNoise(const Vector9& noiseVector);
+      /** Returns true if quadric centroid has negative depth */
+      bool isBehind(const Pose3& cameraPose) const;
+
+      /** 
+       * Returns true if quadric contains point 
+       * Points on the edge of the quadric are considered contained
+       */
+      bool contains(const Pose3& cameraPose) const;
 
       /// @}
       /// @name Manifold group traits
       /// @{
       enum { dimension = 9 };
 
-      /**
-       * The Retract at origin
-       */
+      /** The Retract at origin */
       static ConstrainedDualQuadric Retract(const Vector9& v);
 
-      /**
-       * The Local at origin
-       */
+      /** The Local at origin */
       static Vector9 LocalCoordinates(const ConstrainedDualQuadric& q);
 
-
       /**
-       * The retract function
-       * @param v vector in tangent space (change in latent dims)
-       * @return dual ellipsoid on the manifold
+       * Moves from this by v in tangent space, then retracts back to a quadric
+       * @param v displacement vector in tangent space
+       * @return ConstrainedDualQuadric on the manifold 
        */
       ConstrainedDualQuadric retract(const Vector9& v) const;
 
       /**
-       * The local function
-       * @param dE dual ellipsoid on the manifold
+       * Calculates the distance in tanget space between two quadrics on the manifold
+       * @param other another ConstrainedDualQuadric
        * @return vector between ellipsoids in tangent space
        */
       Vector9 localCoordinates(const ConstrainedDualQuadric& other) const;
@@ -129,6 +151,7 @@ namespace gtsam {
       /** Add quadric to values */
       void addToValues(Values &v, const Key& k);
 
+      /** Get Quadric from values */
       static ConstrainedDualQuadric getFromValues(const Values &v, const Key& k);
 
       /// @}
@@ -138,8 +161,10 @@ namespace gtsam {
       /** Prints the dual quadric with optional string */
       void print(const std::string& s = "") const;
 
-      /** Compares two ellipsoids */
+      /** Compares two ConstrainedDualQuadrics */
+      /// TODO: account for scaling by normalizing quadric
       bool equals(const ConstrainedDualQuadric& other, double tol = 1e-9) const;
+
       /// @}
   };
 

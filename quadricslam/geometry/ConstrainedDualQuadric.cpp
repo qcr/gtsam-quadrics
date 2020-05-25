@@ -15,10 +15,12 @@
  * @brief a constrained dual quadric 
  */
 
+#include <quadricslam/geometry/AlignedBox2.h>
 #include <quadricslam/geometry/ConstrainedDualQuadric.h>
-#include <quadricslam/base/NotImplementedException.h>
-#include <quadricslam/base/Jacobians.h>
+#include <quadricslam/geometry/QuadricCamera.h>
+#include <quadricslam/base/Utilities.h>
 
+#include <Eigen/Eigenvalues>
 #include <iostream>
 
 using namespace std;
@@ -33,21 +35,46 @@ ConstrainedDualQuadric::ConstrainedDualQuadric() {
 
 /* ************************************************************************* */
 ConstrainedDualQuadric::ConstrainedDualQuadric(const Matrix44& dQ) {
-  // TODO: implement
-  throw NotImplementedException();
+  *this = ConstrainedDualQuadric::constrain(dQ);
 }
 
 /* ************************************************************************* */
-// TODO: check dims > 0
-ConstrainedDualQuadric::ConstrainedDualQuadric(const Pose3& pose, const Vector3& radii) {
-  pose_ = pose;
-  radii_ = radii;
-}
+ConstrainedDualQuadric ConstrainedDualQuadric::constrain(const Matrix4& dual_quadric) {
 
-/* ************************************************************************* */
-ConstrainedDualQuadric::ConstrainedDualQuadric(const Rot3& R, const Point3& t, const Vector3& r) {
-  pose_ = Pose3(R, t);
-  radii_ = r;
+  // normalize if required
+  Matrix4 normalized_dual_quadric(dual_quadric);
+  if (dual_quadric(3,3) != 1.0) {
+    normalized_dual_quadric = dual_quadric/dual_quadric(3,3);
+  }
+
+  // extract translation
+  Point3 translation(normalized_dual_quadric.block(0,3,3,1));
+
+  // calculate the point quadric matrix
+  Matrix4 point_quadric = normalized_dual_quadric.inverse();
+  Matrix4 normalized_point_quadric = point_quadric;
+  if (point_quadric(3,3) != 1.0) {
+    normalized_point_quadric = point_quadric/point_quadric(3,3);
+  }
+
+  // extract shape
+  auto lambdaa = normalized_point_quadric.block(0,0,3,3).eigenvalues();
+  Vector3 shape = Eigen::sqrt(
+    -1.0*normalized_point_quadric.determinant() \
+    / normalized_point_quadric.block(0,0,3,3).determinant() \
+    *  1.0/lambdaa.array()  ).abs();
+
+  // extract rotation 
+  Eigen::EigenSolver<Eigen::Matrix<double,3,3>> s(normalized_point_quadric.block(0,0,3,3));
+  Matrix3 rotation_matrix = s.eigenvectors().real();
+
+  // ensure rotation is right-handed
+  if (!(fabs(1.0-rotation_matrix.determinant()) < 1e-8)) {
+    rotation_matrix *= -1.0 * Matrix3::Identity();
+  }
+  Rot3 rotation(rotation_matrix);
+
+  return ConstrainedDualQuadric(rotation, translation, shape);
 }
 
 /* ************************************************************************* */
@@ -57,32 +84,35 @@ Matrix44 ConstrainedDualQuadric::matrix(OptionalJacobian<16,9> dQ_dq) const {
   Matrix44 Q = Z * Qc * Z.transpose(); 
 
   if (dQ_dq) {
-    using namespace internal;
 
-    // NOTE: this will recalculate pose.matrix
-    // NOTE: pose.matrix derivative will also cost an extra Local()
     Eigen::Matrix<double, 16,6> dZ_dx;
-    internal::matrix(pose_, dZ_dx);
+    utils::matrix(pose_, dZ_dx); // NOTE: this will recalculate pose.matrix
     Eigen::Matrix<double, 16,9> dZ_dq = Matrix::Zero(16,9);
     dZ_dq.block(0,0,16,6) = dZ_dx;
-
 
     Eigen::Matrix<double, 16,9> dQc_dq = Matrix::Zero(16,9);
     dQc_dq(0,6) = 2.0 * radii_(0);
     dQc_dq(5,7) = 2.0 * radii_(1);
     dQc_dq(10,8) = 2.0 * radii_(2);
     
+    using utils::kron;
+    static Matrix4 I44 = Matrix::Identity(4,4);
+    static Eigen::Matrix<double, 16,16> T44 = utils::TVEC(4,4);
     *dQ_dq = kron(I44, Z*Qc) * T44 * dZ_dq  +  kron(Z, I44) * (kron(I44, Z)*dQc_dq + kron(Qc, I44)*dZ_dq);
-
-    // cout << "DEBUG dZ_dq: \n" << dZ_dq << endl << endl;
-    // cout << "DEBUG dQc_dq: \n" << dQc_dq << endl << endl;
   }
   return Q;
 }
 
 /* ************************************************************************* */
-// TODO: vectorize, use AlignedBox3
-Vector6 ConstrainedDualQuadric::bounds() const {
+Matrix44 ConstrainedDualQuadric::normalizedMatrix(void) const {
+  Matrix44 Q = this->matrix();
+  return Q/Q(3,3);
+}
+
+
+/* ************************************************************************* */
+// TODO: vectorize
+AlignedBox3 ConstrainedDualQuadric::bounds() const {
   Matrix44 dE = this->matrix();
   double x_min = (dE(0,3) + std::sqrt(dE(0,3) * dE(0,3) - (dE(0,0) * dE(3,3)))) / dE(3,3);
   double y_min = (dE(1,3) + std::sqrt(dE(1,3) * dE(1,3) - (dE(1,1) * dE(3,3)))) / dE(3,3);
@@ -90,18 +120,22 @@ Vector6 ConstrainedDualQuadric::bounds() const {
   double x_max = (dE(0,3) - std::sqrt(dE(0,3) * dE(0,3) - (dE(0,0) * dE(3,3)))) / dE(3,3);
   double y_max = (dE(1,3) - std::sqrt(dE(1,3) * dE(1,3) - (dE(1,1) * dE(3,3)))) / dE(3,3);
   double z_max = (dE(2,3) - std::sqrt(dE(2,3) * dE(2,3) - (dE(2,2) * dE(3,3)))) / dE(3,3);
-  return (Vector6() << x_min, y_min, z_min, x_max, y_max, z_max).finished();
+  return AlignedBox3((Vector6() << x_min, y_min, z_min, x_max, y_max, z_max).finished());
 }
 
 /* ************************************************************************* */
-ConstrainedDualQuadric ConstrainedDualQuadric::addNoise(const Vector9& noiseVector) {
-  Pose3 poseDelta = Pose3::Retract(noiseVector.head<6>());
-  Vector3 radiiDelta = Vector3(noiseVector.tail<3>());
+bool ConstrainedDualQuadric::isBehind(const Pose3& cameraPose) const {
+  Pose3 rpose = cameraPose.between(this->pose());
+  if (rpose.z() < 0.0) { return true;}
+  return false;
+}
 
-  Pose3 noisyPose = pose_.compose(poseDelta);
-  Vector3 noisyRadii = radii_ + radiiDelta;
-
-  return ConstrainedDualQuadric(noisyPose, noisyRadii);    
+/* ************************************************************************* */
+bool ConstrainedDualQuadric::contains(const Pose3& cameraPose) const {
+  Vector4 cameraPoint = (Vector4() << cameraPose.translation().vector(), 1.0).finished();
+  double pointError = cameraPoint.transpose() * this->matrix().inverse() * cameraPoint;
+  if (pointError <= 0.0) { return true;}
+  return false;
 }
 
 /* ************************************************************************* */
@@ -136,15 +170,13 @@ Vector9 ConstrainedDualQuadric::localCoordinates(const ConstrainedDualQuadric& o
 
 /* ************************************************************************* */
 void ConstrainedDualQuadric::print(const std::string& s) const {
-  cout << s << " : " << endl;
-  cout << "QuadricPose\n" << pose_.matrix() << endl;
-  cout << "QuadricRadii: " << radii_.transpose() << endl;
-  cout << "QuadricMatrix\n" << this->matrix() << endl;
+  cout << s;
+  cout << this->matrix() << endl;
 }
 
 /* ************************************************************************* */
 bool ConstrainedDualQuadric::equals(const ConstrainedDualQuadric& other, double tol) const {
-  return this->matrix().isApprox(other.matrix(), tol);
+  return this->normalizedMatrix().isApprox(other.normalizedMatrix(), tol);
 }
 
 /* ************************************************************************* */

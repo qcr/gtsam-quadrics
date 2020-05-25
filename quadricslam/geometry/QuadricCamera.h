@@ -29,87 +29,27 @@
 namespace gtsam {
 
   /**
-   * @class QuadricProjectionException
-   * Exception thrown when attemption to calculate quadric bounding box fails
-   */
-  class GTSAM_EXPORT QuadricProjectionException: public ThreadsafeException<QuadricProjectionException> {
-    public:
-      QuadricProjectionException()
-        : QuadricProjectionException(std::numeric_limits<Key>::max()) {}
-
-      QuadricProjectionException(Key j)
-        : ThreadsafeException<QuadricProjectionException>("QuadricProjectionException"),
-          j_(j) {}
-
-      QuadricProjectionException(const std::string& description)
-        : ThreadsafeException<QuadricProjectionException>(description) {}
-
-      Key nearbyVariable() const {return j_;}
-
-    private:
-      Key j_;
-  };
-
-
-  /**
    * @class QuadricCamera
    * A camera that projects quadrics
    */
-  class GTSAM_EXPORT QuadricCamera : public PinholePose<Cal3_S2> {
-
-    private:
-
-      typedef PinholePose<Cal3_S2> Base; ///< base class has pose and calibration as private member
+  class QuadricCamera {
 
     public:
-    
-      /** Default constructor */
-      QuadricCamera() {};
-
-      /** Constructor with pose and calibration */
-      QuadricCamera(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K) : Base(pose, K) {};
-
-      /** Named static constructor for Expressions 
-       * as found in PinholeCamera.h
-      */
-      static QuadricCamera Create(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& K, OptionalJacobian<6,6> dCamera_dPose, OptionalJacobian<6,5> dCamera_dCalibration);
-      
-      /**
-       * Calculate the 3x4 projection matrix 
-       */
-      Matrix34 transformToImage(OptionalJacobian<12,6> dP_dCamera = boost::none) const;
 
       /** Static projection matrix */
       static Matrix34 transformToImage(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
 
-      /** Static projection function */
-      static DualConic project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
-        OptionalJacobian<9,9> dc_dq = boost::none, OptionalJacobian<9,6> dc_dx = boost::none, OptionalJacobian<9,5> dc_dk = boost::none);
-      
-      /** 
-       * Evaluates whether a given pose-quadric pair will
-       * project correctly. Looks to see that:
-       * Quadric is infront of the camera
-       * The camera is not inside the quadric. 
-       */
-      static bool isValid(const Pose3& pose, const ConstrainedDualQuadric& quadric);
-      
       /**
        * Project a quadric at the stored 3D pose and calibration
        * @param quadric the 3D quadric surface to be projected
        * @return the projected dual conic 
        */
-      DualConic project(const ConstrainedDualQuadric& quadric) const;
+      static DualConic project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
+        OptionalJacobian<9,9> dC_dq = boost::none, OptionalJacobian<9,6> dC_dx = boost::none);
 
-      /** Matrix version of project for numerical differentiation */
-      static Matrix3 project_(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
-
+      /** Project box to planes */
+      static std::vector<Vector4> project(const AlignedBox2& box, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
+      
   };
-
-  // Add dimensions for expressions
-  template<>
-  struct traits<QuadricCamera> {
-    enum { dimension = 6};
-  };  
 
 } // namespace gtsam

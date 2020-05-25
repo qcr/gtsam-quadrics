@@ -26,11 +26,12 @@ namespace gtsam {
   /**
    * @class AlignedBox3
    * An axis aligned 3D bounding box
+   * (xmin, xmax, ymin, ymax, zmin, zmax)
    */
-  class GTSAM_EXPORT AlignedBox3 {
+  class AlignedBox3 {
 
     protected:
-      Vector6 xxyyzz_; ///< xmin,ymin,xmax,ymax
+      Vector6 xxyyzz_; ///< bounds vector 
 
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -45,7 +46,12 @@ namespace gtsam {
       AlignedBox3(const double& xmin, const double& xmax, const double& ymin, const double& ymax, const double& zmin, const double& zmax);
       
       /** Constructor from vector */
-      AlignedBox3(const Vector6& xxyyzz);
+      AlignedBox3(const Vector6& xxyyzz) :
+        xxyyzz_(xxyyzz) {};
+
+      /// @}
+      /// @name Class accessors
+      /// @{
 
       /** Get xmin */
       double xmin() const {return xxyyzz_[0];}
@@ -65,9 +71,12 @@ namespace gtsam {
       /** Get zmax */
       double zmax() const {return xxyyzz_[5];}
 
-
       /** Returns box in xxyyzz vector */
-      Vector6 vector() const;
+      Vector6 vector() const { return xxyyzz_;};
+
+      /// @}
+      /// @name Class methods
+      /// @{
 
       /** Returns x,y,z lengths as a vector */
       Vector3 dimensions() const;
@@ -87,5 +96,9 @@ namespace gtsam {
 
       /// @}
   };
+
+  // Add to testable group 
+  template <>
+  struct traits<AlignedBox3> : public Testable<AlignedBox3> {};
 
 } // namespace gtsam

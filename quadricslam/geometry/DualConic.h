@@ -21,6 +21,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Cal3_S2.h>
 
 namespace gtsam {
 
@@ -28,7 +29,7 @@ namespace gtsam {
    * @class DualConic
    * A dual conic (Matrix33)
    */
-  class GTSAM_EXPORT DualConic {
+  class DualConic {
 
     protected:
       Matrix33 dC_; ///< 3x3 matrix of the quadratic equation
@@ -39,31 +40,53 @@ namespace gtsam {
       /// @name Constructors and named constructors
       /// @{
       
-      /** Default constructor, unit circle at origin */
+      /** Default constructor: unit circle at origin */
       DualConic();
 
       /** Constructor from 3x3 matrix */
-      DualConic(const Matrix33& dC);
+      DualConic(const Matrix33& dC) :
+        dC_(dC) {};
 
       /** Create ellipse from 2D pose and axis lengths */
       DualConic(const Pose2& pose, const Vector2& radii);
 
+      /** Copy constructor */
+      DualConic(const DualConic& other) :
+        dC_(other.dC_) {};
+
+      /// @}
+      /// @name Class methods
+      /// @{
+        
       /** Return 3x3 conic matrix */
-      Matrix33 matrix(void) const;
+      Matrix33 matrix(void) const { return dC_;}
 
       /** Return normalized dual conic */
       DualConic normalize(void) const;
 
-      /** Return 2D bounds on image plane */
+      /**
+       * Returns the standard 2D bounds on the image plane
+       * with no consideration for image dimensions
+       */
       AlignedBox2 bounds(OptionalJacobian<4,9> H = boost::none) const;
 
+      /**
+       * Returns the bounds as an object detector would see
+       * Carefully handling the intersection with the image boundaries
+       * NOTE: assumes conic is visible 
+       */ 
+      AlignedBox2 smartBounds(const boost::shared_ptr<Cal3_S2>& calibration, OptionalJacobian<4,9> H = boost::none) const;
+
       /** 
-       * Classify conic section as generate/degenerate 
+       * Returns true if conic section is degenerate 
        * Using det(C) as opposed to sign(eigenvalues)
        */
       bool isDegenerate(void) const;
 
-      /** Classify conic section as elliptical vs hyperbola/parabola */
+      /** 
+       * Returns true if conic section is elliptical or circular
+       * Internally calculates degeneracy 
+       */
       bool isEllipse(void) const;
 
       /** The polynomial / cartesian form as a string */
@@ -73,7 +96,7 @@ namespace gtsam {
       /// @name Testable group traits
       /// @{
         
-      /** Prints the dual quadric with optional string */
+      /** Prints the dual conic with optional string */
       void print(const std::string& s = "") const;
 
       /** Compares two dual conics accounting for normalization */
@@ -82,14 +105,8 @@ namespace gtsam {
       /// @}
   };
 
-  // Add DualConic to Testable group with dimensions for expressions
+  // Add DualConic to Testable group 
   template <>
-  struct traits<DualConic> : public Testable<DualConic> {
-    enum { dimension = 9};
-  };
-  template <>
-  struct traits<const DualConic> : public Testable<DualConic> {
-    enum { dimension = 9};
-  };
+  struct traits<DualConic> : public Testable<DualConic> {};
     
 } // namespace gtsam
