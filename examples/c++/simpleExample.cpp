@@ -121,9 +121,6 @@ int main(void) {
     // build optimiser
     LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, parameters);
 
-    graph.print("GRAPH\n");
-    initialEstimate.print("ESTIMATE\n");
-
     // optimise the graph
     Values result = optimizer.optimize();
 
