@@ -40,10 +40,6 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
       throw QuadricProjectionException("Camera is inside quadric");
     }
 
-    // if (quadric.notVisible(pose, calibration_)) {
-    //   throw QuadricProjectionException("Quadric is fully outside fov w/ smartBounds on");
-    // }
-
     // project quadric taking into account partial derivatives 
     Eigen::Matrix<double, 9,6> dC_dx; Eigen::Matrix<double, 9,9> dC_dq;
     DualConic dualConic = QuadricCamera::project(quadric, pose, calibration_, H1?&dC_dq:0, H2?&dC_dx:0);
@@ -55,16 +51,7 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
     // calculate conic bounds with derivatives
     Eigen::Matrix<double, 4,9> db_dC;
-    AlignedBox2 predictedBounds;
-
-
-    try {
-      predictedBounds = dualConic.bounds(H1||H2?&db_dC:0);
-      // predictedBounds = dualConic.smartBounds(calibration_, H1||H2?&db_dC:0);
-
-    } catch (QuadricProjectionException& e) {
-      throw QuadricProjectionException("Quadric is fully outside fov w/ smartBounds on");
-    }
+    AlignedBox2 predictedBounds = dualConic.bounds(H1||H2?&db_dC:0);
 
     // evaluate error 
     Vector4 error = predictedBounds.vector() - measured_.vector();

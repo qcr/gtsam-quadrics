@@ -70,13 +70,6 @@ namespace gtsam {
        */
       AlignedBox2 bounds(OptionalJacobian<4,9> H = boost::none) const;
 
-      /**
-       * Returns the bounds as an object detector would see
-       * Carefully handling the intersection with the image boundaries
-       * NOTE: assumes conic is visible 
-       */ 
-      AlignedBox2 smartBounds(const boost::shared_ptr<Cal3_S2>& calibration, OptionalJacobian<4,9> H = boost::none) const;
-
       /** 
        * Returns true if conic section is degenerate 
        * Using det(C) as opposed to sign(eigenvalues)
