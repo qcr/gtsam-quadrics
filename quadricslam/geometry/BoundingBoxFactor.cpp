@@ -98,8 +98,8 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
   // handle projection failures
   } catch(QuadricProjectionException& e) {
     
-    // cout << e.what() << ": Quadric " << DefaultKeyFormatter(this->key2());
-    // cout << " and pose " << DefaultKeyFormatter(this->key1()) << endl;
+    // if error cannot be calculated
+    // set error vector and jacobians to zero
     Vector4 error = Vector4::Zero();
     if (H1) {*H1 = Matrix::Zero(4,6);}
     if (H2) {*H2 = Matrix::Zero(4,9);}

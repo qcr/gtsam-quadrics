@@ -109,7 +109,6 @@ Matrix44 ConstrainedDualQuadric::normalizedMatrix(void) const {
   return Q/Q(3,3);
 }
 
-
 /* ************************************************************************* */
 // TODO: vectorize
 AlignedBox3 ConstrainedDualQuadric::bounds() const {

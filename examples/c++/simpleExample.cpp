@@ -114,9 +114,6 @@ int main(void) {
     parameters.setRelativeErrorTol(1e-10); ///< stop iterating when change in error between steps is less than this
     parameters.setAbsoluteErrorTol(1e-8); ///< stop when cost-costchange < tol
     parameters.setMaxIterations(100); 
-    // parameters.setlambdaInitial(1e-5);
-    // parameters.setlambdaUpperBound(1e10) ///< defaults to 1e5
-    // parameters.setlambdaLowerBound(0) ///< defaults to 0.0
 
     // build optimiser
     LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, parameters);
