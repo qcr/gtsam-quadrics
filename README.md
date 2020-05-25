@@ -55,6 +55,13 @@ Required to build Docs
 
 * Doxygen (`sudo apt-get install doxygen`)
 
+## Usage ##
+
+quadric.addToValues(values, key)
+quadric = ConstrainedDualQuadric.getFromValues(values, key)
+bbf.addToGraph(graph)
+bbf = BoundingBoxFactor.getFromGraph(graph, index)
+
 ## Common Issues ##
 
 If you attempt to build quadricslam and receive:

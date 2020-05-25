@@ -32,10 +32,11 @@ using namespace gtsam;
 
 int main() {
 
+
+  // Example of how between factors fails on graph without noisemodel
   NonlinearFactorGraph graph;
   BetweenFactor<Pose3> bf(Symbol('x', 0), Symbol('x', 1), Pose3());
   graph.add(bf);
-
   graph.print("GRAPH:\n");
 
   cout << "done" << endl;

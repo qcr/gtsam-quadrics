@@ -87,7 +87,6 @@ class ConstrainedDualQuadric {
   bool equals(const ConstrainedDualQuadric& other) const;
 };
 
-
 #include <quadricslam/geometry/BoundingBoxFactor.h>
 virtual class BoundingBoxFactor : NoiseModelFactor {
   BoundingBoxFactor();
@@ -152,8 +151,6 @@ class AlignedBox3 {
   bool equals(const AlignedBox3& other, double tol) const;
   bool equals(const AlignedBox3& other) const;
 };
-
-
 
 #include <quadricslam/geometry/DualConic.h>
 class DualConic {
