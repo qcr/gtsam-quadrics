@@ -296,6 +296,23 @@ class System(object):
                 conic is an ellipse 
             ensure views provide enough DOF (due to edges / out of frame)
         """
+        for pose in poses:
+
+            # quadric must have positive depth
+            if quadric.isBehind(pose):
+                return False
+
+            # camera pose must be outside quadric 
+            if quadric.contains(pose):
+                return False
+
+            # conic must be valid and elliptical 
+            conic = quadricslam.QuadricCamera.project(quadric, pose, calibration)
+            if conic.isDegenerate():
+                return False
+            if not conic.isEllipse():
+                return False
+                
         return True
 
 
