@@ -34,7 +34,6 @@ class System(object):
     """
     X = lambda i: int(gtsam.symbol(ord('x'), i))
     Q = lambda i: int(gtsam.symbol(ord('q'), i))
-    L = lambda i: int(gtsam.symbol(ord('l'), i))
 
     @staticmethod
     def run(sequence):
@@ -153,11 +152,9 @@ class System(object):
         # declare noise models
         ODOM_SIGMA = 0.01; BOX_SIGMA = 5
         ODOM_NOISE = 0.01; BOX_NOISE = 0.0
-        noise_zero = gtsam.noiseModel_Diagonal.Sigmas(np.array([1e-1]*6, dtype=np.float))
+        prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([1e-1]*6, dtype=np.float))
         odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([ODOM_SIGMA]*3 + [ODOM_SIGMA]*3, dtype=np.float))
         bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([BOX_SIGMA]*4, dtype=np.float))
-        X = lambda i: int(gtsam.symbol(ord('x'), i))
-        Q = lambda i: int(gtsam.symbol(ord('q'), i))
 
         # get noisy odometry / boxes 
         true_odometry = sequence.true_trajectory.as_odometry()
@@ -175,10 +172,17 @@ class System(object):
         initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_boxes, sequence.calibration)
 
         # add prior pose
-        initial_trajectory.add_prior(graph, noise_zero)
+        prior_factor = gtsam.PriorFactorPose3(System.X(0), initial_trajectory.at(0), prior_noise)
+        graph.add(prior_factor)
 
         # add odometry measurements
-        noisy_odometry.add_factors(graph, odometry_noise)
+        for (start_key, end_key), rpose in noisy_odometry.items():
+            odometry_factor = gtsam.BetweenFactorPose3(System.X(start_key), System.X(end_key), rpose, odometry_noise)
+            graph.add(odometry_factor)
+
+        # add initial pose estimates
+        for pose_key, pose in initial_trajectory.items():
+            initial_estimate.insert(System.X(pose_key), pose)
 
         # add valid box measurements
         valid_objects = []
@@ -200,9 +204,6 @@ class System(object):
                         bbf = quadricslam.BoundingBoxFactor(box, sequence.calibration, System.X(pose_key), System.Q(object_key), bbox_noise)
                         bbf.addToGraph(graph)
 
-        # add initial pose estimates
-        initial_trajectory.add_estimates(initial_estimate)
-        
         # add initial landmark estimates
         for object_key, quadric in initial_quadrics.items():
 

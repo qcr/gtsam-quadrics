@@ -28,9 +28,8 @@ Q = lambda i: int(gtsam.symbol(ord('q'), i))
 
 class Trajectory(object):
     """ 
-    Implicit data association. 
-    Keys stored in index of pose.
-    Cast to gtsamKey when converted to factor.
+    Class for storing a sequence of 3D poses. 
+    Data association is implicit where the pose_key is represented as index of pose.
     """
     def __init__(self, poses):
         self._poses = poses
@@ -39,44 +38,37 @@ class Trajectory(object):
         return len(self._poses)
 
     def __getitem__(self, index):
-        """ return in order with images[index] """
         return self._poses[index]
 
     def items(self):
-        """ [(key, pose)] """
-        return zip(range(len(self._poses)), self._poses)
+        """ Returns key-value pairs """
+        return list(zip(range(len(self._poses)), self._poses))
 
     def data(self):
-        """ returns list of poses """
+        """ Returns a list of Pose3 objects """
         return self._poses
 
     def keys(self):
+        """ Returns a list of pose_keys """
         return list(range(len(self._poses)))
 
     def at(self, key):
+        """ Get the pose at key """
         return self._poses[key]
 
     def at_keys(self, keys):
-        """ returns a new trajectory only with these keys """
+        """ Returns a new trajectory containing the poses at associated with keys """
         return Trajectory([self._poses[key] for key in keys])
 
     def as_odometry(self):
+        """ Converts the trajectory to a sequence of relative poses """
         relative_poses = [self._poses[i].between(self._poses[i+1]) for i in range(len(self._poses)-1)]
         return Odometry(relative_poses)
 
     def applyTransform(self, reference):
+        """ Transforms trajectory from local coordinates to reference coordinates """
         poses = [reference.transformPoseFrom(pose) for pose in self._poses]
         return Trajectory(poses)
-
-    def add_prior(self, graph, noisemodel):
-        """ add prior X(0) to graph """
-        prior_factor = gtsam.PriorFactorPose3(X(0), self._poses[0], noisemodel)
-        graph.add(prior_factor)
-
-    def add_estimates(self, values):
-        """ add poses X(i) to values """
-        for index, pose in enumerate(self._poses):
-            values.insert(X(index), pose)
 
     @staticmethod
     def from_values(values):
@@ -93,9 +85,8 @@ class Trajectory(object):
 
 class Odometry(object):
     """ 
-    Implicit data association. 
-    Keys stored in index of rpose.
-    Cast to gtsamKey when converted to factor.
+    Class for storing a sequence of relative pose measurements.
+    Data association is implicit in the index of the relative pose.
     """
     def __init__(self, rposes):
         self._rposes = rposes
@@ -106,20 +97,22 @@ class Odometry(object):
     def __getitem__(self, index):
         return self._rposes[index]
 
+    def items(self):
+        """ Returns [(start_key, end_key), rpose] for each relative pose """
+        return list(zip(zip(range(len(self._rposes)), range(1,len(self._rposes)+1)), self._rposes))
+
     def data(self):
+        """ Returns list of relative poses """
         return self._rposes
 
     def as_trajectory(self, reference=gtsam.Pose3()):
+        """ Converts relative poses to global trajectory 
+        reference = first pose of global trajectory
+        """
         global_poses = [reference]
         for rpose in self._rposes:
             global_poses.append( global_poses[-1].compose(rpose) )
         return Trajectory(global_poses)
-
-    def add_factors(self, graph, noisemodel):
-        """ add odom factors X(i) -> X(i+1) to graph """
-        for index, rpose in enumerate(self._rposes):
-            odometry_factor = gtsam.BetweenFactorPose3(X(index), X(index+1), rpose, noisemodel)
-            graph.add(odometry_factor)
 
     def add_noise(self, mu, sd):
         """ compose Pose3::retract(noisevec) onto relative poses """
@@ -165,13 +158,6 @@ class Quadrics(object):
     def at(self, key):
         return self._quadrics[key]
 
-    # def add_estimates(self, values):
-    #     """ add q if n bbfs > 3 """
-    #     for key, quadric in self._quadrics.items():
-    #         quadric.addToValues(values, Q(key))
-    #         # quadricslam.insertConstrainedDualQuadric(values, Q(key), quadric)
-    #         # values.insert(Q(key), quadric)
-
     @staticmethod
     def from_values(values):
         estimate_keys = [values.keys().at(i) for i in range(values.keys().size())]
@@ -204,12 +190,9 @@ class Boxes(object):
 
     def __len__(self):
         return len(self._boxes.values())
-
-    # def __getitem__(self, index):
-    #     """ returns ((pose_key, object_key), box) | O(1)"""
-    #     return list(self._boxes.items())[index]
     
     def items(self):
+        """ Returns [(pose_key, object_key), box] for each box """
         return list(self._boxes.items())
 
     def data(self):
@@ -237,25 +220,6 @@ class Boxes(object):
     def at_object(self, object_key):
         """ returns a Boxes object of boxes at object_key | O(n)"""
         return Boxes({k:v for k,v in self._boxes.items() if k[1] == object_key})
-
-    # def add_factors(self, graph, noisemodel, calibration, image_dimensions, valid_quadrics):
-    #     """ add bbf if q initialized and n > 3 """
-        
-    #     for object_key in np.unique(self.object_keys()):
-    #         if object_key not in valid_quadrics:
-    #             continue
-            
-    #         object_boxes = self.at_object(object_key)
-
-    #         if len(object_boxes) > 3:
-    #             for (pose_key, t), box in object_boxes.items():
-    #                 bbf = quadricslam.BoundingBoxFactor(box, calibration, image_dimensions, X(pose_key), Q(object_key), noisemodel)
-    #                 bbf.addToGraph(graph)
-        
-    #     # for (pose_key, object_key), box in self._boxes.items():
-    #     #     bbf = quadricslam.BoundingBoxFactor(box, calibration, image_dimensions, X(pose_key), Q(object_key), noisemodel)
-    #     #     bbf.addToGraph(graph)
-    #         # graph.add(bbf)
 
     def add_noise(self, mu, sd):
         """ compose noisevec onto relative poses """
