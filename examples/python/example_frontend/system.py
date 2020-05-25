@@ -23,7 +23,7 @@ import quadricslam
 sys.dont_write_bytecode = True
 from dataset_interfaces.simulated_dataset import ManualSequence
 from dataset_interfaces.scenenet_dataset import SceneNetDataset
-from visualization.drawing import Drawing
+from visualization.drawing import MPLDrawing
 from base.evaluation import Evaluation
 from base.containers import *
 
@@ -35,7 +35,6 @@ class System(object):
     X = lambda i: int(gtsam.symbol(ord('x'), i))
     Q = lambda i: int(gtsam.symbol(ord('q'), i))
     L = lambda i: int(gtsam.symbol(ord('l'), i))
-    ZERO = 1e-8
 
     @staticmethod
     def run(sequence):
@@ -43,8 +42,9 @@ class System(object):
         # build graph / estimate
         graph, initial_estimate = System.build_graph(sequence)
 
-        # draw factor graph 
-        # Drawing.draw_problem(graph, initial_estimate)
+        # draw initial system
+        plotting = MPLDrawing('initial_problem')
+        plotting.plot_system(graph, initial_estimate)
 
         # check graph + estimate
         System.check_problem(graph, initial_estimate)
@@ -53,26 +53,28 @@ class System(object):
         estimate = System.optimize(graph, initial_estimate, sequence.calibration)
 
         # draw estimation
-        # Drawing.draw_problem(graph, estimate)
+        plotting = MPLDrawing('final_solution')
+        plotting.plot_system(graph, estimate)
 
-        # # extract quadrics / trajectory 
-        # estimated_trajectory = Trajectory.from_values(estimate)
-        # estimated_quadrics = Quadrics.from_values(estimate)
+        # extract quadrics / trajectory 
+        estimated_trajectory = Trajectory.from_values(estimate)
+        estimated_quadrics = Quadrics.from_values(estimate)
 
-        # # evaluate results
-        # initial_ATE = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), sequence.true_trajectory, horn=True)
-        # estimate_ATE = Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory, horn=True)
-        # print('Horn, initial_ATE: {}'.format(initial_ATE))
-        # print('Horn, estimate_ATE: {}'.format(estimate_ATE))
-        # initial_ATE = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), sequence.true_trajectory, horn=False)
-        # estimate_ATE = Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory, horn=False)
-        # print('initial_ATE: {}'.format(initial_ATE))
-        # print('estimate_ATE: {}'.format(estimate_ATE))
+        # evaluate results
+        initial_ATE_H = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), sequence.true_trajectory, horn=True)[0]
+        estimate_ATE_H = Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory, horn=True)[0]
+        initial_ATE = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), sequence.true_trajectory, horn=False)[0]
+        estimate_ATE = Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory, horn=False)[0]
+        print('Initial ATE w/ horn alignment: {}'.format(initial_ATE_H))
+        print('Final ATE w/ horn alignment: {}'.format(estimate_ATE_H))
+        print('Initial ATE w/ weak alignment: {}'.format(initial_ATE))
+        print('Final ATE w/ weak alignment: {}'.format(estimate_ATE))
 
         # # plot results
-        # trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory, sequence.true_trajectory]
-        # quadrics = [Quadrics.from_values(initial_estimate), estimated_quadrics, sequence.true_quadrics]
-        # Drawing.draw_results(trajectories, quadrics, ['r','m','g'])
+        trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory, sequence.true_trajectory]
+        maps = [Quadrics.from_values(initial_estimate), estimated_quadrics, sequence.true_quadrics]
+        colors = ['r', 'm', 'g']; names = ['initial_estimate', 'final_estimate', 'ground_truth']
+        plotting.plot_result(trajectories, maps, colors, names)
 
         
 
@@ -126,16 +128,10 @@ class System(object):
         # create optimizer
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)
 
-        # plot initial estimate
-        Drawing.plot_problem(graph, initial_estimate, calibration)
-
         # run optimizer
         print('starting optimization')
         estimate = optimizer.optimize()
         print('optimization finished')
-
-        # plot final estimate
-        # Drawing.plot_problem(graph, estimate, calibration)
 
         return estimate
 
@@ -155,9 +151,9 @@ class System(object):
         initial_estimate = gtsam.Values()
 
         # declare noise models
-        ODOM_SIGMA = 0.01; BOX_SIGMA = 0.5
+        ODOM_SIGMA = 0.01; BOX_SIGMA = 5
         ODOM_NOISE = 0.01; BOX_NOISE = 0.0
-        noise_zero = gtsam.noiseModel_Diagonal.Sigmas(np.array([System.ZERO]*6, dtype=np.float))
+        noise_zero = gtsam.noiseModel_Diagonal.Sigmas(np.array([1e-1]*6, dtype=np.float))
         odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([ODOM_SIGMA]*3 + [ODOM_SIGMA]*3, dtype=np.float))
         bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([BOX_SIGMA]*4, dtype=np.float))
         X = lambda i: int(gtsam.symbol(ord('x'), i))
@@ -333,10 +329,11 @@ if __name__ == '__main__':
     protobuf_folder = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}_protobufs'.format(trainval)
     reader_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py'
     dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path)
-    System.run(dataset[0])
+    for sequence in dataset:
+        System.run(sequence)
 
-    sequence = ManualSequence.sequence1()
-    System.run(sequence)
+    # sequence = ManualSequence.sequence1()
+    # System.run(sequence)
 
 
 
