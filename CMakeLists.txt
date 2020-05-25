@@ -6,7 +6,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -g")
 
 ###################################################################################
 # set up options
-option(QUADRICSLAM_BUILD_DOCS "Enable/Disable building of doxygen docs" ON)
 option(QSLAM_BUILD_PYTHON_WRAP "Enable/Disable building of cython wrapper" ON)
 option(QSLAM_TEST_ANALYTICAL "Calculate and compare both analytical and numerical jacobians" ON)
 set(QSLAM_PYTHON_VERSION "3" CACHE STRING "The version of python to build the cython wrapper for (or Default)")
