@@ -21,7 +21,7 @@
 
 #include <gtsam/base/numericalDerivative.h>
 
-#define NUMERICAL_DERIVATIVE true
+#define NUMERICAL_DERIVATIVE false
 
 using namespace std;
 
@@ -100,14 +100,6 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
           cout << "\nWARNING: (*H1) inf/nan\nH1:\n" << (*H1) << endl << endl;  
           throw std::runtime_error("Infinite inside BBF H1");
         }
-
-        if (TEST_ANALYTICAL) {
-          boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
-          Eigen::Matrix<double, 4,6> db_dx_ = numericalDerivative21(funPtr, pose, quadric, 1e-6);
-          if (!db_dx_.isApprox(*H1, 1e-06)) {
-            throw std::runtime_error("BoundingBoxFactor db_dx_ numerical != analytical");
-          }
-        }
       } 
       
       // calculate derivative of error wrt quadric
@@ -118,14 +110,6 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
         if ((*H2).array().isInf().any() or (*H2).array().isNaN().any()) {
           cout << "\nWARNING: (*H2) inf/nan\nH1:\n" << (*H2) << endl << endl;  
           throw std::runtime_error("Infinite inside BBF H2");
-        }
-        
-        if (TEST_ANALYTICAL) {
-          boost::function<Vector(const Pose3&,  const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
-          Eigen::Matrix<double, 4,9> db_dq_ = numericalDerivative22(funPtr, pose, quadric, 1e-6);
-          if (!db_dq_.isApprox(*H2, 1e-06)) {
-            throw std::runtime_error("BoundingBoxFactor db_dq_ numerical != analytical");
-          }
         }
       }
 
