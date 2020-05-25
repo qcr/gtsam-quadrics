@@ -82,9 +82,6 @@ namespace gtsam {
        */
       bool isEllipse(void) const;
 
-      /** The polynomial / cartesian form as a string */
-      std::string polynomial(void) const;
-
       /// @}
       /// @name Testable group traits
       /// @{

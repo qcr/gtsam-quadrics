@@ -28,8 +28,6 @@
 
 using namespace std;
 
-#define SIGN2STR(n) (n >= 0 ? " + " : " - ")
-
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -103,20 +101,6 @@ bool DualConic::isEllipse(void) const {
     return (A33.determinant() > 0);
   }
   return false;
-}
-
-/* ************************************************************************* */
-string DualConic::polynomial(void) const {
-  Matrix33 C = dC_.inverse();
-  stringstream ss;
-  ss << std::fixed << std::setprecision(2);
-  ss << C(0,0)*1 << "*x^2";
-  ss << SIGN2STR(C(0,1)*2) << fabs(C(0,1)*2) << "*x*y";
-  ss << SIGN2STR(C(1,1)*1) << fabs(C(1,1)*1) << "*y^2";
-  ss << SIGN2STR(C(0,2)*2) << fabs(C(0,2)*2) << "*x";
-  ss << SIGN2STR(C(1,2)*2) << fabs(C(1,2)*2) << "*y";
-  ss << SIGN2STR(C(2,2)*1) << fabs(C(2,2)*1) << " = 0";
-  return ss.str();
 }
 
 /* ************************************************************************* */
