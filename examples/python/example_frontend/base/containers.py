@@ -131,6 +131,7 @@ class Odometry(object):
 
 
 
+
 class Quadrics(object):
     """
     Explicit data association.
@@ -164,6 +165,8 @@ class Quadrics(object):
         quadric_keys = [k for k in estimate_keys if chr(gtsam.symbolChr(k)) == 'q']
         quadrics = {int(gtsam.symbolIndex(k)): quadricslam.ConstrainedDualQuadric.getFromValues(values, k) for k in quadric_keys}
         return Quadrics(quadrics)
+
+
 
 
 
@@ -236,10 +239,12 @@ class Boxes(object):
             noisy_boxes.add(noisy_box, pose_key, object_key)
         return noisy_boxes
 
-    def prints(self):
+    def prints(self, detailed=False):
         for object_key in np.unique(self.object_keys()):
             object_boxes = self.at_object(object_key)
 
             print('Object: q{} | {} views'.format(object_key, len(object_boxes)))
-            # for (pose_key, t), box in object_boxes.items():
-            #     print('    x{} -> q{}'.format(pose_key, object_key))
+
+            if detailed:
+                for (pose_key, t), box in object_boxes.items():
+                    print('    x{} -> q{}'.format(pose_key, object_key))

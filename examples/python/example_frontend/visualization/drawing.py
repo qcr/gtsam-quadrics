@@ -84,6 +84,14 @@ class MPLDrawing(object):
         plt.show()
 
     def plot_result(self, trajectories, maps, colors, names=None):
+        """ 
+        Compares a number of trajectories and maps. 
+
+        :param - trajectories: list of Trajectory objects
+        :param - maps: list of Quadrics objects
+        :param - colors: list of matplotlib colors for each trajectory/map
+        :param - names: list of names for legend
+        """
 
         # open and clear figure
         figure = plt.figure(self._figname)

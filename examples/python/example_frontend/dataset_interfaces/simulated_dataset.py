@@ -30,11 +30,16 @@ from base.containers import Boxes
 
 # TODO: ensure calibration / dimensions are linked correctly
 class ManualSequence(object):
+    """
+    Automatically generate dataset information given a set of camera positions and quadrics. 
+    """
     calibration = gtsam.Cal3_S2(525.0, 525.0, 0.0, 160.0, 120.0)
 
-    def __init__(self, points, quadrics):
+    def __init__(self, points, quadrics, n_interpolate=50):
         """
-        Construct with [Point3s] and [Quadrics]
+        :param - points: list of camera positions (Point3)
+        :param - quadrics: list of ConstrainedDualQuadrics
+        :param - n_interpolate: number of points to be generated between 'points'. 
         """
 
         # generate camera poses looking at a quadric 
@@ -42,7 +47,7 @@ class ManualSequence(object):
         poses = [gtsam.SimpleCamera.Lookat(point, target, gtsam.Point3(0,0,1)).pose() for point in points]
 
         # interpolate poses into trajectory
-        self.true_trajectory = self.interpolate_poses(poses, 50)
+        self.true_trajectory = self.interpolate_poses(poses, n_interpolate)
 
         # create quadrics from list
         self.true_quadrics = Quadrics(dict(zip(range(len(quadrics)), quadrics)))
@@ -95,6 +100,7 @@ class ManualSequence(object):
 
     @staticmethod
     def sequence1():
+        """ a manually generated dataset sequence """
         points = []
         points.append(gtsam.Point3(10,0,0))
         points.append(gtsam.Point3(0,-10,0))

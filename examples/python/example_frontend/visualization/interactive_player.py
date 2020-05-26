@@ -17,6 +17,9 @@ import numpy as np
 from abc import ABC, abstractmethod
 
 class InteractivePlayer(ABC):
+    """ Abstract class which implements display loop and key handling. 
+    Derived classes need only implement update() to draw their desired image,
+    and handle_input(key) to modify player variables based off key input. """
     def __init__(self, player_name):
         self.player_name = player_name
         self.running = True
