@@ -108,15 +108,23 @@ if(QSLAM_BUILD_PYTHON_WRAP)
 	include_directories(${GTSAM_EIGENCY_INSTALL_PATH})
 
 	# create __init__.py to allow build/cython/quadricslam be imported as a python package
-	file(WRITE "./build/cython/quadricslam/__init__.py" "from .quadricslam import *")
+	file(WRITE "${PROJECT_BINARY_DIR}/cython/quadricslam/__init__.py" "from .quadricslam import *")
+
+	set(QUADRICSLAM_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
+	if (NOT QUADRICSLAM_CYTHON_INSTALL_PATH)
+		set(QUADRICSLAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython/quadricslam")
+	endif()
 
 	# use gtsams cython wrapping functionality
 	wrap_and_install_library_cython("./quadricslam.h" # interface_header path
 									"from gtsam.gtsam cimport *" # extra imports for cython pxd
-									"${CMAKE_INSTALL_PREFIX}/cython/quadricslam" # install_path
+									"${QUADRICSLAM_CYTHON_INSTALL_PATH}" # install_path
 									"gtsam;${CONVENIENCE_LIB_NAME}" # libraries to link with
 									"wrap;gtsam;${CONVENIENCE_LIB_NAME}" # dependencies)
 	)
+
+	# install __init__.py so package can be loaded
+	# install_cython_files("${PROJECT_BINARY_DIR}/cython/quadricslam/__init__.py" "${QUADRICSLAM_CYTHON_INSTALL_PATH}")
 endif()
 
 ###################################################################################
