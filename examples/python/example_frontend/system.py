@@ -45,9 +45,6 @@ class System(object):
         plotting = MPLDrawing('initial_problem')
         plotting.plot_system(graph, initial_estimate)
 
-        # check graph + estimate
-        System.check_problem(graph, initial_estimate)
-
         # optimize using c++ back-end
         estimate = System.optimize(graph, initial_estimate, sequence.calibration)
 
@@ -74,42 +71,7 @@ class System(object):
         maps = [Quadrics.from_values(initial_estimate), estimated_quadrics, sequence.true_quadrics]
         colors = ['r', 'm', 'g']; names = ['initial_estimate', 'final_estimate', 'ground_truth']
         plotting.plot_result(trajectories, maps, colors, names)
-
-        
-
-
-    @staticmethod
-    def check_problem(graph, estimate):
-        # check trajectory
-        # must be prior pose 
-        # must be odometry between each pose variable
-        # check quadrics
-        # each quadric must be viewed from 3 poses
-
-        factor_keys = []
-        for i in range(graph.size()):
-            factor = graph.at(i)
-            int_keys = [factor.keys().at(j) for j in range(factor.keys().size())]
-            factor_keys += ['{}{}'.format(chr(gtsam.symbolChr(key)), gtsam.symbolIndex(key)) for key in int_keys]
-
-        estimate_int_keys = [estimate.keys().at(i) for i in range(estimate.keys().size())]
-        estimate_keys = ['{}{}'.format(chr(gtsam.symbolChr(key)), gtsam.symbolIndex(key)) for key in estimate_int_keys]
-
-        # check each factor has a variable
-        # and each quadric is viewed 3 times
-        for factor_key in factor_keys:
-            
-            if factor_key not in estimate_keys:
-                print(factor_key, 'doesnt exist in estimate!')
-
-        for estimate_key in estimate_keys:
-
-            if 'q' in estimate_key:
-
-                mkeys = [fkey for fkey in factor_keys if fkey==estimate_key]
-                if len(mkeys) < 3:
-                    print(estimate_key, 'doesnt have 3 bbfs')
-            
+           
     
     @staticmethod
     def optimize(graph, initial_estimate, calibration):
