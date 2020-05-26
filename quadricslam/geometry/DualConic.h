@@ -50,10 +50,6 @@ namespace gtsam {
       /** Create ellipse from 2D pose and axis lengths */
       DualConic(const Pose2& pose, const Vector2& radii);
 
-      /** Copy constructor */
-      DualConic(const DualConic& other) :
-        dC_(other.dC_) {};
-
       /// @}
       /// @name Class methods
       /// @{

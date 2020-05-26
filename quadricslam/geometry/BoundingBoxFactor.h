@@ -56,11 +56,6 @@ namespace gtsam {
       const Key& poseKey, const Key& quadricKey, const SharedNoiseModel& model) : 
           Base(model, poseKey, quadricKey), measured_(measured), calibration_(calibration) {};
 
-      /** Copy constructor */
-      BoundingBoxFactor(const BoundingBoxFactor& other) :
-        Base(other.noiseModel(), other.poseKey(), other.objectKey()), 
-        measured_(other.measured_), calibration_(other.calibration_) {};
-
       /// @}
       /// @name Class accessors
       /// @{
