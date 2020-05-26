@@ -14,6 +14,8 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+import configparser
+import argparse
 
 # import gtsam and extension
 import gtsam
@@ -36,10 +38,10 @@ class System(object):
     Q = lambda i: int(gtsam.symbol(ord('q'), i))
 
     @staticmethod
-    def run(sequence):
+    def run(sequence, config):
 
         # build graph / estimate
-        graph, initial_estimate = System.build_graph(sequence)
+        graph, initial_estimate = System.build_graph(sequence, config)
 
         # draw initial system
         plotting = MPLDrawing('initial_problem')
@@ -98,13 +100,10 @@ class System(object):
 
 
     @staticmethod
-    def build_graph(sequence):
+    def build_graph(sequence, config):
         """
-        Sequence contains:
-        * calibration
-        * true_trajectory 
-        * true_quadrics 
-        * true_boxes 
+        Adds noise to sequence variables / measurements. 
+        Returns graph, initial_estimate
         """
 
         # create empty graph / estimate
@@ -112,16 +111,14 @@ class System(object):
         initial_estimate = gtsam.Values()
 
         # declare noise models
-        ODOM_SIGMA = 0.01; BOX_SIGMA = 5
-        ODOM_NOISE = 0.01; BOX_NOISE = 0.0
-        prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([1e-1]*6, dtype=np.float))
-        odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([ODOM_SIGMA]*3 + [ODOM_SIGMA]*3, dtype=np.float))
-        bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([BOX_SIGMA]*4, dtype=np.float))
+        prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([float(config['base']['PRIOR_SIGMA'])]*6, dtype=np.float))
+        odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([float(config['base']['ODOM_SIGMA'])]*6, dtype=np.float))
+        bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([float(config['base']['BOX_SIGMA'])]*4, dtype=np.float))
 
         # get noisy odometry / boxes 
         true_odometry = sequence.true_trajectory.as_odometry()
-        noisy_odometry = true_odometry.add_noise(mu=0.0, sd=ODOM_NOISE)
-        noisy_boxes = sequence.true_boxes.add_noise(mu=0.0, sd=BOX_NOISE)
+        noisy_odometry = true_odometry.add_noise(mu=0.0, sd=float(config['base']['ODOM_NOISE']))
+        noisy_boxes = sequence.true_boxes.add_noise(mu=0.0, sd=float(config['base']['BOX_NOISE']))
 
         # initialize trajectory
         # TODO: ensure aligned in same reference frame
@@ -130,8 +127,10 @@ class System(object):
 
         # initialize quadrics
         # NOTE: careful initializing with true quadrics and noise traj as it may not make sense
-        # initial_quadrics = sequence.true_quadrics
-        initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_boxes, sequence.calibration)
+        if config['base']['Initialization'] == 'SVD':
+            initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_boxes, sequence.calibration)
+        elif config['base']['Initialization'] == 'Dataset':
+            initial_quadrics = sequence.true_quadrics
 
         # add prior pose
         prior_factor = gtsam.PriorFactorPose3(System.X(0), initial_trajectory.at(0), prior_noise)
@@ -177,6 +176,7 @@ class System(object):
 
     @staticmethod
     def initialize_quadrics(trajectory, boxes, calibration):
+        """ Uses SVD to initialize quadrics from measurements """
         quadrics = Quadrics()
 
         # loop through object keys
@@ -276,28 +276,51 @@ class System(object):
 
 
 
+
+
+
 if __name__ == '__main__':
-    """
-    Options:
-    - manual / scenenet 
-    - seed 
-    - sigmas (odom, box)
-    - noise (odom, box, quadrics)
-    - quadric init (svd, dataset)
-    """
-    np.random.seed(121)
+    # parse input arguments for config file
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', help='path to config file', required=True)
+    args = parser.parse_args()
 
-    trainval = 'train'
-    dataset_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}'.format(trainval)
-    protobuf_folder = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}_protobufs'.format(trainval)
-    reader_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py'
-    dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path)
-    for sequence in dataset:
-        System.run(sequence)
+    # load config
+    config = configparser.ConfigParser()
+    # default_config = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.ini')
+    config.read(args.config)
 
-    # sequence = ManualSequence.sequence1()
-    # System.run(sequence)
+    # validate config 
+    if config['base']['Dataset'] == 'SceneNet':
 
+        # ensure scenenet paths provided
+        if 'SceneNet' not in config or \
+                'path_to_data' not in config['SceneNet'] or \
+                'path_to_protobufs' not in config['SceneNet'] or \
+                'path_to_protobuf_definition' not in config['SceneNet']:
+            raise RuntimeError("If SceneNet selected as dataset, must provide path to SceneNet files.")
 
+        # ensure shapenet enabled if initializing from SceneNet
+        if config['base']['Initialization'] == 'Dataset' and \
+                config['base']['Dataset'] == 'SceneNet' and \
+                'ShapeNet' not in config:
+            raise RuntimeError("ShapeNet required to initialize landmarks from SceneNet dataset.")
 
+    # set seed
+    np.random.seed(int(config['base']['Seed']))
+
+    # load dataset
+    if config['base']['Dataset'] == 'SceneNet':
+        dataset = SceneNetDataset(
+            dataset_path = config['SceneNet']['path_to_data'],
+            protobuf_folder = config['SceneNet']['path_to_protobufs'],
+            reader_path = config['SceneNet']['path_to_protobuf_definition'],
+            shapenet_path = None if 'ShapeNet' not in config else config['ShapeNet']['path_to_shapenet']
+        )
+        sequence = dataset[int(config['SceneNet']['sequence_n'])]
+    else:
+        sequence = SimulatedSequence.sequence1()
+
+    # run system on sequence 
+    System.run(sequence, config)
 
