@@ -29,7 +29,7 @@ from base.containers import Boxes
 
 
 # TODO: ensure calibration / dimensions are linked correctly
-class ManualSequence(object):
+class SimulatedSequence(object):
     """
     Automatically generate dataset information given a set of camera positions and quadrics. 
     """
@@ -111,5 +111,5 @@ class ManualSequence(object):
         quadrics = []
         quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(), np.array([0.2,0.3,0.4])))
         quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(0.2,0.2,0.2)), np.array([0.2,0.3,0.4])))
-        sequence = ManualSequence(points, quadrics)
+        sequence = SimulatedSequence(points, quadrics)
         return sequence

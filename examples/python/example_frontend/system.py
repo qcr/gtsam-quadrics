@@ -21,7 +21,7 @@ import quadricslam
 
 # import custom python modules
 sys.dont_write_bytecode = True
-from dataset_interfaces.simulated_dataset import ManualSequence
+from dataset_interfaces.simulated_dataset import SimulatedSequence
 from dataset_interfaces.scenenet_dataset import SceneNetDataset
 from visualization.drawing import MPLDrawing
 from base.evaluation import Evaluation
