@@ -40,7 +40,7 @@ To enable the python interface:
 
 * Enable QSLAM_BUILD_PYTHON_WRAP in the CMakeLists.txt
 * Repeat the steps above to build the library
-* Add quadricslam/build/cython/ to PYTHONPATH or move to a location on your path
+* Add /build/cython/quadricslam to PYTHONPATH or move to a location on your path
 
 The provided tests can be run using `make check`
 
@@ -48,6 +48,7 @@ The provided examples can be compiled using `make examples`
 
 The doxygen generated documentation can be build using `make doc` and removed with `make doc_clean`
 
+The headers / library / python module can be installed using `make install`
 
 ## Dependencies ##
 Core C++ 
@@ -82,8 +83,15 @@ Required to test the example_frontend on SceneNetRGBD:
 
 * [pySceneNetRGBD](https://github.com/jmccormac/pySceneNetRGBD)
 * [SceneNetRGBD Data](https://robotvault.bitbucket.io/scenenet-rgbd.html)
+* [ShapeNet Dataset](https://www.shapenet.org/) (optional, required to initialize quadrics using true object dimensions)
 
-## Adding Variables and Factors to Graph / Values in Python ##
+## Using QuadricSLAM ##
+
+If you wish to use this package in your own project, you can install the c++ headers and shared library using `make install`. By default the headers and library are installed to /usr/local/include and /usr/local/lib respectively. 
+
+The python interface can be used, after building, by adding /build/cython/quadricslam to the PYTHONPATH. Alternatively, `make install` will install the python module, by default, to /usr/local/cython/quadricslam. Ensure you have this folder on your PYTHONPATH before attempting to import quadricslam. 
+
+## Notes ##
 
 When using the python interface, ConstrainedDualQuadrics can be added or retrieved from Values using:
 ```Python
@@ -106,3 +114,15 @@ cython/quadricslam/quadricslam.pxd:1:0: 'gtsam/gtsam.pxd' not found
 ```
 
 Ensure that gtsam is installed with the cython toolbox enabled, and that it is on the PYTHONPATH. You can test this by attempting to import gtsam from within python. By default, gtsam is installed to /usr/local/cython. 
+
+If you import quadricslam and find it does not contain any attributes, or recieve:
+
+```
+AttributeError: module 'quadricslam' has no attribute 'ConstrainedDualQuadric'
+```
+
+Ensure that quadricslam is built with QSLAM_BUILD_PYTHON_WRAP set ON, the correct python version is used, and that the generated quadricslam.so shared library is on your PYTHONPATH. I.e, if you have installed quadricslam, that you have the following line in your ~/.bashrc
+
+```
+export PYTHONPATH=$PYTHONPATH:/usr/local/cython/quadricslam
+```
