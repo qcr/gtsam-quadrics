@@ -29,3 +29,9 @@ We have provided config files for use with SceneNet and a simple Simulated datas
 * **BOX_NOISE**: the standard deviation of noise to be introduced to the true boundingbox measurements 
 * **Initialization**: controls how quadrics are initialized, either 'SVD' to be constructed from noisy measurements, or 'Dataset' to use the true dataset quadrics. 
 * **Dataset**: controls which dataset to be run, either 'SceneNet' or 'Simulated'.
+
+* **path_to_data**: path to scenenet 'train' or 'val' folder
+* **path_to_protobufs**: path to folder containing scenenet train/val protobufs 
+* **path_to_protobuf_definition**: path to scenenet protobuf definition file (scenenet_pb2.py) from pySceneNetRGBD
+* **sequence_n**: the video number to run through the system 
+* **path_to_shapenet**: the path the 'ShapeNetCore.v2' folder 
