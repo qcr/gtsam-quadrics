@@ -12,7 +12,7 @@
  * @file AlignedBox2.cpp
  * @date Apr 14, 2020
  * @author Lachlan Nicholson
- * @brief an axis aligned 2D bounding box
+ * @brief an axis aligned 3D bounding box
  */
 
 #include <quadricslam/geometry/AlignedBox3.h>

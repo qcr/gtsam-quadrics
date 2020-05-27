@@ -21,7 +21,7 @@
 
 #include <gtsam/base/numericalDerivative.h>
 
-#define NUMERICAL_DERIVATIVE true
+#define NUMERICAL_DERIVATIVE false
 
 using namespace std;
 
@@ -40,13 +40,14 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
       throw QuadricProjectionException("Camera is inside quadric");
     }
 
-    // if (quadric.notVisible(pose, calibration_)) {
-    //   throw QuadricProjectionException("Quadric is fully outside fov w/ smartBounds on");
-    // }
-
     // project quadric taking into account partial derivatives 
     Eigen::Matrix<double, 9,6> dC_dx; Eigen::Matrix<double, 9,9> dC_dq;
-    DualConic dualConic = QuadricCamera::project(quadric, pose, calibration_, H1?&dC_dq:0, H2?&dC_dx:0);
+    DualConic dualConic;
+    if (!NUMERICAL_DERIVATIVE) {
+      dualConic = QuadricCamera::project(quadric, pose, calibration_, H1?&dC_dq:0, H2?&dC_dx:0);
+    } else {
+      dualConic = QuadricCamera::project(quadric, pose, calibration_);
+    }
 
     // check dual conic is valid for error function
     if (!dualConic.isEllipse()) {
@@ -55,30 +56,15 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
     // calculate conic bounds with derivatives
     Eigen::Matrix<double, 4,9> db_dC;
-    AlignedBox2 predictedBounds;
-
-
-    try {
+    AlignedBox2 predictedBounds; 
+    if (!NUMERICAL_DERIVATIVE) {
       predictedBounds = dualConic.bounds(H1||H2?&db_dC:0);
-      // predictedBounds = dualConic.smartBounds(calibration_, H1||H2?&db_dC:0);
-
-    } catch (QuadricProjectionException& e) {
-      throw QuadricProjectionException("Quadric is fully outside fov w/ smartBounds on");
+    } else {
+      predictedBounds = dualConic.bounds();
     }
 
     // evaluate error 
     Vector4 error = predictedBounds.vector() - measured_.vector();
-
-    // ensure error is never invalid
-    if (error.array().isInf().any() or error.array().isNaN().any()) {
-      cout << "Infinite error inside BBF" << endl;
-      cout << "Dual Conic:\n" << dualConic.matrix() << endl;
-      cout << "error: " << error.transpose() << endl;
-      pose.print("pose:\n");
-      quadric.print();
-      throw std::runtime_error("Infinite error inside BBF");
-    }
-
 
     if (NUMERICAL_DERIVATIVE) {
       boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
@@ -96,18 +82,6 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
         // combine partial derivatives 
         *H1 = db_dC * dC_dx;
-        if ((*H1).array().isInf().any() or (*H1).array().isNaN().any()) {
-          cout << "\nWARNING: (*H1) inf/nan\nH1:\n" << (*H1) << endl << endl;  
-          throw std::runtime_error("Infinite inside BBF H1");
-        }
-
-        if (TEST_ANALYTICAL) {
-          boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
-          Eigen::Matrix<double, 4,6> db_dx_ = numericalDerivative21(funPtr, pose, quadric, 1e-6);
-          if (!db_dx_.isApprox(*H1, 1e-06)) {
-            throw std::runtime_error("BoundingBoxFactor db_dx_ numerical != analytical");
-          }
-        }
       } 
       
       // calculate derivative of error wrt quadric
@@ -115,18 +89,6 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
         // combine partial derivatives 
         *H2 = db_dC * dC_dq; 
-        if ((*H2).array().isInf().any() or (*H2).array().isNaN().any()) {
-          cout << "\nWARNING: (*H2) inf/nan\nH1:\n" << (*H2) << endl << endl;  
-          throw std::runtime_error("Infinite inside BBF H2");
-        }
-        
-        if (TEST_ANALYTICAL) {
-          boost::function<Vector(const Pose3&,  const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
-          Eigen::Matrix<double, 4,9> db_dq_ = numericalDerivative22(funPtr, pose, quadric, 1e-6);
-          if (!db_dq_.isApprox(*H2, 1e-06)) {
-            throw std::runtime_error("BoundingBoxFactor db_dq_ numerical != analytical");
-          }
-        }
       }
 
     }
@@ -136,8 +98,8 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
   // handle projection failures
   } catch(QuadricProjectionException& e) {
     
-    // cout << e.what() << ": Quadric " << DefaultKeyFormatter(this->key2());
-    // cout << " and pose " << DefaultKeyFormatter(this->key1()) << endl;
+    // if error cannot be calculated
+    // set error vector and jacobians to zero
     Vector4 error = Vector4::Zero();
     if (H1) {*H1 = Matrix::Zero(4,6);}
     if (H2) {*H2 = Matrix::Zero(4,9);}

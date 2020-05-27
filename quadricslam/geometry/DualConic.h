@@ -50,10 +50,6 @@ namespace gtsam {
       /** Create ellipse from 2D pose and axis lengths */
       DualConic(const Pose2& pose, const Vector2& radii);
 
-      /** Copy constructor */
-      DualConic(const DualConic& other) :
-        dC_(other.dC_) {};
-
       /// @}
       /// @name Class methods
       /// @{
@@ -70,13 +66,6 @@ namespace gtsam {
        */
       AlignedBox2 bounds(OptionalJacobian<4,9> H = boost::none) const;
 
-      /**
-       * Returns the bounds as an object detector would see
-       * Carefully handling the intersection with the image boundaries
-       * NOTE: assumes conic is visible 
-       */ 
-      AlignedBox2 smartBounds(const boost::shared_ptr<Cal3_S2>& calibration, OptionalJacobian<4,9> H = boost::none) const;
-
       /** 
        * Returns true if conic section is degenerate 
        * Using det(C) as opposed to sign(eigenvalues)
@@ -88,9 +77,6 @@ namespace gtsam {
        * Internally calculates degeneracy 
        */
       bool isEllipse(void) const;
-
-      /** The polynomial / cartesian form as a string */
-      std::string polynomial(void) const;
 
       /// @}
       /// @name Testable group traits

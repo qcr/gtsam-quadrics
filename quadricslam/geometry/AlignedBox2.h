@@ -53,10 +53,6 @@ namespace gtsam {
       AlignedBox2(const Vector4& tlbr) : 
         tlbr_(tlbr) {};
 
-      /** Copy constructor */
-      AlignedBox2(const AlignedBox2& other) :
-        tlbr_(other.vector()) {};
-
       /// @}
       /// @name Class accessors
       /// @{

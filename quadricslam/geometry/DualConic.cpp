@@ -28,8 +28,6 @@
 
 using namespace std;
 
-#define SIGN2STR(n) (n >= 0 ? " + " : " - ")
-
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -85,117 +83,6 @@ AlignedBox2 DualConic::bounds(OptionalJacobian<4,9> H) const {
 }
 
 /* ************************************************************************* */
-/// NOTE: assumes you've checked the conic is elliptical
-AlignedBox2 DualConic::smartBounds(const boost::shared_ptr<Cal3_S2>& calibration, OptionalJacobian<4,9> H) const {
-
-  // calculate point conic
-  Matrix3 dC = dC_/dC_(2,2);
-  Matrix3 C = dC.inverse();
-
-  // normalize conic so polynomials behave 
-  C = C/C(2,2);
-  
-  // get conic extrema points
-  /// NOTE: because using bounds to find corrosponding points
-  /// and inaccuracies in inversion, we solve the poly
-  /// with a tolerance for small negative discrimnants
-  AlignedBox2 bounds = this->bounds();
-  double p1_x = bounds.xmin();
-  double p2_y = bounds.ymin();
-  double p3_x = bounds.xmax();
-  double p4_y = bounds.ymax();
-
-  AlignedBox2 fov_box(0, 0, 2.0*calibration->px(), 2.0*calibration->py());
-  if (!fov_box.containsOrIntersects(bounds)) {
-    throw QuadricProjectionException("no valid conic points inside screen dimensions, implies quadric not visible");
-  }
-  
-  // calculate corrosponding points of conic extrema
-  /// NOTE: poly should return the same item twice
-  double p1_y, p3_y, p2_x, p4_x;
-  try {
-    p1_y = gtsam::utils::getConicPointsAtX(C, p1_x)[0];
-    p3_y = gtsam::utils::getConicPointsAtX(C, p3_x)[0];
-    p2_x = gtsam::utils::getConicPointsAtY(C, p2_y)[0];
-    p4_x = gtsam::utils::getConicPointsAtY(C, p4_y)[0];
-  } catch (std::runtime_error& e) {
-    cout << "bounds: " << this->bounds().vector().transpose() << endl;
-    cout << "isEllipse: " << this->isEllipse() << endl;
-    cout << "isDegenerate: " << this->isDegenerate() << endl;
-    throw std::runtime_error("unable to get conic bound points, complex values, implies inaccurate simple bounds");
-  }
-
-  // append to set of points
-  std::vector<Point2> points; 
-  points.push_back(Point2(p1_x, p1_y));
-  points.push_back(Point2(p2_x, p2_y));
-  points.push_back(Point2(p3_x, p3_y));
-  points.push_back(Point2(p4_x, p4_y));
-
-  // calculate image dimensions from calibration
-  double image_width = calibration->px() * 2.0;
-  double image_height = calibration->py() * 2.0;
-
-  // intersection of conic and line at X = 0 
-  try {
-    Vector2 ys = gtsam::utils::getConicPointsAtX(C, 0.0);
-    points.push_back(Point2(0.0, ys[0]));
-    points.push_back(Point2(0.0, ys[1]));
-  } catch(std::runtime_error& e) { }
-
-  // intersection of conic and line at X = width
-  try {
-    Vector2 ys = gtsam::utils::getConicPointsAtX(C, image_width);
-    points.push_back(Point2(image_width, ys[0]));
-    points.push_back(Point2(image_width, ys[1]));
-  } catch(std::runtime_error& e) { }
-
-  // intersection of conic and line at Y = 0 
-  try {
-    Vector2 xs = gtsam::utils::getConicPointsAtY(C, 0.0);
-    points.push_back(Point2(xs[0], 0.0));
-    points.push_back(Point2(xs[1], 0.0));
-  } catch(std::runtime_error& e) { }
-
-  // intersection of conic and line at Y = height
-  try {
-    Vector2 xs = gtsam::utils::getConicPointsAtY(C, image_height);
-    points.push_back(Point2(xs[0], image_height));
-    points.push_back(Point2(xs[1], image_height));
-  } catch(std::runtime_error& e) { }
-
-  // only accept non-imaginary points within image boundaries
-  /// NOTE: it's important that contains includes points on the boundary
-  /// ^ such that the fov intersect points count as valid
-  AlignedBox2 imageBounds(0.0, 0.0, image_width, image_height);
-  std::vector<Point2> validPoints;
-  for (auto point : points) {
-    if (imageBounds.contains(point)) {
-      validPoints.push_back(point);
-    }
-  }
-
-  if (validPoints.size() < 1) {
-    throw std::runtime_error("no valid conic points inside image dimensions");
-  }
-  auto minMaxX = std::minmax_element(validPoints.begin(), validPoints.end(), 
-    [] (const Point2& lhs, const Point2& rhs) {return lhs.x() < rhs.x();});
-  auto minMaxY = std::minmax_element(validPoints.begin(), validPoints.end(), 
-    [] (const Point2& lhs, const Point2& rhs) {return lhs.y() < rhs.y();});
-
-  // take the max/min of remaining points
-  AlignedBox2 smartBounds(minMaxX.first->x(), minMaxY.first->y(), minMaxX.second->x(), minMaxY.second->y());
-
-  // calculate jacobians
-  if (H) {
-    // boost::function<Vector(const DualConic&)> funPtr(boost::bind(&DualConic::vectorSmartBounds, _1, calibration, boost::none));
-    // Eigen::Matrix<double, 4,9> db_dC = numericalDerivative11(funPtr, *this, 1e-6);
-    *H = Matrix::Zero(4,9);
-  }
-  return smartBounds;
-}
-
-/* ************************************************************************* */
 bool DualConic::isDegenerate(void) const {
   Matrix33 C = dC_.inverse();
   if (C.determinant() == 0.0 || C.array().isInf().any() || C.array().isNaN().any()) {
@@ -214,20 +101,6 @@ bool DualConic::isEllipse(void) const {
     return (A33.determinant() > 0);
   }
   return false;
-}
-
-/* ************************************************************************* */
-string DualConic::polynomial(void) const {
-  Matrix33 C = dC_.inverse();
-  stringstream ss;
-  ss << std::fixed << std::setprecision(2);
-  ss << C(0,0)*1 << "*x^2";
-  ss << SIGN2STR(C(0,1)*2) << fabs(C(0,1)*2) << "*x*y";
-  ss << SIGN2STR(C(1,1)*1) << fabs(C(1,1)*1) << "*y^2";
-  ss << SIGN2STR(C(0,2)*2) << fabs(C(0,2)*2) << "*x";
-  ss << SIGN2STR(C(1,2)*2) << fabs(C(1,2)*2) << "*y";
-  ss << SIGN2STR(C(2,2)*1) << fabs(C(2,2)*1) << " = 0";
-  return ss.str();
 }
 
 /* ************************************************************************* */

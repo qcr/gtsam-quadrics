@@ -9,8 +9,8 @@ add_executable(exampleWithNoise EXCLUDE_FROM_ALL exampleWithNoise.cpp)
 add_executable(simpleExample EXCLUDE_FROM_ALL simpleExample.cpp)
 
 # link with gtsam (or recieve undefined refrences)
-target_link_libraries(exampleWithNoise gtsam;cquadrics)
-target_link_libraries(simpleExample gtsam;cquadrics)
+target_link_libraries(exampleWithNoise gtsam;${CONVENIENCE_LIB_NAME})
+target_link_libraries(simpleExample gtsam;${CONVENIENCE_LIB_NAME})
 
 # adding examples_folder target to list example dependencies here
 # as opposed to listing under "make examples" in root CMakeLists

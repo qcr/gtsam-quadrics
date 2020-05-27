@@ -58,26 +58,7 @@ class Evaluation(object):
             trans_errors.append(np.linalg.norm(pose_diff.translation().vector()))
         trans_errors = np.array(trans_errors)
         rmse = np.sqrt(np.average(trans_errors**2))
-        return rmse
-
-    @staticmethod
-    def window(trajectory1, trajectory2, window):
-        """
-        Aligns a segment of the trajectory of length window
-        Then calculates the ATE between the segments
-        """
-        # assert len(trajectory1) == len(trajectory2)
-        # trans_errors = []
-        # for i in range(len(trajectory1)-window):
-        #     ap1 = trajectory1[i].between(trajectory1[i+window])
-        #     ap2 = trajectory2[i].between(trajectory2[i+window])
-        #     pose_diff = ap1.between(ap2)
-        #     trans_errors.append(np.linalg.norm(pose_diff.translation().vector()))
-        # trans_errors = np.array(trans_errors)
-        # rmse = np.sqrt(np.average(trans_errors**2))
-        # return rmse
-        pass
-            
+        return rmse            
 
     @staticmethod
     def horn_align(trajectory1, trajectory2):
@@ -92,7 +73,7 @@ class Evaluation(object):
         
     @staticmethod
     def weak_align(trajectory1, trajectory2):
-        """ Aligns trajectory1 with trajectory 2 """
+        """ Aligns the first pose of trajectory1 with trajectory2 """
         transform = trajectory1[0].between(trajectory2[0])
         warped_trajectory = trajectory1.applyTransform(transform)
         return warped_trajectory
