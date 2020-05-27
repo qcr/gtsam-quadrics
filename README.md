@@ -48,7 +48,7 @@ The provided examples can be compiled using `make examples`
 
 The doxygen generated documentation can be build using `make doc` and removed with `make doc_clean`
 
-The headers / library / python module can be installed using `make install`
+The headers / library / python module can be installed using `make install` and removed with `make uninstall`
 
 ## Dependencies ##
 Core C++ 
