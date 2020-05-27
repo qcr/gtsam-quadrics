@@ -599,10 +599,10 @@ class SceneNetPlayer(InteractivePlayer):
 
 if __name__ == '__main__':
     trainval = 'train'
-    dataset_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}'.format(trainval)
-    protobuf_folder = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/data/{}_protobufs'.format(trainval)
-    reader_path = '/media/feyre/DATA1/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py'
-    shapenet_path = '/media/feyre/DATA1/Datasets/ShapeNet/ShapeNetCore.v2'
+    dataset_path = '/path/to/SceneNetRGBD/pySceneNetRGBD/data/{}'.format(trainval)
+    protobuf_folder = '/path/to/SceneNetRGBD/pySceneNetRGBD/data/{}_protobufs'.format(trainval)
+    reader_path = '/path/to/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py'
+    shapenet_path = '/path/to/ShapeNet/ShapeNetCore.v2'
     dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path, shapenet_path)
 
     player = SceneNetPlayer(dataset)
