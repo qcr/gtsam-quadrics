@@ -9,10 +9,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file AlignedBox2.h
+ * @file quadricslam.h
  * @date Apr 14, 2020
  * @author Lachlan Nicholson
- * @brief an axis aligned 2D bounding box
+ * @brief this file provides the interface for gtsams python wrapping tool
  */
 
 /* -------------------------------------

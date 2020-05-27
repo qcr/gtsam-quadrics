@@ -9,10 +9,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testAlignedBox2.cpp
+ * @file testAlignedBox3.cpp
  * @date Apr 16, 2020
  * @author Lachlan Nicholson
- * @brief test cases for AlignedBox2
+ * @brief test cases for AlignedBox3
  */
 
 #include <CppUnitLite/TestHarness.h>
