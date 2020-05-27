@@ -9,7 +9,7 @@ set(QUADRICSLAM_VERSION
 
 
 # we want to use some C++11 features
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
 
 ###################################################################################
 # set up options
