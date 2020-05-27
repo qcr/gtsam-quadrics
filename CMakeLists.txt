@@ -80,6 +80,15 @@ install(FILES ${quadricslam_base_headers} DESTINATION include/quadricslam/base)
 file(GLOB quadricslam_geometry_headers "quadricslam/geometry/*.h")
 install(FILES ${quadricslam_geometry_headers} DESTINATION include/quadricslam/geometry)
 
+###################################################################################
+# uninstall target 
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+  IMMEDIATE @ONLY)
+
+add_custom_target(uninstall
+  "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
 
 ###################################################################################
 # Build tests (CMake tracks the dependecy to link with GTSAM through our project's static library)
