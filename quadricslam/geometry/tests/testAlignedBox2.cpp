@@ -56,6 +56,13 @@ TEST(AlignedBox2, Accessors) {
   EXPECT(assert_equal(Point2(3.,4.), box.maxPoint()));
 }
 
+TEST(AlignedBox2, WidthHeight) {
+  AlignedBox2 box(1.5, 2.7, 3.5, 12.1);
+
+  EXPECT(assert_equal(3.5-1.5, box.width()));
+  EXPECT(assert_equal(12.1-2.7, box.height()));
+}
+
 TEST(AlignedBox2, Lines) {
   AlignedBox2 box(2.,3.,4.,5.);
   std::vector<Vector3> lines = box.lines();

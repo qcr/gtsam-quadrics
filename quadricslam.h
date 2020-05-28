@@ -120,6 +120,8 @@ class AlignedBox2 {
   double xmax() const;
   double ymax() const;
   Vector vector() const;
+  double width() const;
+  double height() const;
   bool contains(const Point2& point) const;
   bool contains(const AlignedBox2& other) const;
   bool intersects(const AlignedBox2& other) const;
