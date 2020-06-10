@@ -80,7 +80,7 @@ int main(void) {
         trajectory.push_back(poses[i]);
 
         for(int j = 0; j < nBetween; j++) {
-            double perc = (j+1) / (nBetween+1);
+            double perc = (j+1) / double(nBetween+1);
             Pose3 newPose = gtsam::interpolate<Pose3>(poses[i], poses[i+1], perc);
             trajectory.push_back(newPose);
         }
