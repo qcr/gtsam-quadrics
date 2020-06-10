@@ -103,9 +103,6 @@ namespace gtsam {
       /** Returns true if this intersects other box */
       bool intersects(const AlignedBox2& other) const;
 
-      /** Returns true if this completely or partially contains other */
-      bool containsOrIntersects(const AlignedBox2& other) const;
-
       /// @}
       /// @name Testable group traits
       /// @{

@@ -125,7 +125,6 @@ class AlignedBox2 {
   bool contains(const Point2& point) const;
   bool contains(const AlignedBox2& other) const;
   bool intersects(const AlignedBox2& other) const;
-  bool containsOrIntersects(const AlignedBox2& other) const;
   gtsam::Vector3Vector lines() const;
   void print(const string& s) const;
   void print() const;

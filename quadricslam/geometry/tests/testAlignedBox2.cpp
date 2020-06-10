@@ -91,27 +91,21 @@ TEST(AlignedBox2, Contains) {
   AlignedBox2 rightEdge(10,5, 15, 7);
 
   EXPECT((true == box1.contains(fullyContained)));
-  EXPECT((true == box1.containsOrIntersects(fullyContained)));
   EXPECT((false == box1.intersects(fullyContained)));
 
   EXPECT((false == box1.contains(notContained)));
-  EXPECT((false == box1.containsOrIntersects(notContained)));
   EXPECT((false == box1.intersects(notContained)));
 
   EXPECT((false == box1.contains(surrounding)));
-  EXPECT((false == box1.containsOrIntersects(surrounding)));
   EXPECT((false == box1.intersects(surrounding)));
 
   EXPECT((false == box1.contains(partiallyContained)));
-  EXPECT((true == box1.containsOrIntersects(partiallyContained)));
   EXPECT((true == box1.intersects(partiallyContained)));
 
   EXPECT((false == box1.contains(leftEdge)));
-  EXPECT((true == box1.containsOrIntersects(leftEdge)));
   EXPECT((true == box1.intersects(leftEdge)));
 
   EXPECT((false == box1.contains(rightEdge)));
-  EXPECT((true == box1.containsOrIntersects(rightEdge)));
   EXPECT((true == box1.intersects(rightEdge)));
 }
 
