@@ -87,6 +87,7 @@ TEST(AlignedBox2, Contains) {
   AlignedBox2 notContained(15,15, 20,20);
   AlignedBox2 surrounding(-3,-3, 13,13);
   AlignedBox2 partiallyContained(5,5, 15,15);
+  AlignedBox2 edgeIntersects(-5,-5, 5,15);
   AlignedBox2 leftEdge(-3,5, 0, 7);
   AlignedBox2 rightEdge(10,5, 15, 7);
 
@@ -101,6 +102,9 @@ TEST(AlignedBox2, Contains) {
 
   EXPECT((false == box1.contains(partiallyContained)));
   EXPECT((true == box1.intersects(partiallyContained)));
+
+  EXPECT((false == box1.contains(edgeIntersects)));
+  EXPECT((true == box1.intersects(edgeIntersects)));
 
   EXPECT((false == box1.contains(leftEdge)));
   EXPECT((true == box1.intersects(leftEdge)));
