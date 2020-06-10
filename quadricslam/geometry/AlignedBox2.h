@@ -78,6 +78,12 @@ namespace gtsam {
       /** Returns Point2(xmax, ymax) */
       Point2 maxPoint() const {return Vector2(xmax(), ymax());}
 
+      /** Returns box width */
+      double width() const { return xmax()-xmin();}
+
+      /** Returns box height */
+      double height() const { return ymax()-ymin();}
+
       /// @}
       /// @name Class methods
       /// @{
@@ -91,14 +97,18 @@ namespace gtsam {
        */
       bool contains(const Point2& point) const;
 
-      /** Returns true if this completely contains other box */
+      /** 
+       * Returns true if this completely contains other box
+       * Edges touching are considered contained 
+       */
       bool contains(const AlignedBox2& other) const;
 
-      /** Returns true if this intersects other box */
+      /** 
+       * Returns true if this intersects other box 
+       * Edges touching are considered not intersecting
+       * NOTE: assumes xmin < xmax, ymin < ymax 
+       */
       bool intersects(const AlignedBox2& other) const;
-
-      /** Returns true if this completely or partially contains other */
-      bool containsOrIntersects(const AlignedBox2& other) const;
 
       /// @}
       /// @name Testable group traits

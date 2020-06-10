@@ -82,11 +82,11 @@ class System(object):
         params = gtsam.LevenbergMarquardtParams()
         params.setVerbosityLM("SUMMARY")    # SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA : VALUES, ERROR 
         params.setMaxIterations(100)
-        params.setlambdaInitial(1e-5)       # defaults to 1e5
-        params.setlambdaUpperBound(1e10)     # defaults to 1e5
-        params.setlambdaLowerBound(1e-8)    # defaults to 0.0
-        params.setRelativeErrorTol(1e-10)   # stop iterating when change in error between steps is less than this
-        params.setAbsoluteErrorTol(1e-8)    # stop when cost-costchange < tol
+        params.setlambdaInitial(1e-5)
+        params.setlambdaUpperBound(1e10)
+        params.setlambdaLowerBound(1e-8)
+        params.setRelativeErrorTol(1e-5)
+        params.setAbsoluteErrorTol(1e-5)
   
         # create optimizer
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)

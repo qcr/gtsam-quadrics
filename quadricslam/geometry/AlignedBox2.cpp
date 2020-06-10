@@ -42,32 +42,19 @@ bool AlignedBox2::contains(const Point2& point) const {
 
 /* ************************************************************************* */
 bool AlignedBox2::contains(const AlignedBox2& other) const {
-  if (this->contains(other.minPoint()) && this->contains(other.maxPoint())) {
-    return true;
-  }
-  return false;
+  return (other.xmin() >= this->xmin()
+        && other.xmax() <= this->xmax()
+        && other.ymin() >= this->ymin()
+        && other.ymax() <= this->ymax());
 }
 
 /* ************************************************************************* */
 bool AlignedBox2::intersects(const AlignedBox2& other) const {
-  int n_corners = 0;
-  if (this->contains(other.minPoint())) { n_corners++;}
-  if (this->contains(other.maxPoint())) { n_corners++;}
-  if (n_corners == 1) {
-    return true;
-  }
-  return false;
-}
-
-/* ************************************************************************* */
-bool AlignedBox2::containsOrIntersects(const AlignedBox2& other) const {
-  int n_corners = 0;
-  if (this->contains(other.minPoint())) { n_corners++;}
-  if (this->contains(other.maxPoint())) { n_corners++;}
-  if (n_corners > 0) {
-    return true;
-  }
-  return false;
+  if (this->contains(other) || other.contains(*this)) { return false;}
+  return !(this->xmin() > other.xmax() 
+        || this->xmax() < other.xmin()
+        || this->ymin() > other.ymax()
+        || this->ymax() < other.ymin()); 
 }
 
 /* ************************************************************************* */

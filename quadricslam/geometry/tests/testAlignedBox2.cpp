@@ -56,6 +56,13 @@ TEST(AlignedBox2, Accessors) {
   EXPECT(assert_equal(Point2(3.,4.), box.maxPoint()));
 }
 
+TEST(AlignedBox2, WidthHeight) {
+  AlignedBox2 box(1.5, 2.7, 3.5, 12.1);
+
+  EXPECT(assert_equal(3.5-1.5, box.width()));
+  EXPECT(assert_equal(12.1-2.7, box.height()));
+}
+
 TEST(AlignedBox2, Lines) {
   AlignedBox2 box(2.,3.,4.,5.);
   std::vector<Vector3> lines = box.lines();
@@ -80,31 +87,29 @@ TEST(AlignedBox2, Contains) {
   AlignedBox2 notContained(15,15, 20,20);
   AlignedBox2 surrounding(-3,-3, 13,13);
   AlignedBox2 partiallyContained(5,5, 15,15);
+  AlignedBox2 edgeIntersects(-5,-5, 5,15);
   AlignedBox2 leftEdge(-3,5, 0, 7);
   AlignedBox2 rightEdge(10,5, 15, 7);
 
   EXPECT((true == box1.contains(fullyContained)));
-  EXPECT((true == box1.containsOrIntersects(fullyContained)));
   EXPECT((false == box1.intersects(fullyContained)));
 
   EXPECT((false == box1.contains(notContained)));
-  EXPECT((false == box1.containsOrIntersects(notContained)));
   EXPECT((false == box1.intersects(notContained)));
 
   EXPECT((false == box1.contains(surrounding)));
-  EXPECT((false == box1.containsOrIntersects(surrounding)));
   EXPECT((false == box1.intersects(surrounding)));
 
   EXPECT((false == box1.contains(partiallyContained)));
-  EXPECT((true == box1.containsOrIntersects(partiallyContained)));
   EXPECT((true == box1.intersects(partiallyContained)));
 
+  EXPECT((false == box1.contains(edgeIntersects)));
+  EXPECT((true == box1.intersects(edgeIntersects)));
+
   EXPECT((false == box1.contains(leftEdge)));
-  EXPECT((true == box1.containsOrIntersects(leftEdge)));
   EXPECT((true == box1.intersects(leftEdge)));
 
   EXPECT((false == box1.contains(rightEdge)));
-  EXPECT((true == box1.containsOrIntersects(rightEdge)));
   EXPECT((true == box1.intersects(rightEdge)));
 }
 

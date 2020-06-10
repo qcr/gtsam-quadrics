@@ -80,7 +80,7 @@ int main(void) {
         trajectory.push_back(poses[i]);
 
         for(int j = 0; j < nBetween; j++) {
-            double perc = (j+1) / (nBetween+1);
+            double perc = (j+1) / double(nBetween+1);
             Pose3 newPose = gtsam::interpolate<Pose3>(poses[i], poses[i+1], perc);
             trajectory.push_back(newPose);
         }
@@ -205,12 +205,8 @@ int main(void) {
 
     LevenbergMarquardtParams parameters;
     parameters.setVerbosityLM("SUMMARY"); // SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
-    parameters.setRelativeErrorTol(1e-10); ///< stop iterating when change in error between steps is less than this
-    parameters.setAbsoluteErrorTol(1e-8); ///< stop when cost-costchange < tol
     parameters.setMaxIterations(100); 
-    // parameters.setlambdaInitial(1e-5);
-    // parameters.setlambdaUpperBound(1e10) ///< defaults to 1e5
-    // parameters.setlambdaLowerBound(0) ///< defaults to 0.0
+    parameters.setlambdaUpperBound(1e10); ///< defaults to 1e5
 
     // build optimiser
     LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, parameters);

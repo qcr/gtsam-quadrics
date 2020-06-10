@@ -89,7 +89,7 @@ class SimulatedSequence(object):
 
             # interpolate new poses
             for j in range(n_between):
-                percentage = (j+1) / (n_between+1)
+                percentage = (j+1) / float(n_between+1)
                 ipose = quadricslam.interpolate(poses[i], poses[i+1], percentage)
                 new_poses.append(ipose)
 

@@ -111,8 +111,6 @@ int main(void) {
     // define lm parameters
     LevenbergMarquardtParams parameters;
     parameters.setVerbosityLM("SUMMARY"); // SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
-    parameters.setRelativeErrorTol(1e-10); ///< stop iterating when change in error between steps is less than this
-    parameters.setAbsoluteErrorTol(1e-8); ///< stop when cost-costchange < tol
     parameters.setMaxIterations(100); 
 
     // build optimiser

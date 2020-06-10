@@ -85,13 +85,13 @@ if __name__ == '__main__':
 
     # define lm parameters
     parameters = gtsam.LevenbergMarquardtParams()
-    parameters.setVerbosityLM("SUMMARY")    # SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA : VALUES, ERROR 
+    parameters.setVerbosityLM("SUMMARY") # SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA : VALUES, ERROR 
     parameters.setMaxIterations(100)
-    parameters.setlambdaInitial(1e-5)       # defaults to 1e5
-    parameters.setlambdaUpperBound(1e10)     # defaults to 1e5
-    parameters.setlambdaLowerBound(1e-8)    # defaults to 0.0
-    parameters.setRelativeErrorTol(1e-10)   # stop iterating when change in error between steps is less than this
-    parameters.setAbsoluteErrorTol(1e-8)    # stop when cost-costchange < tol
+    parameters.setlambdaInitial(1e-5)
+    parameters.setlambdaUpperBound(1e10)
+    parameters.setlambdaLowerBound(1e-8)
+    parameters.setRelativeErrorTol(1e-5)
+    parameters.setAbsoluteErrorTol(1e-5)
 
     # create optimizer
     optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, parameters)
