@@ -97,10 +97,17 @@ namespace gtsam {
        */
       bool contains(const Point2& point) const;
 
-      /** Returns true if this completely contains other box */
+      /** 
+       * Returns true if this completely contains other box
+       * Edges touching are considered contained 
+       */
       bool contains(const AlignedBox2& other) const;
 
-      /** Returns true if this intersects other box */
+      /** 
+       * Returns true if this intersects other box 
+       * Edges touching are considered not intersecting
+       * NOTE: assumes xmin < xmax, ymin < ymax 
+       */
       bool intersects(const AlignedBox2& other) const;
 
       /// @}
