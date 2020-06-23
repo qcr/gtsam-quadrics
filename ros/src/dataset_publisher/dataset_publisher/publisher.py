@@ -1,19 +1,8 @@
+# import standard libraries
 import os
 import sys
-sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-packages/')
-sys.path.append('/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector')
-sys.path.append('/home/lachness/git_ws/quadricslam/examples/python/example_frontend')
-sys.dont_write_bytecode = True
-
-# import custom python modules
-from dataset_interfaces.scenenet_dataset import SceneNetDataset
-from base.containers import Boxes, Trajectory
-
-# import standard libraries
 import numpy as np
-import gtsam
-import quadricslam
-import time
+sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-packages/')
 
 # import ros libraries
 import rclpy
@@ -22,6 +11,17 @@ from std_msgs.msg import Header
 from geometry_msgs.msg import PoseStamped
 from detection_msgs.msg import AssociatedAlignedBox2D
 from detection_msgs.msg import AssociatedAlignedBox2DArray
+
+# import custom python modules
+sys.path.append('/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector')
+sys.path.append('/home/lachness/git_ws/quadricslam/examples/python/example_frontend')
+sys.dont_write_bytecode = True
+from dataset_interfaces.scenenet_dataset import SceneNetDataset
+from base.containers import Boxes, Trajectory
+
+# import gtsam and extension
+import gtsam
+import quadricslam
 
 class DatasetPublisher(Node):
     """
