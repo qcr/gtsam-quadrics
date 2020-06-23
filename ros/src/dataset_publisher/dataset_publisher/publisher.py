@@ -96,7 +96,9 @@ class DatasetPublisher(Node):
         # if we hit end of data
         if self.pose_index >= len(self.noisy_trajectory):
             self.destroy_node()
-            rclpy.shutdown()
+            # rclpy.shutdown()
+            exit()
+            
             
 
 def main(args=None):
