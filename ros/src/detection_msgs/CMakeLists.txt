@@ -23,6 +23,8 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/AlignedBox2D.msg"
   "msg/AlignedBox2DArray.msg"
+  "msg/AssociatedAlignedBox2D.msg"
+  "msg/AssociatedAlignedBox2DArray.msg"
   DEPENDENCIES std_msgs
  )
 
