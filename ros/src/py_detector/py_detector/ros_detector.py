@@ -25,6 +25,7 @@ import sys
 sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-packages/')
 sys.path.append('/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector')
 
+import cv2
 from cv_bridge import CvBridge
 
 from detector import Detector
@@ -57,19 +58,35 @@ class ROSDetector(Node):
         image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
 
         # pass image through detector 
-        detections = self.detector.forward(image).astype(np.float64)
+        detections = self.detector.forward(image)
 
-        # convert Nx85 to detection_msgs/msg/AlignedBox2DArray
-        out_detections = AlignedBox2DArray()
-        out_detections.header = msg.header
-        out_detections.boxes = []
-        for detection in detections:
-            box = AlignedBox2D()
-            box.xmin, box.ymin, box.xmax, box.ymax = detection[0:4]
-            out_detections.boxes.append(box)
-        
-        # publish detections
-        self.publisher.publish(out_detections)
+        if detections is not None:
+
+            # convert to float64 (from float32)
+            detections = detections.astype(np.float64)
+
+            # convert Nx85 to detection_msgs/msg/AlignedBox2DArray
+            out_detections = AlignedBox2DArray()
+            out_detections.header = msg.header
+            out_detections.boxes = []
+            for detection in detections:
+                box = AlignedBox2D()
+                box.xmin, box.ymin, box.xmax, box.ymax = detection[0:4]
+                out_detections.boxes.append(box)
+            
+            # publish detections
+            self.publisher.publish(out_detections)
+
+            # draw detections
+        #     for detection in detections:
+        #         x1 = detection[0]
+        #         y1 = detection[1]
+        #         x2 = detection[2]
+        #         y2 = detection[3]
+        #         cv2.rectangle(image, (int(x1),int(y1)), (int(x2),int(y2)), (255,0,0), 2)
+        # cv2.imshow('detections', image)
+        # cv2.waitKey(1)
+
 
 
 

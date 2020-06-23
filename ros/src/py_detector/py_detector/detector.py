@@ -86,18 +86,9 @@ class Detector(object):
 
             # nms returns None for each image if no detections
             if detections is None:
-                return []
+                return None
 
             # rescale to original image
             detections = rescale_boxes(detections, self.img_size, image_shape[:2])
-
-        # for detection in detections:
-        #     x1 = detection[0]
-        #     y1 = detection[1]
-        #     x2 = detection[2]
-        #     y2 = detection[3]
-        #     cv2.rectangle(image_cv2, (int(x1),int(y1)), (int(x2),int(y2)), (0,0,255), 2)
-        # cv2.imshow('detections', image_cv2)
-        # cv2.waitKey(1)
 
         return detections.cpu().numpy()
