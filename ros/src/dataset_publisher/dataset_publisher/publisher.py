@@ -49,7 +49,7 @@ class DatasetPublisher(Node):
         self.detections_publisher = self.create_publisher(AssociatedAlignedBox2DArray, 'detections', 10)
 
         # create timer
-        timer_period = 0.5  # seconds
+        timer_period = 0.1  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.pose_index = 0
 
@@ -62,7 +62,7 @@ class DatasetPublisher(Node):
         pose_detections = self.noisy_boxes.at_pose(self.pose_index)
 
         header = Header()
-        header.frame_id = "robot"
+        header.frame_id = '{}'.format(self.pose_index)
         header.stamp = self.get_clock().now().to_msg()
 
         pose_msg = PoseStamped()
