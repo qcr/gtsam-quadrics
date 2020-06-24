@@ -113,18 +113,18 @@ class ROSQuadricSLAM(Node):
                 object_boxes = self.boxes.at_object(object_key)
                 # # need to use pose history as old measurements would have had the corrosponding poses cleared
                 object_poses = [self.pose_history[pose_key] for pose_key in object_boxes.pose_keys()]
-                # quadric_matrix = self.quadric_SVD(object_poses, object_boxes, self.calibration)
-                # quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
+                quadric_matrix = self.quadric_SVD(object_poses, object_boxes, self.calibration)
+                quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
 
-                quadric = self.true_quadrics.at(object_key)
+                # quadric = self.true_quadrics.at(object_key)
 
                 # check quadric is okay
-                # if not self.is_okay(quadric, object_poses, self.calibration):
+                if self.is_okay(quadric, object_poses, self.calibration):
 
-                # add quadric to values and history
-                quadric.addToValues(self.estimate, self.Q(object_key))
-                quadric.addToValues(self.estimate_full, self.Q(object_key))
-                self.initial_quadrics.add(quadric, object_key)
+                    # add quadric to values and history
+                    quadric.addToValues(self.estimate, self.Q(object_key))
+                    quadric.addToValues(self.estimate_full, self.Q(object_key))
+                    self.initial_quadrics.add(quadric, object_key)
 
         # add measurements if initialized 
         for (pose_key, object_key), box in self.boxes.items():
