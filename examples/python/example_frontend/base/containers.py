@@ -143,6 +143,9 @@ class Quadrics(object):
         if quadrics is None:
             self._quadrics = dict()
 
+    def __len__(self):
+        return len(self._quadrics)
+
     def add(self, quadric, key):
         """ inline """
         self._quadrics[key] = quadric
