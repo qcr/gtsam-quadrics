@@ -205,6 +205,9 @@ class Boxes(object):
         """ returns [boxes] | O(1)"""
         return list(self._boxes.values())
 
+    def remove(self, pose_key, object_key):
+        self._boxes.pop((pose_key, object_key))
+
     def keypairs(self):
         return list(self._boxes.keys())
 
