@@ -20,7 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'run = rosquadricslam.system:main',
+            'system = rosquadricslam.system:main',
+            'dataset_publisher = rosquadricslam.dataset_publisher:main',
+            'webcam_publisher = rosquadricslam.webcam_publisher:main',
         ],
     },
 )
