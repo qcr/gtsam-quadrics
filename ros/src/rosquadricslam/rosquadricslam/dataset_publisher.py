@@ -3,14 +3,17 @@ import os
 import sys
 import numpy as np
 sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-packages/')
+import cv2
 
 # import ros libraries
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Header
+from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseStamped
 from detection_msgs.msg import AssociatedAlignedBox2D
 from detection_msgs.msg import AssociatedAlignedBox2DArray
+from cv_bridge import CvBridge
 
 # import custom python modules
 sys.path.append('/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector')
@@ -34,6 +37,9 @@ class DatasetPublisher(Node):
         self.dataset = dataset
         self.sequence = dataset[0]
 
+        # load images
+        self.image_paths = self.sequence.image_paths
+
         # get noisy odometry
         self.true_trajectory = self.sequence.true_trajectory
         self.true_odometry = self.true_trajectory.as_odometry()
@@ -47,24 +53,36 @@ class DatasetPublisher(Node):
         # create publishers
         self.pose_publisher = self.create_publisher(PoseStamped, 'poses', 10)
         self.detections_publisher = self.create_publisher(AssociatedAlignedBox2DArray, 'detections', 10)
+        self.image_publisher = self.create_publisher(Image, 'images', 10)
+
+        # store cv2bridge
+        self.bridge = CvBridge()
 
         # create timer
         timer_period = 0.1  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
-        self.pose_index = 0
+        self.index = 0
 
     def timer_callback(self):
         """
         Every few seconds publish next pose and relevant detections
         """
 
-        pose = self.noisy_trajectory.at(self.pose_index)
-        pose_detections = self.noisy_boxes.at_pose(self.pose_index)
+        # get pose, detections and image
+        image = cv2.imread(self.image_paths[self.index])
+        pose = self.noisy_trajectory.at(self.index)
+        pose_detections = self.noisy_boxes.at_pose(self.index)
 
+        # create header
         header = Header()
-        header.frame_id = '{}'.format(self.pose_index)
+        header.frame_id = '{}'.format(self.index)
         header.stamp = self.get_clock().now().to_msg()
 
+        # convert cv2 image to msg
+        image_msg = self.bridge.cv2_to_imgmsg(image, encoding='passthrough')
+        image_msg.header = header
+
+        # convert pose to msg
         pose_msg = PoseStamped()
         pose_msg.pose.position.x = pose.x()
         pose_msg.pose.position.y = pose.y()
@@ -75,6 +93,7 @@ class DatasetPublisher(Node):
         pose_msg.pose.orientation.z = pose.rotation().quaternion()[3]
         pose_msg.header = header
 
+        # convert detections to msg
         detections_msg = AssociatedAlignedBox2DArray()
         detections_msg.header = header
         detections_msg.boxes = []
@@ -87,14 +106,15 @@ class DatasetPublisher(Node):
             box_msg.key = int(object_key)
             detections_msg.boxes.append(box_msg)
 
+        # publish and log
         self.pose_publisher.publish(pose_msg)
         self.detections_publisher.publish(detections_msg)
-        self.get_logger().info('Publishing pose key: {}'.format(self.pose_index))
-
-        self.pose_index += 1
+        self.image_publisher.publish(image_msg)
+        self.get_logger().info('Publishing pose key: {}'.format(self.index))
+        self.index += 1
 
         # if we hit end of data
-        if self.pose_index >= len(self.noisy_trajectory):
+        if self.index >= len(self.noisy_trajectory):
             self.destroy_node()
             # rclpy.shutdown()
             exit()
