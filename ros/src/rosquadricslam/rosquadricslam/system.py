@@ -2,16 +2,21 @@
 import os
 import sys
 import numpy as np
-from collections import defaultdict
 sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-packages/')
+import cv2
+from enum import Enum
 
 # import ros libraries
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Header
+from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseStamped
 from detection_msgs.msg import AssociatedAlignedBox2D
 from detection_msgs.msg import AssociatedAlignedBox2DArray
+from detection_msgs.msg import AlignedBox2D
+from detection_msgs.msg import AlignedBox2DArray
+from cv_bridge import CvBridge
 
 # import custom python modules
 sys.path.append('/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector')
@@ -19,7 +24,7 @@ sys.path.append('/home/lachness/git_ws/quadricslam/examples/python/example_front
 sys.dont_write_bytecode = True
 from dataset_interfaces.scenenet_dataset import SceneNetDataset
 from base.containers import Trajectory, Quadrics
-from visualization.drawing import MPLDrawing
+from visualization.drawing import CV2Drawing
 
 # import gtsam and extension
 import gtsam
@@ -74,8 +79,9 @@ class Poses(object):
 
 
 class AssociatedBox(quadricslam.AlignedBox2): 
-    def __init__(self, box, pose_key=-1, object_key=-1):
+    def __init__(self, box, pose_key=-1, object_key=-1, time=None):
         super().__init__(box)
+        self.time = time
         self.pose_key = pose_key
         self.object_key = object_key
         self.used = False
@@ -113,8 +119,8 @@ class Boxes(object):
     def __getitem__(self, index):
         return self._boxes[index]
 
-    def add_box(self, box, pose_key=-1, object_key=-1):
-        self._boxes.append(AssociatedBox(box, pose_key, object_key))
+    def add_box(self, box, pose_key=-1, object_key=-1, time=None):
+        self._boxes.append(AssociatedBox(box, pose_key, object_key, time))
 
     def add_associated_box(self, abox):
         self._boxes.append(abox)
@@ -148,13 +154,205 @@ class Boxes(object):
 
     
 
+
+
+
+
+
+
+class TrackerType(Enum):
+    BOOSTING = 1
+    MIL = 2
+    KCF = 3
+    TLD = 4
+    MEDIANFLOW = 5
+    GOTURN = 6
+    MOSSE = 7
+    CSRT = 8
+
+class BoxTracker(object):
+    """
+    Wrapper around cv2.tracker to convert box types and control tracker type.
+    that allows us to stop using the tracker
+    if it's failed in the past. 
+    """
+
+    def __init__(self, image, box, tracker_type=TrackerType.KCF):
+        self.tracker_type = tracker_type
+        self.tracker = self.new_tracker()
+        try:
+            self.tracker.init(image, self.to_cvbox(box))
+        except:
+            print('tracker wont init, box: ', self.to_cvbox(box))
+            exit()
+    
+    @staticmethod
+    def to_cvbox(box):
+        return (box.xmin(), box.ymin(), box.xmax()-box.xmin(), box.ymax()-box.ymin())
+
+    @staticmethod
+    def from_cvbox(tlwh):
+        return quadricslam.AlignedBox2(tlwh[0], tlwh[1], tlwh[0]+tlwh[2], tlwh[1]+tlwh[3])
+
+    def new_tracker(self):
+        if self.tracker_type == TrackerType.BOOSTING:
+            return cv2.TrackerBoosting_create() #'BOOSTING'
+        elif self.tracker_type == TrackerType.MIL:
+            return cv2.TrackerMIL_create() #'MIL'
+        elif self.tracker_type == TrackerType.KCF:
+            return cv2.TrackerKCF_create() #'KCF'
+        elif self.tracker_type == TrackerType.TLD:
+            return cv2.TrackerTLD_create() #'TLD'
+        elif self.tracker_type == TrackerType.MEDIANFLOW:
+            return cv2.TrackerMedianFlow_create() #'MEDIANFLOW'
+        elif self.tracker_type == TrackerType.GOTURN:
+            return cv2.TrackerGOTURN_create() #'GOTURN'
+        elif self.tracker_type == TrackerType.MOSSE:
+            return cv2.TrackerMOSSE_create() #'MOSSE'
+        elif self.tracker_type == TrackerType.CSRT:
+            return cv2.TrackerCSRT_create() #"CSRT"
+        else:
+            raise ValueError('BoxTracker new_tracker called with unknown self.tracker_type')
+
+    def update(self, image):    
+        ok, cvbox = self.tracker.update(image)
+        box = self.from_cvbox(cvbox)
+        return ok, box
+
+
+class ObjectTracker(object):
+    """
+    Ensure you call update(image) before checking compatability. 
+    """
+    def __init__(self, object_key, image, box):
+        self.object_key = object_key
+        
+        # define parameters
+        self.n_active_trackers = 1
+        
+        # store trackers
+        tracker = BoxTracker(image, box)
+        self.trackers = [tracker]
+
+        # store last prediction
+        self.predictions = []
+
+    def update(self, image):
+        # clear previous predictions
+        self.predictions = []
+        
+        # update most recent trackers
+        for tracker in self.trackers[-self.n_active_trackers:]:
+            ok, box = tracker.update(image)
+            if ok:
+                self.predictions.append(box)
+
+    def compatability(self, box):
+        """
+        Checks how compatible new box is with trackers
+        """
+        if len(self.predictions) == 0:
+            return 0.0
+        ious = [self._iou(predicted_box, box) for predicted_box in self.predictions]
+        return np.max(ious)
+
+    def associate(self, box, image):
+        tracker = BoxTracker(image, box)
+        box.object_key = self.object_key
+        self.trackers.append(tracker)
+
+    @staticmethod
+    def _iou(boxA, boxB):
+        # determine the (x, y)-coordinates of the intersection rectangle
+        xA = max(boxA.xmin(), boxB.xmin())
+        yA = max(boxA.ymin(), boxB.ymin())
+        xB = min(boxA.xmax(), boxB.xmax())
+        yB = min(boxA.ymax(), boxB.ymax())
+
+        # compute the area of intersection rectangle
+        interArea = max(0, max(0,(xB - xA + 1)) * max(0,(yB - yA + 1)))
+
+        # compute the area of both the prediction and ground-truth boxes
+        boxAArea = (boxA.xmax() - boxA.xmin() + 1) * (boxA.ymax() - boxA.ymin() + 1)
+        boxBArea = (boxB.xmax() - boxB.xmin() + 1) * (boxB.ymax() - boxB.ymin() + 1)
+
+        # compute the intersection over union by taking the intersection
+        # area and dividing it by the sum of prediction + ground-truth
+        # areas - the interesection area
+        iou = interArea / float(boxAArea + boxBArea - interArea)
+
+        if iou < 0.0:
+            print('NEGATIVE IOU')
+            exit()
+        return iou
+
+
+
+class DataAssociation(object):
+    """
+    Detections are assigned to an object key as they come in. 
+    They should not be stored without a key as we never go back to update / arange them.
+    """
+    def __init__(self):
+        self.object_trackers = []
+        self.IOU_THRESH = 0.1
+
+    def track(self, image, image_detections):
+        # debug variables
+        new_objects = 0
+        tracked_objects = 0
+        
+        # update object trackers with new image
+        # should also turn inactive if not matched in X frames
+        for object_tracker in self.object_trackers:
+            object_tracker.update(image)
+
+        # check compatability between each detection and active trackers
+        for box in image_detections:
+            compatabilities = [tracker.compatability(box) for tracker in self.object_trackers]
+
+            # draw box and predictions
+            # img = image.copy()
+            # cv2.rectangle(img, (int(box.xmin()),int(box.ymin())), (int(box.xmax()),int(box.ymax())), (255,255,0), 1)
+            # for tracker in self.object_trackers:
+            #     for pbox in tracker.predictions:
+            #         cv2.rectangle(img, (int(pbox.xmin()),int(pbox.ymin())), (int(pbox.xmax()),int(pbox.ymax())), (0,255,255), 1)
+            # cv2.imshow('test',img)
+            # cv2.waitKey(1)
+
+            # associate with existing tracker
+            if len(compatabilities) > 0 and np.max(compatabilities) > self.IOU_THRESH:
+                self.object_trackers[np.argmax(compatabilities)].associate(box, image)
+                tracked_objects += 1
+
+            # or create new tracker 
+            else:
+                new_key = len(self.object_trackers)
+                self.object_trackers.append(ObjectTracker(new_key, image, box))
+                new_objects += 1
+
+        # print 
+        print('DataAssociation: image had {} detections. {} associated | {} new | Total trackers: {}'.format(
+            len(image_detections),
+            tracked_objects,
+            new_objects,
+            len(self.object_trackers),
+        ))
+
+    def prints(self):
+        print('DataAssociation: {} objects and {} trackers'.format(
+            len(self.object_trackers),
+            len(self.object_trackers)
+        ))
+    
+
 class ROSQuadricSLAM(Node):
     def __init__(self):
         # set node name
         super().__init__('ROSQuadricSLAM')
 
         # settings
-        UPDATE_TIME = 3.0  # seconds
+        UPDATE_TIME = 1.0  # seconds
         POSE_SIGMA = 0.001
         BOX_SIGMA = 0.5
 
@@ -164,21 +362,32 @@ class ROSQuadricSLAM(Node):
 
         # start subscriptions
         self.pose_subscription = self.create_subscription(PoseStamped, 'poses', self.pose_callback, 10)
-        self.detection_subscription = self.create_subscription(AssociatedAlignedBox2DArray, 'detections', self.detection_callback, 10)
+        self.detection_subscription = self.create_subscription(AlignedBox2DArray, 'detections', self.detection_callback, 10)
+        self.image_subscription = self.create_subscription(Image, 'image', self.image_callback, 10)
+
+        # store Image->msg converter
+        self.bridge = CvBridge()
 
         # get camera calibration
-        dataset = SceneNetDataset(
-            dataset_path = '/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/data/train',
-            protobuf_folder = '/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/data/train_protobufs',
-            reader_path = '/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py',
-            shapenet_path = '/media/lachness/DATA/Datasets/ShapeNet/ShapeNetCore.v2'
+        # dataset = SceneNetDataset(
+        #     dataset_path = '/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/data/train',
+        #     protobuf_folder = '/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/data/train_protobufs',
+        #     reader_path = '/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py',
+        #     shapenet_path = '/media/lachness/DATA/Datasets/ShapeNet/ShapeNetCore.v2'
+        # )
+        # self.calibration = dataset.load_calibration()
+        self.calibration = gtsam.Cal3_S2(
+            311.48, 
+            311.26, 
+            0.0, 
+            309.43, 
+            237.72
         )
-        self.calibration = dataset.load_calibration()
 
         # store true data
-        sequence = dataset[0]
-        self.true_trajectory = sequence.true_trajectory
-        self.true_quadrics = sequence.true_quadrics
+        # sequence = dataset[0]
+        # self.true_trajectory = sequence.true_trajectory
+        # self.true_quadrics = sequence.true_quadrics
 
         # set noise models
         self.prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([POSE_SIGMA]*6, dtype=np.float))
@@ -196,21 +405,82 @@ class ROSQuadricSLAM(Node):
         self.isam = gtsam.ISAM2(self.parameters)
 
         # set measurement storage 
+        self.images = dict()
         self.poses = Poses()
         self.boxes = Boxes()
         self.initial_quadrics = Quadrics()
 
+        # store DA tracker
+        self.data_association = DataAssociation()
+        self.associated_times = []
+
         # create timer for update function
         self.timer = self.create_timer(UPDATE_TIME, self.update)
         
+        # convert from time stamp to pose_keys
+        # needed because we recieve poses/images/detections with times
+        # but end up storing them in Poses/graph with keys
+        self.time2key = dict()
+
+        # store current estimates to draw each frame
+        self.current_trajectory = []
+        self.current_quadrics = []
         print('\n~ Awaiting Measurements ~')
 
 
-    def associate(self, boxes):
-        """
-        Assigns all boxes with no object key to a previous or new object.
-        """
-        
+    def convert_time_to_key(self, stamp):
+        # store stamp->key
+        float_time = float(stamp.sec) + float(stamp.nanosec)*1e-9
+
+        # add new pose_key if new time 
+        if float_time not in self.time2key:
+            pose_key = len(self.time2key)
+            self.time2key[float_time] = pose_key
+        else: 
+            pose_key = self.time2key[float_time]
+        return pose_key
+
+    def detection_callback(self, msg):
+
+        # convert time 2 key
+        pose_key = self.convert_time_to_key(msg.header.stamp)
+        # self.get_logger().info('Receieved detection @ {}'.format(pose_key))
+
+        # convert msg to AlignedBox2 and store
+        float_time = float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec)*1e-9
+        for msg_box in msg.boxes:
+            box = quadricslam.AlignedBox2(msg_box.xmin, msg_box.ymin, msg_box.xmax, msg_box.ymax)
+            # object_key = int(msg_box.key)
+            self.boxes.add_box(box, pose_key, -1, time=float_time)
+
+    def pose_callback(self, msg):
+
+        # convert time 2 key
+        pose_key = self.convert_time_to_key(msg.header.stamp)
+        # self.get_logger().info('Receieved pose @ {}'.format(pose_key))
+
+        # convert msg to Pose3 and store
+        point = gtsam.Point3(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
+        rot = gtsam.Rot3.Quaternion(msg.pose.orientation.w, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z)
+        pose = gtsam.Pose3(rot, point)
+        self.poses.add_pose(pose, pose_key)
+
+    def image_callback(self, msg):
+        # self.get_logger().info('Receieved image @ {}'.format(msg.header.frame_id))
+
+        # convert msg to Image and store
+        image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+        float_time = float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec)*1e-9
+        self.images[float_time] = image
+
+    def draw_detections(self):
+        for time, image in self.images.items():
+            boxes = [b for b in self.boxes if b.time == time]
+            for box in boxes:
+                cv2.rectangle(image, (int(box.xmin()),int(box.ymin())), (int(box.xmax()),int(box.ymax())), (255,255,0), 1)
+            cv2.imshow('test', image)
+            cv2.waitKey(100)
+
 
     def update(self):
         """
@@ -220,7 +490,8 @@ class ROSQuadricSLAM(Node):
             add newly initialized landmarks to estimate
             add any new detections if object initialized to graph
         """
-        self.get_logger().info('updating isam2 with measurements')
+        self.get_logger().info('Started Update function')
+
 
         # create local graph and estimate
         local_graph = gtsam.NonlinearFactorGraph()
@@ -233,9 +504,13 @@ class ROSQuadricSLAM(Node):
             local_graph.add(prior_factor)
             stamped_pose.used = True
 
-
-        # associate measurements
-        self.associate(self.boxes)
+        # associate new measurements
+        for time, image in self.images.items():
+            if time not in self.associated_times:
+                # self.get_logger().info('UPDATE: associating detections from time {}'.format(time))
+                image_detections = [b for b in self.boxes if b.time == time]
+                self.data_association.track(image, image_detections)
+                self.associated_times.append(time)
 
         # check if we can initialize any new objects
         object_keys, counts = np.unique(self.boxes.object_keys(), return_counts=True)
@@ -253,6 +528,7 @@ class ROSQuadricSLAM(Node):
             if count >= 5:
 
                 object_boxes = self.boxes.at_object(object_key)
+                # NOTE: not all poses may have come through
                 object_poses = self.poses.at_keys(object_boxes.pose_keys())
                 quadric_matrix = self.quadric_SVD(object_poses, object_boxes, self.calibration)
                 quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
@@ -293,6 +569,10 @@ class ROSQuadricSLAM(Node):
         # calculate current estimate
         current_estimate = self.isam.calculateEstimate()
 
+        # draw current map view
+        self.current_trajectory = Trajectory.from_values(current_estimate)
+        self.current_quadrics = Quadrics.from_values(current_estimate)
+
 
         # # lvm optimisation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # params = gtsam.LevenbergMarquardtParams()
@@ -314,13 +594,15 @@ class ROSQuadricSLAM(Node):
         # # lvm optimisation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         # draw current estimate 
-        current_trajectory = Trajectory.from_values(current_estimate)
-        current_quadrics = Quadrics.from_values(current_estimate)
-        initial_trajectory = Trajectory.from_values(self.estimate)
-        initial_quadrics = Quadrics.from_values(self.estimate)
-        if len(current_trajectory) > 3 and len(current_quadrics) > 0:
-            mpldrawing = MPLDrawing('result')
-            mpldrawing.plot_result([self.true_trajectory, current_trajectory, initial_trajectory], [self.true_quadrics, current_quadrics, initial_quadrics], ['g', 'm', 'r'], ['true_estimate', 'current_estimate', 'initial_estimate'])
+        # current_trajectory = Trajectory.from_values(current_estimate)
+        # current_quadrics = Quadrics.from_values(current_estimate)
+        # initial_trajectory = Trajectory.from_values(self.estimate)
+        # initial_quadrics = Quadrics.from_values(self.estimate)
+        # if len(current_trajectory) > 3 and len(current_quadrics) > 0:
+        #     mpldrawing = MPLDrawing('result')
+        #     mpldrawing.plot_result([self.true_trajectory, current_trajectory, initial_trajectory], [self.true_quadrics, current_quadrics, initial_quadrics], ['g', 'm', 'r'], ['true_estimate', 'current_estimate', 'initial_estimate'])
+
+
 
             
     def check_problem(self, graph, estimate): 
@@ -328,14 +610,13 @@ class ROSQuadricSLAM(Node):
         print('Checking problem for missing DOF')
 
         # extract variables from estimate
-        trajectory = Trajectory.from_values(estimate)
         quadrics = Quadrics.from_values(estimate)
         # box_factors = [quadricslam.BoundingBoxFactor.getFromGraph(graph, i) for i in range(graph.size()) if graph.at(i).keys().size() == 2 and chr(gtsam.symbolChr(graph.at(i).keys().at(1))) == 'q']
         box_factor_keys = [int(gtsam.symbolIndex(graph.at(i).keys().at(1))) for i in range(graph.size()) if graph.at(i).keys().size() == 2 and chr(gtsam.symbolChr(graph.at(i).keys().at(1))) == 'q']
         # pose_factors = [graph.at(i) for i in range(graph.size()) if graph.at(i).keys().size() == 1 and chr(gtsam.symbolChr(graph.at(i).keys().at(0))) == 'x']
 
         pose_factor_keys = [int(gtsam.symbolIndex(graph.at(i).keys().at(0))) for i in range(graph.size()) if graph.at(i).keys().size() == 1 and chr(gtsam.symbolChr(graph.at(i).keys().at(0))) == 'x']
-        pose_estimate_keys = trajectory.keys()
+        pose_estimate_keys = [int(gtsam.symbolIndex(estimate.keys().at(i))) for i in range(estimate.keys().size()) if chr(gtsam.symbolChr(estimate.keys().at(i))) == 'x']
 
         # ensure each pose factor has estimate
         leftover_keys = list(set(pose_factor_keys).symmetric_difference(pose_estimate_keys))
@@ -379,25 +660,6 @@ class ROSQuadricSLAM(Node):
                     object_key, pose_key,
                     H1dof, H2dof
                 ))
-
-    def detection_callback(self, msg):
-        self.get_logger().info('Receieved detection @ {}'.format(msg.header.frame_id))
-
-        # convert msg to AlignedBox2 and store
-        pose_key = int(msg.header.frame_id)
-        for msg_box in msg.boxes:
-            box = quadricslam.AlignedBox2(msg_box.xmin, msg_box.ymin, msg_box.xmax, msg_box.ymax)
-            self.boxes.add_box(box, pose_key, int(msg_box.key))
-
-    def pose_callback(self, msg):
-        self.get_logger().info('Receieved pose @ {}'.format(msg.header.frame_id))
-
-        # convert msg to Pose3 and store
-        pose_key = int(msg.header.frame_id)
-        point = gtsam.Point3(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
-        rot = gtsam.Rot3.Quaternion(msg.pose.orientation.w, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z)
-        pose = gtsam.Pose3(rot, point)
-        self.poses.add_pose(pose, pose_key)
 
     def quadric_SVD(self, poses, object_boxes, calibration):
         """ calculates quadric_matrix using SVD """
