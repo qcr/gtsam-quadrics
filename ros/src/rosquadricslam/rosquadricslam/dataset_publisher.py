@@ -53,7 +53,7 @@ class DatasetPublisher(Node):
         # create publishers
         self.pose_publisher = self.create_publisher(PoseStamped, 'poses', 10)
         self.detections_publisher = self.create_publisher(AssociatedAlignedBox2DArray, 'detections', 10)
-        self.image_publisher = self.create_publisher(Image, 'images', 10)
+        self.image_publisher = self.create_publisher(Image, 'image', 10)
 
         # store cv2bridge
         self.bridge = CvBridge()
