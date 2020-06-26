@@ -14,11 +14,15 @@ colcon build
 
 ### Usage
 
-* start the camera publisher (ros2 run image_tools cam2image --ros-args -p width:=640 -p height:=480)
-* start the detector (ros2 run py_detector detect)
+#### With PySceneNetRGBD
 
-```
-source /path/to/quadricslam/ros/install/setup.bash
-ros2 run py_detector listener
-```
+* start the dataset publisher ``` ros2 run rosquadricslam dataset_publisher ```
+* start the system ``` ros2 run rosquadricslam system ```
 
+#### With webcam
+
+<!-- * start the webcam publisher ``` ros2 run image_tools cam2image --ros-args -p width:=640 -p height:=480 ``` -->
+* start the webcam publisher ``` ros2 run rosquadricslam webcam_publisher --ros-args -p width:=640 -p height:=480 ```
+* start the object detector ``` ros2 run py_detector detect ```
+* start the slam system ``` ros2 run openvslam run_slam -v ../../example/webcam/orb_vocab.dbow2 -c ../../example/webcam/mono.yaml ```
+* start the quadricslam system ``` ros2 run rosquadricslam system  ```
