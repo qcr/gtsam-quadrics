@@ -39,6 +39,7 @@ class DatasetPublisher(Node):
 
         # load images
         self.image_paths = self.sequence.image_paths
+        self.image_dimensions = cv2.imread(self.image_paths[0]).shape[:2][::-1]
 
         # get noisy odometry
         self.true_trajectory = self.sequence.true_trajectory
@@ -48,7 +49,7 @@ class DatasetPublisher(Node):
 
         # get noisy detections
         self.true_boxes = self.sequence.true_boxes
-        self.noisy_boxes = self.true_boxes.add_noise(mu=0.0, sd=2.0)
+        self.noisy_boxes = self.true_boxes.add_noise_strict(mu=0.0, sd=2.0, image_dimensions=self.image_dimensions)
 
         # create publishers
         self.pose_publisher = self.create_publisher(PoseStamped, 'poses', 10)

@@ -245,6 +245,43 @@ class Boxes(object):
             noisy_boxes.add(noisy_box, pose_key, object_key)
         return noisy_boxes
 
+    def add_noise_strict(self, mu, sd, image_dimensions):
+        """ Take care to ensure boxes have positive width/height
+        And they do not extend past the image dimensions """
+        image_box = quadricslam.AlignedBox2(0,0,image_dimensions[0],image_dimensions[1])
+        noisy_boxes = Boxes()
+        for (pose_key, object_key), box in list(self._boxes.items()):
+
+            # get normally distributed doubles 
+            noise_vector = np.random.normal(mu, sd, 4)
+
+            # construct noisey perturbation
+            nbox = quadricslam.AlignedBox2(box.vector() + noise_vector)
+
+            # ensure nbox right way around
+            if nbox.width() < 0:
+                nbox = quadricslam.AlignedBox2(nbox.xmax(), nbox.ymin(), nbox.xmin(), nbox.ymax())
+            if nbox.height() < 0:
+                nbox = quadricslam.AlignedBox2(nbox.xmin(), nbox.ymax(), nbox.xmax(), nbox.ymin())
+
+            # make sure box is inside image dimensions
+            if nbox.intersects(image_box):
+                nbox = nbox.vector()
+                nbox[[0,2]] = np.clip(nbox[[0,2]], image_box.xmin(), image_box.xmax())
+                nbox[[1,3]] = np.clip(nbox[[1,3]], image_box.ymin(), image_box.ymax())
+                nbox = quadricslam.AlignedBox2(nbox)
+
+            # make sure nbox has width/height
+            if nbox.width() >= 0.0 and nbox.width() < 1.0:
+                continue
+            if nbox.height() >= 0.0 and nbox.height() < 1.0:
+                continue
+
+
+            # add nbox to collection
+            noisy_boxes.add(nbox, pose_key, object_key)
+        return noisy_boxes
+
     def prints(self, detailed=False):
         for object_key in np.unique(self.object_keys()):
             object_boxes = self.at_object(object_key)
