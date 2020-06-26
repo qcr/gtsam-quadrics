@@ -90,7 +90,13 @@ class SimulatedSequence(object):
             # interpolate new poses
             for j in range(n_between):
                 percentage = (j+1) / float(n_between+1)
-                ipose = quadricslam.interpolate(poses[i], poses[i+1], percentage)
+
+                # provide support for newer gtsam versions
+                if hasattr(quadricslam, 'utils_interpolate'):
+                    ipose = quadricslam.utils_interpolate(poses[i], poses[i+1], percentage)
+                else:
+                    ipose = quadricslam.interpolate(poses[i], poses[i+1], percentage)
+
                 new_poses.append(ipose)
 
         # add final pose
