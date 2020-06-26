@@ -22,10 +22,6 @@ sys.dont_write_bytecode = True
 from dataset_interfaces.scenenet_dataset import SceneNetDataset
 from base.containers import Boxes, Trajectory
 
-# import gtsam and extension
-import gtsam
-import quadricslam
-
 class DatasetPublisher(Node):
     """
     Publish /detections and /poses
@@ -76,7 +72,7 @@ class DatasetPublisher(Node):
 
         # create header
         header = Header()
-        header.frame_id = '{}'.format(self.index)
+        header.frame_id = 'camera_frame'
         header.stamp = self.get_clock().now().to_msg()
 
         # convert cv2 image to msg
@@ -111,7 +107,7 @@ class DatasetPublisher(Node):
         self.pose_publisher.publish(pose_msg)
         self.detections_publisher.publish(detections_msg)
         self.image_publisher.publish(image_msg)
-        self.get_logger().info('Publishing pose key: {}'.format(self.index))
+        self.get_logger().info('Publishing frame {}'.format(self.index))
         self.index += 1
 
         # if we hit end of data
@@ -135,7 +131,6 @@ def main(args=None):
     rclpy.spin(dataset_publisher)
     dataset_publisher.destroy_node()
     rclpy.shutdown()
-
 
 
 if __name__ == '__main__':
