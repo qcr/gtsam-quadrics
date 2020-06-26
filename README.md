@@ -84,6 +84,7 @@ Required to test the example_frontend on SceneNetRGBD:
 * [pySceneNetRGBD](https://github.com/jmccormac/pySceneNetRGBD)
 * [SceneNetRGBD Data](https://robotvault.bitbucket.io/scenenet-rgbd.html)
 * [ShapeNet Dataset](https://www.shapenet.org/) (optional, required to initialize quadrics using true object dimensions)
+* Google Protobuf (`pip3 install protobuf`)
 
 ## Using QuadricSLAM ##
 
