@@ -1,36 +1,36 @@
+"""
+QuadricSLAM Copyright 2020, ARC Centre of Excellence for Robotic Vision, Queensland University of Technology (QUT)
+Brisbane, QLD 4000
+All Rights Reserved
 
+See LICENSE for the license information
+
+Description: Trajectory, Quadrics, Boxes, Odometry containers
+Author: Lachlan Nicholson (Python)
+"""
+
+# import standard libraries
 import os
 import sys
 sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-packages/')
-sys.path.append('/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector')
-
-import time
-import datetime
-import argparse
-
-from models import *
-from utils.utils import *
-from utils.datasets import *
-
+import numpy as np
 from PIL import Image
-
+import cv2
 import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision import transforms
 from torch.autograd import Variable
-
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.ticker import NullLocator
 
-import cv2
-
-import numpy as np
-import torch
-from torchvision import transforms
-import torch.nn.functional as F
-
+# import custom modules
+sys.dont_write_bytecode = True
+sys.path.append('/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector')
+from models import *
+from utils.utils import *
+from utils.datasets import *
 
 class Detector(object):
     def __init__(self):

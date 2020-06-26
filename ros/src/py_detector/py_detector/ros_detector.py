@@ -1,35 +1,34 @@
-# Copyright 2016 Open Source Robotics Foundation, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""
+QuadricSLAM Copyright 2020, ARC Centre of Excellence for Robotic Vision, Queensland University of Technology (QUT)
+Brisbane, QLD 4000
+All Rights Reserved
 
+See LICENSE for the license information
+
+Description: Trajectory, Quadrics, Boxes, Odometry containers
+Author: Lachlan Nicholson (Python)
+"""
+
+# import standard libraries
+import os
+import sys
+sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-packages/')
+import numpy as np
+import cv2
+
+# import ros libraries
 import rclpy
 from rclpy.node import Node
-
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from detection_msgs.msg import AlignedBox2D
 from detection_msgs.msg import AlignedBox2DArray
-
-import os
-import sys
-sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-packages/')
-sys.path.append('/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector')
-
-import cv2
 from cv_bridge import CvBridge
 
+# import custom modules 
+sys.dont_write_bytecode = True
+sys.path.append('/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector')
 from detector import Detector
-import numpy as np
 
 class ROSDetector(Node):
 
@@ -77,30 +76,13 @@ class ROSDetector(Node):
             # publish detections
             self.publisher.publish(out_detections)
 
-            # draw detections
-        #     for detection in detections:
-        #         x1 = detection[0]
-        #         y1 = detection[1]
-        #         x2 = detection[2]
-        #         y2 = detection[3]
-        #         cv2.rectangle(image, (int(x1),int(y1)), (int(x2),int(y2)), (255,0,0), 2)
-        # cv2.imshow('detections', image)
-        # cv2.waitKey(1)
-
-
-
-
 
 def main(args=None):
     rclpy.init(args=args)
-
     ros_detector = ROSDetector()
-
     rclpy.spin(ros_detector)
-
     ros_detector.destroy_node()
     rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()
