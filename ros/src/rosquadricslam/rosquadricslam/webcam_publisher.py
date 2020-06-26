@@ -43,7 +43,7 @@ class WebcamPublisher(Node):
             return
 
         # convert cv2 image to msg        
-        msg = self.bridge.cv2_to_imgmsg(image, encoding='passthrough')
+        msg = self.bridge.cv2_to_imgmsg(image, encoding='bgr8')
         msg.header.frame_id = 'camera_frame'
         msg.header.stamp = self.get_clock().now().to_msg()
 
