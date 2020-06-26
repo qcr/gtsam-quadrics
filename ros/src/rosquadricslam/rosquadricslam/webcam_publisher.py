@@ -29,7 +29,7 @@ class WebcamPublisher(Node):
         self.bridge = CvBridge()
 
         # create publishers
-        self.image_publisher = self.create_publisher(Image, 'images', 10)
+        self.image_publisher = self.create_publisher(Image, 'image', 10)
 
         # create timer
         timer_period = 1.0/self.max_fps.value  # seconds
