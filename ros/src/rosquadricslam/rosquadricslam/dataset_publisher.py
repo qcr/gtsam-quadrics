@@ -29,6 +29,9 @@ class DatasetPublisher(Node):
     def __init__(self, dataset):
         super().__init__('dataset_publisher')
 
+        # declare parameters
+        self.delay = self.declare_parameter('delay', 0.5)
+
         # load sequence
         self.dataset = dataset
         self.sequence = dataset[0]
@@ -56,8 +59,7 @@ class DatasetPublisher(Node):
         self.bridge = CvBridge()
 
         # create timer
-        timer_period = 0.5  # seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.timer = self.create_timer(self.delay.value, self.timer_callback)
         self.index = 0
 
     def timer_callback(self):
