@@ -25,6 +25,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/AlignedBox2DArray.msg"
   "msg/AssociatedAlignedBox2D.msg"
   "msg/AssociatedAlignedBox2DArray.msg"
+  "msg/ObjectDetection.msg"
+  "msg/ObjectDetectionArray.msg"
   DEPENDENCIES std_msgs
  )
 

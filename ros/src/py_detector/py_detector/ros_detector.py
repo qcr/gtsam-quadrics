@@ -21,8 +21,8 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
-from detection_msgs.msg import AlignedBox2D
-from detection_msgs.msg import AlignedBox2DArray
+from detection_msgs.msg import ObjectDetection
+from detection_msgs.msg import ObjectDetectionArray
 from cv_bridge import CvBridge
 
 # import custom modules 
@@ -39,15 +39,10 @@ class ROSDetector(Node):
         self.visualize = self.declare_parameter('visualize', True)
 
         # create image subscriber
-        self.subscription = self.create_subscription(
-            Image,
-            'image',
-            self.listener_callback,
-            10)
-        self.subscription  # prevent unused variable warning
+        self.subscription = self.create_subscription(Image, 'image', self.listener_callback, 10)
 
         # create detections publisher 
-        self.publisher = self.create_publisher(AlignedBox2DArray, 'detections', 10)
+        self.publisher = self.create_publisher(ObjectDetectionArray, 'detections', 10)
 
         # create object detector 
         self.detector = Detector(visualize=self.visualize.value)
@@ -73,13 +68,15 @@ class ROSDetector(Node):
         detections = detections.astype(np.float64)
 
         # convert Nx85 to detection_msgs/msg/AlignedBox2DArray
-        out_detections = AlignedBox2DArray()
+        out_detections = ObjectDetectionArray()
         out_detections.header = msg.header
-        out_detections.boxes = []
+        out_detections.detections = []
         for detection in detections:
-            box = AlignedBox2D()
-            box.xmin, box.ymin, box.xmax, box.ymax = detection[0:4]
-            out_detections.boxes.append(box)
+            d = ObjectDetection()
+            d.box.xmin, d.box.ymin, d.box.xmax, d.box.ymax = detection[0:4]
+            d.objectness = detection[4]
+            d.scores = detection[5:]
+            out_detections.detections.append(d)
         
         # publish detections
         float_time = float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec)*1e-9
