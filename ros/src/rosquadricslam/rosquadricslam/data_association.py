@@ -173,6 +173,7 @@ class DataAssociation(object):
             else:
                 new_key = len(self.object_trackers)
                 self.object_trackers.append(ObjectTracker(new_key, image, box))
+                box.object_key = new_key
                 new_objects += 1
 
         # print 
