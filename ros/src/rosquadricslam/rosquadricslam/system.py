@@ -11,10 +11,8 @@ from rclpy.node import Node
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseStamped
-from detection_msgs.msg import AssociatedAlignedBox2D
-from detection_msgs.msg import AssociatedAlignedBox2DArray
-from detection_msgs.msg import AlignedBox2D
-from detection_msgs.msg import AlignedBox2DArray
+from detection_msgs.msg import ObjectDetectionArray
+from detection_msgs.msg import ObjectDetection
 from cv_bridge import CvBridge
 import message_filters
 
@@ -175,9 +173,13 @@ class ROSQuadricSLAM(Node):
         self.X = lambda i: int(gtsam.symbol(ord('x'), i))
         self.Q = lambda i: int(gtsam.symbol(ord('q'), i))
 
+        # load class names
+        fp = open('/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector/data/coco.names', "r")
+        self.names = fp.read().split("\n")[:-1]
+
         # start subscriptions
         self.pose_subscription = message_filters.Subscriber(self, PoseStamped, 'poses')
-        self.detection_subscription = message_filters.Subscriber(self, AlignedBox2DArray, 'detections')
+        self.detection_subscription = message_filters.Subscriber(self, ObjectDetectionArray, 'detections')
         self.image_subscription = message_filters.Subscriber(self, Image, 'image')
         self.time_synchronizer = message_filters.TimeSynchronizer([self.image_subscription, self.pose_subscription, self.detection_subscription], 10)
         self.time_synchronizer.registerCallback(self.update)
@@ -249,8 +251,13 @@ class ROSQuadricSLAM(Node):
         self.only_track = False
 
 
-    def msg2boxes(self, msg):
-        return [quadricslam.AlignedBox2(msg_box.xmin, msg_box.ymin, msg_box.xmax, msg_box.ymax) for msg_box in msg.boxes]
+    def msg2boxes(self, msg, filter=None):
+        boxes = []
+        for detection in msg.detections:
+            if filter is None or np.argmax(detection.scores) == self.names.index(filter):
+                box = quadricslam.AlignedBox2(detection.box.xmin, detection.box.ymin, detection.box.xmax, detection.box.ymax) 
+                boxes.append(box)
+        return boxes
 
     def msg2pose(self, msg):
         point = gtsam.Point3(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
@@ -292,7 +299,7 @@ class ROSQuadricSLAM(Node):
         # convert msgs to data
         image = self.msg2image(image_msg)
         camera_pose = self.msg2pose(pose_msg).inverse()
-        boxes = self.msg2boxes(detections_msg)
+        boxes = self.msg2boxes(detections_msg, filter='bowl')
         float_time = self.msg2time(detections_msg)
         pose_key = self.time2key(float_time)
 
