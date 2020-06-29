@@ -32,8 +32,14 @@ from models import *
 from utils.utils import *
 from utils.datasets import *
 
+# import quadricslam modules
+import quadricslam
+sys.path.append('/home/lachness/git_ws/quadricslam/examples/python/example_frontend')
+from visualization.drawing import CV2Drawing
+
 class Detector(object):
-    def __init__(self):
+    def __init__(self, visualize=False):
+        self.visualize = visualize
         self.code_path = '/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector'
         self.weights_path = self.code_path + '/weights/yolov3.weights'
         self.config_path = self.code_path + '/config/yolov3.cfg'
@@ -49,17 +55,17 @@ class Detector(object):
         self.classes = load_classes(self.classes_path)
         self.Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 
-    def forward(self, image):
+    def forward(self, cv2_image):
         """
         image: cv2 format, i.e, HxWxC 0-255 BGR format. 
         Returns Nx85 where each row has: x1,y1,x2,y2,objectness,scores[80]
         """
 
         # record original image shape
-        image_shape = image.shape
+        image_shape = cv2_image.shape
 
         # convert HWC|0-255|BGR into HWC|0-255|RGB
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
 
         # convert to CHW|0-1|RGB
         image = transforms.ToTensor()(image)
@@ -91,4 +97,21 @@ class Detector(object):
             # rescale to original image
             detections = rescale_boxes(detections, self.img_size, image_shape[:2])
 
-        return detections.cpu().numpy()
+        # detatch detections
+        detections = detections.cpu().numpy()
+
+        # draw detections 
+        if self.visualize:
+            self.draw_detections(cv2_image, detections)
+        
+        return detections
+
+    def draw_detections(self, image, detections):
+        drawing = CV2Drawing(image)
+        for detection in detections:
+            box = quadricslam.AlignedBox2(*detection[0:4])
+            class_scores = detection[5:] * detection[4]
+            text = '{}:{:.2f}'.format(self.classes[np.argmax(class_scores)], np.max(class_scores))
+            drawing.box_and_text(box, (255,255,0), text, (0,0,0))
+        cv2.imshow('detections', image)
+        cv2.waitKey(1)

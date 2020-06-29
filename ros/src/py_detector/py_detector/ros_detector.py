@@ -35,6 +35,9 @@ class ROSDetector(Node):
     def __init__(self):
         super().__init__('ROSDetector')
 
+        # set parameters
+        self.visualize = self.declare_parameter('visualize', True)
+
         # create image subscriber
         self.subscription = self.create_subscription(
             Image,
@@ -46,8 +49,10 @@ class ROSDetector(Node):
         # create detections publisher 
         self.publisher = self.create_publisher(AlignedBox2DArray, 'detections', 10)
 
-        # create object detector and cvbridge
-        self.detector = Detector()
+        # create object detector 
+        self.detector = Detector(visualize=self.visualize.value)
+
+        # store cvbridge
         self.bridge = CvBridge()
 
         # log info 
