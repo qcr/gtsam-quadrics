@@ -50,31 +50,36 @@ class ROSDetector(Node):
         self.detector = Detector()
         self.bridge = CvBridge()
 
-    def listener_callback(self, msg):
-        self.get_logger().info('I heard an image with {}x{} dimensions'.format(msg.width, msg.height))
+        # log info 
+        self.get_logger().info('Starting Detector with device "{}"'.format(self.detector.device))
 
+
+    def listener_callback(self, msg):
         # convert sensor_msgs/msg/Image to cv2 image
         image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
 
         # pass image through detector 
         detections = self.detector.forward(image)
 
-        if detections is not None:
+        if detections is None:
+            detections = np.array([])
 
-            # convert to float64 (from float32)
-            detections = detections.astype(np.float64)
+        # convert to float64 (from float32)
+        detections = detections.astype(np.float64)
 
-            # convert Nx85 to detection_msgs/msg/AlignedBox2DArray
-            out_detections = AlignedBox2DArray()
-            out_detections.header = msg.header
-            out_detections.boxes = []
-            for detection in detections:
-                box = AlignedBox2D()
-                box.xmin, box.ymin, box.xmax, box.ymax = detection[0:4]
-                out_detections.boxes.append(box)
-            
-            # publish detections
-            self.publisher.publish(out_detections)
+        # convert Nx85 to detection_msgs/msg/AlignedBox2DArray
+        out_detections = AlignedBox2DArray()
+        out_detections.header = msg.header
+        out_detections.boxes = []
+        for detection in detections:
+            box = AlignedBox2D()
+            box.xmin, box.ymin, box.xmax, box.ymax = detection[0:4]
+            out_detections.boxes.append(box)
+        
+        # publish detections
+        float_time = float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec)*1e-9
+        self.get_logger().info('Publishing {} detections from time {}'.format(len(detections), float_time))
+        self.publisher.publish(out_detections)
 
 
 def main(args=None):
