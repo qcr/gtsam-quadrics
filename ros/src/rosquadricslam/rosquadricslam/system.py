@@ -16,6 +16,7 @@ from detection_msgs.msg import AssociatedAlignedBox2DArray
 from detection_msgs.msg import AlignedBox2D
 from detection_msgs.msg import AlignedBox2DArray
 from cv_bridge import CvBridge
+import message_filters
 
 # import custom python modules
 sys.path.append('/home/lachness/git_ws/quadricslam/ros/src/rosquadricslam/rosquadricslam')
@@ -168,16 +169,18 @@ class ROSQuadricSLAM(Node):
         # settings
         UPDATE_TIME = 1.0  # seconds
         POSE_SIGMA = 0.001
-        BOX_SIGMA = 0.5
+        BOX_SIGMA = 20.0
 
         # store constants
         self.X = lambda i: int(gtsam.symbol(ord('x'), i))
         self.Q = lambda i: int(gtsam.symbol(ord('q'), i))
 
         # start subscriptions
-        self.pose_subscription = self.create_subscription(PoseStamped, 'poses', self.pose_callback, 10)
-        self.detection_subscription = self.create_subscription(AlignedBox2DArray, 'detections', self.detection_callback, 10)
-        self.image_subscription = self.create_subscription(Image, 'image', self.image_callback, 10)
+        self.pose_subscription = message_filters.Subscriber(self, PoseStamped, 'poses')
+        self.detection_subscription = message_filters.Subscriber(self, AlignedBox2DArray, 'detections')
+        self.image_subscription = message_filters.Subscriber(self, Image, 'image')
+        self.time_synchronizer = message_filters.TimeSynchronizer([self.image_subscription, self.pose_subscription, self.detection_subscription], 10)
+        self.time_synchronizer.registerCallback(self.update)
 
         # store Image->msg converter
         self.bridge = CvBridge()
@@ -229,63 +232,39 @@ class ROSQuadricSLAM(Node):
         self.associated_times = []
 
         # create timer for update function
-        self.timer = self.create_timer(UPDATE_TIME, self.update)
+        # self.timer = self.create_timer(UPDATE_TIME, self.update)
         
         # convert from time stamp to pose_keys
         # needed because we recieve poses/images/detections with times
         # but end up storing them in Poses/graph with keys
-        self.time2key = dict()
+        self.pose_keys = dict()
 
         # store current estimates to draw each frame
-        self.current_trajectory = []
-        self.current_quadrics = []
+        self.current_trajectory = Poses()
+        self.current_quadrics = Quadrics()
         print('\n~ Awaiting Measurements ~')
 
+        # self.quadric = quadricslam.ConstrainedDualQuadric(gtsam.Rot3(), gtsam.Point3(0.,0.,0.), np.array([0.02,0.02,0.02]))
+        # self.current_quadrics.add(self.quadric, 1)
+        self.only_track = False
 
-    def convert_time_to_key(self, stamp):
-        # store stamp->key
-        float_time = float(stamp.sec) + float(stamp.nanosec)*1e-9
 
-        # add new pose_key if new time 
-        if float_time not in self.time2key:
-            pose_key = len(self.time2key)
-            self.time2key[float_time] = pose_key
-        else: 
-            pose_key = self.time2key[float_time]
-        return pose_key
+    def msg2boxes(self, msg):
+        return [quadricslam.AlignedBox2(msg_box.xmin, msg_box.ymin, msg_box.xmax, msg_box.ymax) for msg_box in msg.boxes]
 
-    def detection_callback(self, msg):
-
-        # convert time 2 key
-        pose_key = self.convert_time_to_key(msg.header.stamp)
-        # self.get_logger().info('Receieved detection @ {}'.format(pose_key))
-
-        # convert msg to AlignedBox2 and store
-        float_time = float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec)*1e-9
-        for msg_box in msg.boxes:
-            box = quadricslam.AlignedBox2(msg_box.xmin, msg_box.ymin, msg_box.xmax, msg_box.ymax)
-            # object_key = int(msg_box.key)
-            self.boxes.add_box(box, pose_key, -1, time=float_time)
-
-    def pose_callback(self, msg):
-
-        # convert time 2 key
-        pose_key = self.convert_time_to_key(msg.header.stamp)
-        # self.get_logger().info('Receieved pose @ {}'.format(pose_key))
-
-        # convert msg to Pose3 and store
+    def msg2pose(self, msg):
         point = gtsam.Point3(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
         rot = gtsam.Rot3.Quaternion(msg.pose.orientation.w, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z)
-        pose = gtsam.Pose3(rot, point)
-        self.poses.add_pose(pose, pose_key)
+        return gtsam.Pose3(rot, point)
 
-    def image_callback(self, msg):
-        # self.get_logger().info('Receieved image @ {}'.format(msg.header.frame_id))
+    def msg2image(self, msg):
+        return self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+        
+    def msg2time(self, msg):
+        return float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec)*1e-9
 
-        # convert msg to Image and store
-        image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
-        float_time = float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec)*1e-9
-        self.images[float_time] = image
+
+
 
     def draw_detections(self):
         for time, image in self.images.items():
@@ -295,44 +274,79 @@ class ROSQuadricSLAM(Node):
             cv2.imshow('test', image)
             cv2.waitKey(100)
 
+    def time2key(self, float_time):
+        try:
+            return self.pose_keys[float_time]
+        except KeyError as key_error:
+            pose_key = len(self.pose_keys)
+            self.pose_keys[float_time] = pose_key
+            return pose_key
 
-    def update(self):
-        """
-        Receive new odometry / detections:
-            pass complete detections through data association
-            try to initialize new objects from associated measurements
-            add newly initialized landmarks to estimate
-            add any new detections if object initialized to graph
-        """
-        self.get_logger().info('Started Update function')
+    def update(self, image_msg, pose_msg, detections_msg):
+        # self.get_logger().info('Started Update function')
 
+        # print('image time: {}'.format(self.msg2time(image_msg)))
+        # print('pose time: {}'.format(self.msg2time(pose_msg)))
+        # print('boxes time: {}'.format(self.msg2time(detections_msg)))
+
+        # convert msgs to data
+        image = self.msg2image(image_msg)
+        camera_pose = self.msg2pose(pose_msg).inverse()
+        boxes = self.msg2boxes(detections_msg)
+        float_time = self.msg2time(detections_msg)
+        pose_key = self.time2key(float_time)
+
+        # draw detections
+        # draw current map 
+        img = image.copy()
+        drawing = CV2Drawing(img)
+        for quadric in self.current_quadrics.data():
+            try:
+                drawing.quadric(camera_pose, quadric, self.calibration, (255,0,255))
+            except:
+                print('failed with pose: ')
+                print(camera_pose)
+                exit()
+        cv2.imshow('Current view', img)
+        cv2.waitKey(1)
+
+        # if self.only_track:
+        #     return
+
+        # convert boxes to pose stamped Boxes
+        new_boxes = Boxes()
+        for box in boxes:
+            new_boxes.add_box(box, pose_key, -1, float_time)
+
+        # associate new measurements with existing keys
+        self.data_association.track(image, new_boxes)
+        # for box in new_boxes:
+        #     box.object_key = 1
+
+        # store new boxes and pose for later initialization and factor adding
+        self.boxes.add_boxes(new_boxes)
+        self.poses.add_pose(camera_pose, pose_key)
 
         # create local graph and estimate
         local_graph = gtsam.NonlinearFactorGraph()
         local_estimate = gtsam.Values()
         
         # add new pose measurements to graph / estimate
-        for stamped_pose in self.poses.unused():
-            local_estimate.insert(self.X(stamped_pose.pose_key), stamped_pose)
-            prior_factor = gtsam.PriorFactorPose3(self.X(stamped_pose.pose_key), stamped_pose, self.prior_noise)
-            local_graph.add(prior_factor)
-            stamped_pose.used = True
-
-        # associate new measurements
-        for time, image in self.images.items():
-            if time not in self.associated_times:
-                # self.get_logger().info('UPDATE: associating detections from time {}'.format(time))
-                image_detections = [b for b in self.boxes if b.time == time]
-                self.data_association.track(image, image_detections)
-                self.associated_times.append(time)
+        local_estimate.insert(self.X(pose_key), camera_pose)
+        prior_factor = gtsam.PriorFactorPose3(self.X(pose_key), camera_pose, self.prior_noise)
+        local_graph.add(prior_factor)
 
         # check if we can initialize any new objects
         object_keys, counts = np.unique(self.boxes.object_keys(), return_counts=True)
         for object_key, count in zip(object_keys, counts):
 
+            if self.only_track:
+                continue
+            
+
             # dont use uninitialized objects
             if object_key == -1:
-                continue
+                raise Exception("key with -1")
 
             # no need to re-initialize objects
             if object_key in self.initial_quadrics.keys():
@@ -342,12 +356,9 @@ class ROSQuadricSLAM(Node):
             if count >= 5:
 
                 object_boxes = self.boxes.at_object(object_key)
-                # NOTE: not all poses may have come through
                 object_poses = self.poses.at_keys(object_boxes.pose_keys())
                 quadric_matrix = self.quadric_SVD(object_poses, object_boxes, self.calibration)
                 quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
-
-                # quadric = self.true_quadrics.at(object_key)
 
                 # check quadric is okay
                 if self.is_okay(quadric, object_poses, self.calibration):
@@ -355,6 +366,7 @@ class ROSQuadricSLAM(Node):
                     # add quadric to values and history
                     quadric.addToValues(local_estimate, self.Q(object_key))
                     self.initial_quadrics.add(quadric, object_key)
+                    self.only_track = True
 
 
         # add measurements if unused
@@ -362,7 +374,7 @@ class ROSQuadricSLAM(Node):
 
             # dont use uninitialized objects
             if box.object_key == -1:
-                continue
+                raise Exception("key with -1")
                 
             # add measurements if initialized 
             if box.object_key in self.initial_quadrics.keys():
@@ -370,8 +382,9 @@ class ROSQuadricSLAM(Node):
                 bbf.addToGraph(local_graph)
                 box.used = True
 
+
         # check problem
-        self.check_problem(self.graph, self.estimate)
+        # self.check_problem(self.graph, self.estimate)
 
         # use local graph / estimate to update isam2
         self.isam.update(local_graph, local_estimate)
@@ -386,36 +399,6 @@ class ROSQuadricSLAM(Node):
         # draw current map view
         self.current_trajectory = Trajectory.from_values(current_estimate)
         self.current_quadrics = Quadrics.from_values(current_estimate)
-
-
-        # # lvm optimisation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # params = gtsam.LevenbergMarquardtParams()
-        # params.setVerbosityLM("SUMMARY")    # SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA : VALUES, ERROR 
-        # params.setMaxIterations(20)
-        # params.setlambdaInitial(1e-5)
-        # params.setlambdaUpperBound(1e10)
-        # params.setlambdaLowerBound(1e-8)
-        # params.setRelativeErrorTol(1e-5)
-        # params.setAbsoluteErrorTol(1e-5)
-  
-        # # create optimizer
-        # optimizer = gtsam.LevenbergMarquardtOptimizer(self.graph_full, self.estimate_full, params)
-
-        # # run optimizer
-        # print('starting optimization')
-        # current_estimate = optimizer.optimize()
-        # print('finished optimization')
-        # # lvm optimisation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        # draw current estimate 
-        # current_trajectory = Trajectory.from_values(current_estimate)
-        # current_quadrics = Quadrics.from_values(current_estimate)
-        # initial_trajectory = Trajectory.from_values(self.estimate)
-        # initial_quadrics = Quadrics.from_values(self.estimate)
-        # if len(current_trajectory) > 3 and len(current_quadrics) > 0:
-        #     mpldrawing = MPLDrawing('result')
-        #     mpldrawing.plot_result([self.true_trajectory, current_trajectory, initial_trajectory], [self.true_quadrics, current_quadrics, initial_quadrics], ['g', 'm', 'r'], ['true_estimate', 'current_estimate', 'initial_estimate'])
-
 
 
             
