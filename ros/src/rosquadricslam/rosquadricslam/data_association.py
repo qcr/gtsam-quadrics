@@ -106,9 +106,8 @@ class ObjectTracker(object):
         ious = [self._iou(predicted_box, box) for predicted_box in self.predictions]
         return np.max(ious)
 
-    def associate(self, box, image):
+    def add_tracker(self, box, image):
         tracker = BoxTracker(image, box)
-        box.object_key = self.object_key
         self.trackers.append(tracker)
 
     @staticmethod
@@ -166,7 +165,8 @@ class DataAssociation(object):
 
             # associate with existing tracker
             if len(compatabilities) > 0 and np.max(compatabilities) > self.IOU_THRESH:
-                self.object_trackers[np.argmax(compatabilities)].associate(box, image)
+                self.object_trackers[np.argmax(compatabilities)].add_tracker(box, image)
+                box.object_key = self.object_trackers[np.argmax(compatabilities)].object_key
                 tracked_objects += 1
 
             # or create new tracker 
