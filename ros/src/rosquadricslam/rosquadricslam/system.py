@@ -251,12 +251,18 @@ class ROSQuadricSLAM(Node):
         self.only_track = False
 
 
-    def msg2boxes(self, msg, filter=None):
+    def msg2boxes(self, msg, filters=None):
         boxes = []
         for detection in msg.detections:
-            if filter is None or np.argmax(detection.scores) == self.names.index(filter):
+            if filters is None:
                 box = quadricslam.AlignedBox2(detection.box.xmin, detection.box.ymin, detection.box.xmax, detection.box.ymax) 
                 boxes.append(box)
+                
+            else:
+                filter_indicies = [self.names.index(filter) for filter in filters]
+                if np.argmax(detection.scores) in filter_indicies:
+                    box = quadricslam.AlignedBox2(detection.box.xmin, detection.box.ymin, detection.box.xmax, detection.box.ymax) 
+                    boxes.append(box)
         return boxes
 
     def msg2pose(self, msg):
@@ -299,7 +305,7 @@ class ROSQuadricSLAM(Node):
         # convert msgs to data
         image = self.msg2image(image_msg)
         camera_pose = self.msg2pose(pose_msg).inverse()
-        boxes = self.msg2boxes(detections_msg, filter='bowl')
+        boxes = self.msg2boxes(detections_msg, filters=['cup'])
         float_time = self.msg2time(detections_msg)
         pose_key = self.time2key(float_time)
 
