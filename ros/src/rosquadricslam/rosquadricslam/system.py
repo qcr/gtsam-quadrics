@@ -165,7 +165,6 @@ class ROSQuadricSLAM(Node):
         super().__init__('ROSQuadricSLAM')
 
         # settings
-        UPDATE_TIME = 1.0  # seconds
         POSE_SIGMA = 0.001
         BOX_SIGMA = 20.0
         self.VIEW_THRESH = 5
@@ -188,14 +187,7 @@ class ROSQuadricSLAM(Node):
         # store Image->msg converter
         self.bridge = CvBridge()
 
-        # get camera calibration
-        # dataset = SceneNetDataset(
-        #     dataset_path = '/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/data/train',
-        #     protobuf_folder = '/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/data/train_protobufs',
-        #     reader_path = '/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py',
-        #     shapenet_path = '/media/lachness/DATA/Datasets/ShapeNet/ShapeNetCore.v2'
-        # )
-        # self.calibration = dataset.load_calibration()
+        # temporarily load calibration manually
         self.calibration = gtsam.Cal3_S2(
             311.48, 
             311.26, 
@@ -203,11 +195,6 @@ class ROSQuadricSLAM(Node):
             309.43, 
             237.72
         )
-
-        # store true data
-        # sequence = dataset[0]
-        # self.true_trajectory = sequence.true_trajectory
-        # self.true_quadrics = sequence.true_quadrics
 
         # set noise models
         self.prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([POSE_SIGMA]*6, dtype=np.float))
@@ -232,14 +219,8 @@ class ROSQuadricSLAM(Node):
 
         # store DA tracker
         self.data_association = DataAssociation()
-        self.associated_times = []
 
-        # create timer for update function
-        # self.timer = self.create_timer(UPDATE_TIME, self.update)
-        
         # convert from time stamp to pose_keys
-        # needed because we recieve poses/images/detections with times
-        # but end up storing them in Poses/graph with keys
         self.pose_keys = dict()
 
         # store current estimates to draw each frame
@@ -247,8 +228,7 @@ class ROSQuadricSLAM(Node):
         self.current_quadrics = Quadrics()
         print('\n~ Awaiting Measurements ~')
 
-        # self.quadric = quadricslam.ConstrainedDualQuadric(gtsam.Rot3(), gtsam.Point3(0.,0.,0.), np.array([0.02,0.02,0.02]))
-        # self.current_quadrics.add(self.quadric, 1)
+        # flag to tell the system to not create any extra landmarks
         self.only_track = False
 
 
@@ -276,17 +256,6 @@ class ROSQuadricSLAM(Node):
         
     def msg2time(self, msg):
         return float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec)*1e-9
-
-
-
-
-    def draw_detections(self):
-        for time, image in self.images.items():
-            boxes = [b for b in self.boxes if b.time == time]
-            for box in boxes:
-                cv2.rectangle(image, (int(box.xmin()),int(box.ymin())), (int(box.xmax()),int(box.ymax())), (255,255,0), 1)
-            cv2.imshow('test', image)
-            cv2.waitKey(100)
 
     def time2key(self, float_time):
         try:
@@ -334,8 +303,6 @@ class ROSQuadricSLAM(Node):
 
         # associate new measurements with existing keys
         self.data_association.track(image, new_boxes)
-        # for box in new_boxes:
-        #     box.object_key = 1
 
         # store new boxes and pose for later initialization and factor adding
         self.boxes.add_boxes(new_boxes)
