@@ -356,11 +356,6 @@ class ROSQuadricSLAM(Node):
 
             if self.only_track:
                 continue
-            
-
-            # dont use uninitialized objects
-            if object_key == -1:
-                raise Exception("key with -1")
 
             # no need to re-initialize objects
             if object_key in self.initial_quadrics.keys():
@@ -386,10 +381,6 @@ class ROSQuadricSLAM(Node):
         # add measurements if unused
         for box in self.boxes.unused():
 
-            # dont use uninitialized objects
-            if box.object_key == -1:
-                raise Exception("key with -1")
-                
             # add measurements if initialized 
             if box.object_key in self.initial_quadrics.keys():
                 bbf = quadricslam.BoundingBoxFactor(box, self.calibration, self.X(box.pose_key), self.Q(box.object_key), self.bbox_noise)
