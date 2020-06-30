@@ -168,6 +168,7 @@ class ROSQuadricSLAM(Node):
         UPDATE_TIME = 1.0  # seconds
         POSE_SIGMA = 0.001
         BOX_SIGMA = 20.0
+        self.VIEW_THRESH = 5
 
         # store constants
         self.X = lambda i: int(gtsam.symbol(ord('x'), i))
@@ -366,7 +367,7 @@ class ROSQuadricSLAM(Node):
                 continue
 
             # initialize object if seen enough
-            if count >= 5:
+            if count >= self.VIEW_THRESH:
 
                 object_boxes = self.boxes.at_object(object_key)
                 object_poses = self.poses.at_keys(object_boxes.pose_keys())
