@@ -30,6 +30,11 @@ sys.dont_write_bytecode = True
 sys.path.append('/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector')
 from detector import Detector
 
+# import quadricslam modules
+import quadricslam
+sys.path.append('/home/lachness/git_ws/quadricslam/examples/python/example_frontend')
+from visualization.drawing import CV2Drawing
+
 class ROSDetector(Node):
 
     def __init__(self):
@@ -45,7 +50,7 @@ class ROSDetector(Node):
         self.publisher = self.create_publisher(ObjectDetectionArray, 'detections', 10)
 
         # create object detector 
-        self.detector = Detector(visualize=self.visualize.value)
+        self.detector = Detector()
 
         # store cvbridge
         self.bridge = CvBridge()
@@ -60,9 +65,6 @@ class ROSDetector(Node):
 
         # pass image through detector 
         detections = self.detector.forward(image)
-
-        if detections is None:
-            detections = np.array([])
 
         # convert to float64 (from float32)
         detections = detections.astype(np.float64)
@@ -82,6 +84,21 @@ class ROSDetector(Node):
         float_time = float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec)*1e-9
         self.get_logger().info('Publishing {} detections from time {}'.format(len(detections), float_time))
         self.publisher.publish(out_detections)
+
+        # draw detections
+        if self.visualize.value:
+            self.draw_detections(image, detections)
+
+
+    def draw_detections(self, image, detections):
+        drawing = CV2Drawing(image)
+        for detection in detections:
+            box = quadricslam.AlignedBox2(*detection[0:4])
+            class_scores = detection[5:] * detection[4]
+            text = '{}:{:.2f}'.format(self.detector.classes[np.argmax(class_scores)], np.max(class_scores))
+            drawing.box_and_text(box, (255,255,0), text, (0,0,0))
+        cv2.imshow('detections', image)
+        cv2.waitKey(1)
 
 
 def main(args=None):
