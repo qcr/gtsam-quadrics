@@ -44,7 +44,7 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     Eigen::Matrix<double, 9,6> dC_dx; Eigen::Matrix<double, 9,9> dC_dq;
     DualConic dualConic;
     if (!NUMERICAL_DERIVATIVE) {
-      dualConic = QuadricCamera::project(quadric, pose, calibration_, H1?&dC_dq:0, H2?&dC_dx:0);
+      dualConic = QuadricCamera::project(quadric, pose, calibration_, H2?&dC_dq:0, H1?&dC_dx:0);
     } else {
       dualConic = QuadricCamera::project(quadric, pose, calibration_);
     }
