@@ -109,6 +109,20 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 }
 
 /* ************************************************************************* */
+Matrix BoundingBoxFactor::evaluateH1(const Pose3& pose, const ConstrainedDualQuadric& quadric) const {
+  Matrix H1;
+  this->evaluateError(pose, quadric, H1, boost::none);
+  return H1;
+}
+
+/* ************************************************************************* */
+Matrix BoundingBoxFactor::evaluateH2(const Pose3& pose, const ConstrainedDualQuadric& quadric) const {
+  Matrix H2;
+  this->evaluateError(pose, quadric, boost::none, H2);
+  return H2;
+}
+
+/* ************************************************************************* */
 void BoundingBoxFactor::addToGraph(NonlinearFactorGraph& graph) { 
   graph.add(*this);
 }

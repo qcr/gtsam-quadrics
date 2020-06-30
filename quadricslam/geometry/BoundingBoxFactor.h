@@ -83,6 +83,12 @@ namespace gtsam {
       Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric,
 			  boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none) const;      
 
+      /** Evaluates the derivative of the error wrt pose */
+      Matrix evaluateH1(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
+
+      /** Evaluates the derivative of the error wrt quadric */
+      Matrix evaluateH2(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
+
       /** 
        * Add this factor to given graph 
        */
