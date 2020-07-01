@@ -6,6 +6,11 @@ from enum import Enum
 sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-packages/')
 import cv2
 
+# import custom libraries
+sys.path.append('/home/lachness/git_ws/quadricslam/examples/python/example_frontend/')
+sys.dont_write_bytecode = True
+from base.containers import Detections
+
 # import gtsam and extension
 import gtsam
 import quadricslam
@@ -140,7 +145,10 @@ class DataAssociation(object):
         self.object_trackers = []
         self.IOU_THRESH = 0.4
 
-    def track(self, image, image_detections):
+    def track(self, image, image_detections, pose_key):
+        # store associated detections
+        associated_detections = Detections()
+        
         # debug variables
         new_objects = 0
         tracked_objects = 0
@@ -151,30 +159,23 @@ class DataAssociation(object):
             object_tracker.update(image)
 
         # check compatability between each detection and active trackers
-        for box in image_detections:
-            compatabilities = [tracker.compatability(box) for tracker in self.object_trackers]
-
-            # draw box and predictions
-            # img = image.copy()
-            # cv2.rectangle(img, (int(box.xmin()),int(box.ymin())), (int(box.xmax()),int(box.ymax())), (255,255,0), 1)
-            # for tracker in self.object_trackers:
-            #     for pbox in tracker.predictions:
-            #         cv2.rectangle(img, (int(pbox.xmin()),int(pbox.ymin())), (int(pbox.xmax()),int(pbox.ymax())), (0,255,255), 1)
-            # cv2.imshow('test',img)
-            # cv2.waitKey(1)
+        for detection in image_detections:
+            compatabilities = [tracker.compatability(detection.box) for tracker in self.object_trackers]
 
             # associate with existing tracker
             if len(compatabilities) > 0 and np.max(compatabilities) > self.IOU_THRESH:
-                self.object_trackers[np.argmax(compatabilities)].add_tracker(box, image)
-                box.object_key = self.object_trackers[np.argmax(compatabilities)].object_key
+                self.object_trackers[np.argmax(compatabilities)].add_tracker(detection.box, image)
+                object_key = self.object_trackers[np.argmax(compatabilities)].object_key
                 tracked_objects += 1
 
             # or create new tracker 
             else:
-                new_key = len(self.object_trackers)
-                self.object_trackers.append(ObjectTracker(new_key, image, box))
-                box.object_key = new_key
+                object_key = len(self.object_trackers)
+                self.object_trackers.append(ObjectTracker(object_key, image, detection.box))
                 new_objects += 1
+
+            # add associated detection
+            associated_detections.add(detection, pose_key, object_key)
 
         # print 
         print('DataAssociation: image had {} detections. {} associated | {} new | Total trackers: {}'.format(
@@ -183,6 +184,7 @@ class DataAssociation(object):
             new_objects,
             len(self.object_trackers),
         ))
+        return associated_detections
 
     def prints(self):
         print('DataAssociation: {} objects and {} trackers'.format(

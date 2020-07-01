@@ -19,7 +19,7 @@ from cv_bridge import CvBridge
 sys.path.append('/home/lachness/git_ws/quadricslam/examples/python/example_frontend')
 sys.dont_write_bytecode = True
 from dataset_interfaces.scenenet_dataset import SceneNetDataset
-from base.containers import Boxes, Trajectory
+from base.containers import Detections, Trajectory
 
 class DatasetPublisher(Node):
     """
@@ -68,8 +68,9 @@ class DatasetPublisher(Node):
 
         # get pose, detections and image
         image = cv2.imread(self.image_paths[self.index])
-        pose = self.noisy_trajectory.at(self.index)
-        pose_detections = self.noisy_boxes.at_pose(self.index)
+        pose_key = self.noisy_trajectory.keys()[self.index]
+        pose = self.noisy_trajectory.at(pose_key)
+        pose_detections = self.noisy_boxes.at_pose(pose_key)
 
         # create header
         header = Header()

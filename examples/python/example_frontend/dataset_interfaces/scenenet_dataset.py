@@ -27,7 +27,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 # import custom python modules
 sys.dont_write_bytecode = True
-from base.containers import Boxes
+from base.containers import Detections
 from base.containers import Trajectory
 from base.containers import Odometry
 from base.containers import Quadrics
@@ -274,7 +274,7 @@ class SceneNetSequence(object):
     ###############################################################
     @cached_property
     def true_boxes(self):
-        boxes = Boxes()
+        boxes = Detections()
         for index, instance_path in enumerate(self.instance_paths):
 
             # key must align with trajectory keys
@@ -287,7 +287,7 @@ class SceneNetSequence(object):
             image_boxes = self.boxes_from_instance(instance_image, pose_key)
 
             # add to video_boxes
-            boxes.add_boxes(image_boxes)
+            boxes.add_detections(image_boxes)
         return boxes
 
     def boxes_from_instance(self, instance_image, pose_key):
@@ -297,7 +297,7 @@ class SceneNetSequence(object):
         [0, 1, 0] would effectively be (1,1,2,2) 
         [0, 0, 0]
         """
-        image_boxes = Boxes()
+        image_boxes = Detections()
         for instance_id in np.unique(instance_image):
 
             # only use box if class is valid
@@ -345,14 +345,14 @@ class SceneNetSequence(object):
     @cached_property
     def true_trajectory(self):
         """ posekeys must align with boxes / images """
-        poses = []
+        trajectory = Trajectory()
         for index, view in enumerate(self.sequence_data.views):
             # pose_key = view.frame_num 
             pose_key = index
             pose_matrix = self.calculate_pose_matrix(view)
             pose = gtsam.Pose3(pose_matrix.astype(np.float))
-            poses.append(pose)
-        return Trajectory(poses)
+            trajectory.add(pose, pose_key)
+        return trajectory
 
     def calculate_pose_matrix(self, view):
         true_pose = self.interpolate_poses(view.shutter_open, view.shutter_close, 0.5)

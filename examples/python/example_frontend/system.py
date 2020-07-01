@@ -122,7 +122,7 @@ class System(object):
 
         # initialize trajectory
         # TODO: ensure aligned in same reference frame
-        initial_trajectory = noisy_odometry.as_trajectory(sequence.true_trajectory.data()[0])
+        initial_trajectory = noisy_odometry.as_trajectory(sequence.true_trajectory.values()[0])
         # initial_trajectory = noisy_odometry.as_trajectory()
 
         # initialize quadrics
@@ -161,7 +161,7 @@ class System(object):
 
                     # add measurements
                     valid_objects.append(object_key)
-                    for (pose_key, t), box in object_boxes.items():
+                    for pose_key, box in object_boxes.items():
                         bbf = quadricslam.BoundingBoxFactor(box, sequence.calibration, System.X(pose_key), System.Q(object_key), bbox_noise)
                         bbf.addToGraph(graph)
 
@@ -186,7 +186,7 @@ class System(object):
             object_boxes = boxes.at_object(object_key)
 
             # get the poses associated with each detection 
-            pose_keys = object_boxes.pose_keys()
+            pose_keys = list(object_boxes.keys())
             poses = trajectory.at_keys(pose_keys)
 
             # ensure quadric seen from > 3 views
@@ -194,7 +194,7 @@ class System(object):
                 continue
 
             # initialize quadric fomr views using svd
-            quadric_matrix = System.quadric_SVD(poses, object_boxes, calibration)
+            quadric_matrix = System.quadric_SVD(poses, list(object_boxes.values()), calibration)
 
             # constrain generic dual quadric to be ellipsoidal 
             quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
@@ -211,7 +211,7 @@ class System(object):
 
         # iterate through box/pose data
         planes = []
-        for box, pose in zip(object_boxes.data(), poses.data()):
+        for box, pose in zip(object_boxes, poses):
 
             # calculate boxes lines
             lines = box.lines()

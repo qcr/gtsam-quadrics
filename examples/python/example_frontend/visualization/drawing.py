@@ -28,9 +28,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 # import custom python modules
 sys.dont_write_bytecode = True
 from base.containers import Trajectory
-from base.containers import Odometry
 from base.containers import Quadrics
-from base.containers import Boxes
 
 symbolChr = lambda i: chr(gtsam.symbolChr(i))
 
@@ -53,7 +51,7 @@ class MPLDrawing(object):
         # odom_factors = [graph.at(i) for i in range(graph.size()) if graph.at(i).keys().size() == 2 and chr(gtsam.symbolChr(graph.at(i).keys().at(1))) == 'x']
 
         # extract x-y positions
-        xy = np.array([[pose.x(), pose.y()] for pose in trajectory.data()])
+        xy = np.array([[pose.x(), pose.y()] for pose in trajectory.values()])
 
         # extract error at each pose
         errors = []
@@ -76,7 +74,7 @@ class MPLDrawing(object):
         plt.colorbar()
         
         # plot quadrics
-        for quadric in quadrics.data():
+        for quadric in quadrics.values():
             plt.plot(quadric.pose().x(), quadric.pose().y(), marker='o', markersize=5, c='m', fillstyle='none')
             plt.plot(quadric.pose().x(), quadric.pose().y(), marker='o', markersize=5, c='m', alpha=0.5)
         
@@ -99,12 +97,12 @@ class MPLDrawing(object):
 
         # plot trajectories
         for i, trajectory in enumerate(trajectories):
-            xy = np.array([[pose.x(), pose.y()] for pose in trajectory.data()])
+            xy = np.array([[pose.x(), pose.y()] for pose in trajectory.values()])
             plt.plot(xy[:,0], xy[:,1], marker='o', markersize=3, c=colors[i], label='traj {}'.format(i))
         
         # plot quadrics
         for i, quadrics in enumerate(maps):
-            for quadric in quadrics.data():
+            for quadric in quadrics.values():
                 plt.plot(quadric.pose().x(), quadric.pose().y(), marker='o', markersize=3, c=colors[i], label='quads {}'.format(i))
 
         # draw legend

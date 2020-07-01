@@ -13,7 +13,6 @@ from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseStamped
 from detection_msgs.msg import ObjectDetectionArray
-from detection_msgs.msg import ObjectDetection
 from cv_bridge import CvBridge
 import message_filters
 
@@ -23,131 +22,12 @@ sys.path.append('/home/lachness/git_ws/quadricslam/examples/python/example_front
 sys.dont_write_bytecode = True
 from data_association import DataAssociation
 from dataset_interfaces.scenenet_dataset import SceneNetDataset
-from base.containers import Trajectory, Quadrics
 from visualization.drawing import CV2Drawing
+from base.containers import Trajectory, Quadrics, Detections, ObjectDetection
 
 # import gtsam and extension
 import gtsam
 import quadricslam
-
-
-"""
-The only way to provide re-association is to store key inside object. 
-Allowing multiple boxes at the same key requires us to always count how many boxes we get from .at
-"""
-
-class AssociatedPose(gtsam.Pose3):
-    def __init__(self, pose, pose_key=-1):
-        super().__init__(pose)
-        self.pose_key = pose_key
-        self.used = False
-
-class Poses(object):
-    def __init__(self, poses=None):
-        if poses is None:
-            self._poses = []
-        elif type(poses) is list:
-            self._poses = poses
-        elif type(poses) is Boxes:
-            self._poses = poses._poses
-        else:
-            raise TypeError('incorrect Poses init type')
-
-    def __len__(self):
-        return len(self._poses)
-
-    def __getitem__(self, index):
-        return self._poses[index]
-
-    def add_pose(self, pose, pose_key=-1):
-        self._poses.append(AssociatedPose(pose, pose_key))
-
-    def add_associated_pose(self, apose):
-        self._poses.append(apose)
-
-    def add_poses(self, other):
-        self._poses += other._poses
-
-    def at(self, pose_key):
-        return Poses([pose for pose in self._poses if pose.pose_key==pose_key])
-
-    def at_keys(self, pose_keys):
-        return Poses([pose for pose in self._poses if pose.pose_key in pose_keys])
-
-    def unused(self):
-        return Poses([pose for pose in self._poses if pose.used==False])
-
-    @staticmethod
-    def from_values(values):
-        estimate_keys = [values.keys().at(i) for i in range(values.keys().size())]
-        pose_keys = [k for k in estimate_keys if chr(gtsam.symbolChr(k)) == 'x']
-        poses = [values.atPose3(k) for k in pose_keys]
-        aposes = [AssociatedPose(p, gtsam.symbolIndex(k)) for p,k in zip(poses, pose_keys)]
-        return Poses(aposes)
-
-
-class AssociatedDetection(quadricslam.AlignedBox2): 
-    def __init__(self, box, objectness, scores, pose_key=-1, object_key=-1):
-        super().__init__(box)
-        self.objectness = objectness
-        self.scores = scores
-        self.pose_key = pose_key
-        self.object_key = object_key
-        self.used = False
-
-class Boxes(object):
-    def __init__(self, boxes=None):
-        if boxes is None:
-            self._boxes = []
-        elif type(boxes) is list:
-            self._boxes = boxes
-        elif type(boxes) is Boxes:
-            self._boxes = boxes._boxes
-        else:
-            raise TypeError('incorrect Boxes init type')
-
-    def __len__(self):
-        return len(self._boxes)
-
-    def __getitem__(self, index):
-        return self._boxes[index]
-
-    def add_box(self, box, objectness, scores, pose_key=-1, object_key=-1):
-        self._boxes.append(AssociatedDetection(box, objectness, scores, pose_key, object_key))
-
-    def add_associated_box(self, abox):
-        self._boxes.append(abox)
-
-    def add_boxes(self, boxes):
-        self._boxes += boxes._boxes
-
-    def at(self, pose_key, object_key):
-        return Boxes([box for box in self._boxes if box.pose_key==pose_key])
-    
-    def at_pose(self, pose_key):
-        return Boxes([box for box in self._boxes if box.pose_key==pose_key])
-
-    def at_object(self, object_key):
-        """ Slow. 
-        Use groupby_objects instead of looping through this function """
-        return Boxes([box for box in self._boxes if box.object_key==object_key])
-
-    def unused(self):
-        return Boxes([box for box in self._boxes if box.used==False])
-
-    def associated(self):
-        return Boxes([box for box in self._boxes if box.object_key!=-1])
-
-    def pose_keys(self):
-        return [box.pose_key for box in self._boxes]
-
-    def object_keys(self):
-        return [box.object_key for box in self._boxes]
-
-
-    
-
-
 
 
 
@@ -161,7 +41,7 @@ class ROSQuadricSLAM(Node):
         super().__init__('ROSQuadricSLAM')
 
         # settings
-        self.record = True
+        self.record = False
         POSE_SIGMA = 0.001
         BOX_SIGMA = 10.0
         self.VIEW_THRESH = 5
@@ -218,8 +98,8 @@ class ROSQuadricSLAM(Node):
 
         # set measurement storage 
         self.images = dict()
-        self.poses = Poses()
-        self.boxes = Boxes()
+        self.poses = Trajectory()
+        self.detections = Detections()
         self.initial_quadrics = Quadrics()
 
         # store DA tracker
@@ -229,7 +109,7 @@ class ROSQuadricSLAM(Node):
         self.pose_keys = dict()
 
         # store current estimates to draw each frame
-        self.current_trajectory = Poses()
+        self.current_trajectory = Trajectory()
         self.current_quadrics = Quadrics()
 
         # prepare video capture
@@ -238,14 +118,16 @@ class ROSQuadricSLAM(Node):
             atexit.register(self.video_writer.release)
         print('\n~ Awaiting Measurements ~')
 
-    def msg2boxes(self, msg, filters, pose_key):
-        boxes = Boxes()
+        
+    def msg2detections(self, msg, filters):
+        detections = []
         for detection in msg.detections:
             filter_indicies = [self.class_names.index(filter) for filter in filters]
             if np.argmax(detection.scores) in filter_indicies:
                 box = quadricslam.AlignedBox2(detection.box.xmin, detection.box.ymin, detection.box.xmax, detection.box.ymax) 
-                boxes.add_box(box, detection.objectness, detection.scores, pose_key, -1)
-        return boxes
+                detection = ObjectDetection(box, detection.objectness, detection.scores)
+                detections.append(detection)
+        return detections
 
     def msg2pose(self, msg):
         point = gtsam.Point3(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
@@ -278,18 +160,18 @@ class ROSQuadricSLAM(Node):
         camera_pose = self.msg2pose(pose_msg).inverse()
         float_time = self.msg2time(detections_msg)
         pose_key = self.time2key(float_time)
-        boxes = self.msg2boxes(detections_msg, filters=['cup', 'bowl'], pose_key=pose_key)
+        image_detections = self.msg2detections(detections_msg, filters=['cup', 'bowl'])
 
         # draw detections
         img = image.copy()
         drawing = CV2Drawing(img)
-        for detection in boxes:
+        for detection in image_detections:
             scores = detection.scores
             text = '{}:{:.2f}'.format(self.class_names[np.argmax(scores)], np.max(scores))
-            drawing.box_and_text(detection, (0,0,255), text, (0,0,0))
+            drawing.box_and_text(detection.box, (0,0,255), text, (0,0,0))
 
         # draw current map 
-        for quadric in self.current_quadrics.data():
+        for quadric in self.current_quadrics.values():
             try:
                 drawing.quadric(camera_pose, quadric, self.calibration, (255,0,255))
             except:
@@ -302,11 +184,11 @@ class ROSQuadricSLAM(Node):
             self.video_writer.write(img)
 
         # associate new measurements with existing keys
-        self.data_association.track(image, boxes)
+        associated_detections = self.data_association.track(image, image_detections, pose_key)
 
         # store new boxes and pose for later initialization and factor adding
-        self.boxes.add_boxes(boxes)
-        self.poses.add_pose(camera_pose, pose_key)
+        self.detections.add_detections(associated_detections)
+        self.poses.add(camera_pose, pose_key)
         self.images[pose_key] = image
 
         # create local graph and estimate
@@ -319,18 +201,18 @@ class ROSQuadricSLAM(Node):
         local_graph.add(prior_factor)
 
         # check if we can initialize any new objects
-        object_keys, counts = np.unique(self.boxes.object_keys(), return_counts=True)
-        for object_key, count in zip(object_keys, counts):
+        for object_key, object_detections in self.detections.per_object():
 
             # no need to re-initialize objects
             if object_key in self.initial_quadrics.keys():
                 continue
-
+            
             # initialize object if seen enough
-            if count >= self.VIEW_THRESH:
+            if len(object_detections) >= self.VIEW_THRESH:
 
-                object_boxes = self.boxes.at_object(object_key)
-                object_poses = self.poses.at_keys(object_boxes.pose_keys())
+                object_boxes = [d.box for d in object_detections.values()]
+                object_keys = object_detections.keys()
+                object_poses = self.poses.at_keys(object_keys)
                 quadric_matrix = self.quadric_SVD(object_poses, object_boxes, self.calibration)
                 quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
 
@@ -344,14 +226,17 @@ class ROSQuadricSLAM(Node):
 
 
         # add measurements if unused
-        for box in self.boxes.unused():
+        for (pose_key, object_key), detection in self.detections.items():
+
+            # only add new measurements
+            if self.detections.is_used(pose_key, object_key):
+                continue            
 
             # add measurements if initialized 
-            if box.object_key in self.initial_quadrics.keys():
-                bbf = quadricslam.BoundingBoxFactor(box, self.calibration, self.X(box.pose_key), self.Q(box.object_key), self.bbox_noise)
+            if object_key in self.initial_quadrics.keys():
+                bbf = quadricslam.BoundingBoxFactor(detection.box, self.calibration, self.X(pose_key), self.Q(object_key), self.bbox_noise)
                 bbf.addToGraph(local_graph)
-                box.used = True
-
+                self.detections.set_used(True, pose_key, object_key)
 
         # append local graph / estimate to full graph
         self.graph.push_back(local_graph)
@@ -398,7 +283,7 @@ class ROSQuadricSLAM(Node):
         for bbf in box_factors:
             pose_key = gtsam.symbolIndex(bbf.keys().at(0))
             object_key = gtsam.symbolIndex(bbf.keys().at(1))
-            pose = poses.at(pose_key)[0]
+            pose = poses.at(pose_key)
             quadric = quadrics.at(object_key)
             error = bbf.evaluateError(pose, quadric).sum()
 
@@ -461,7 +346,7 @@ class ROSQuadricSLAM(Node):
 
             # get associated poses
             pose_keys = [gtsam.symbolIndex(f.keys().at(0)) for f in bbfs]
-            poses = [full_poses.at(pose_key)[0] for pose_key in pose_keys]
+            poses = [full_poses.at(pose_key) for pose_key in pose_keys]
 
             # calculate error with jacobian 
             n_H2_rows = []

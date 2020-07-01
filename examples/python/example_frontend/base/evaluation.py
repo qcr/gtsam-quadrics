@@ -27,8 +27,8 @@ class Evaluation(object):
             aligned_trajectory = Evaluation.weak_align(estimated_trajectory, true_trajectory)
         
         # evaluate metrics
-        rmse_ATE = Evaluation.ATE(aligned_trajectory, true_trajectory)
-        rmse_RPE = Evaluation.RPE(aligned_trajectory, true_trajectory)
+        rmse_ATE = Evaluation.ATE(aligned_trajectory.values(), true_trajectory.values())
+        rmse_RPE = Evaluation.RPE(aligned_trajectory.values(), true_trajectory.values())
         return [rmse_ATE, rmse_RPE]
 
     @staticmethod
@@ -36,7 +36,7 @@ class Evaluation(object):
         """ point error = || x ominus x* || """ 
         assert len(trajectory1) == len(trajectory2)
         trans_errors = []
-        for p1, p2 in zip(trajectory1.data(), trajectory2.data()):
+        for p1, p2 in zip(trajectory1, trajectory2):
             point_error = np.linalg.norm(p1.between(p2).translation().vector())
             trans_errors.append(point_error)
         trans_errors = np.array(trans_errors)
@@ -63,8 +63,8 @@ class Evaluation(object):
     @staticmethod
     def horn_align(trajectory1, trajectory2):
         """ Aligns trajectory1 with trajectory2 using HORN """
-        xyz1 = np.matrix([p.translation().vector() for p in trajectory1.data()]).transpose()
-        xyz2 = np.matrix([p.translation().vector() for p in trajectory2.data()]).transpose()
+        xyz1 = np.matrix([p.translation().vector() for p in trajectory1.values()]).transpose()
+        xyz2 = np.matrix([p.translation().vector() for p in trajectory2.values()]).transpose()
         R,T,trans_error = Evaluation._horn_align(xyz1, xyz2)
         transform = gtsam.Pose3(gtsam.Rot3(R), gtsam.Point3(np.array(T)[:,0])) # T = [[x],[y],[z]] [:,0] = tranpose()[0]
         warped_trajectory = trajectory1.applyTransform(transform)

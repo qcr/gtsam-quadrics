@@ -25,7 +25,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 sys.dont_write_bytecode = True
 from base.containers import Trajectory
 from base.containers import Quadrics
-from base.containers import Boxes
+from base.containers import Detections
 
 
 # TODO: ensure calibration / dimensions are linked correctly
@@ -50,7 +50,9 @@ class SimulatedSequence(object):
         self.true_trajectory = self.interpolate_poses(poses, n_interpolate)
 
         # create quadrics from list
-        self.true_quadrics = Quadrics(dict(zip(range(len(quadrics)), quadrics)))
+        self.true_quadrics = Quadrics()
+        for key, quadric in zip(range(len(quadrics)), quadrics):
+            self.true_quadrics.add(quadric, key)
 
         # create box measurements
         self.true_boxes = self.reproject_quadrics(self.true_quadrics, self.true_trajectory)
@@ -58,7 +60,7 @@ class SimulatedSequence(object):
 
     def reproject_quadrics(self, quadrics, trajectory):
         image_box = quadricslam.AlignedBox2(0,0,self.calibration.px()*2.0, self.calibration.py()*2.0)
-        boxes = Boxes()
+        boxes = Detections()
         for pose_key, pose in trajectory.items():
             for object_key, quadric in quadrics.items():
 
@@ -81,11 +83,11 @@ class SimulatedSequence(object):
         return boxes
 
     def interpolate_poses(self, poses, n_between):
-        new_poses = []
+        new_poses = Trajectory()
         for i in range(len(poses)-1):
 
             # add real pose
-            new_poses.append(poses[i])
+            new_poses.add(poses[i], len(new_poses))
 
             # interpolate new poses
             for j in range(n_between):
@@ -97,11 +99,11 @@ class SimulatedSequence(object):
                 else:
                     ipose = quadricslam.interpolate(poses[i], poses[i+1], percentage)
 
-                new_poses.append(ipose)
+                new_poses.add(ipose, len(new_poses))
 
         # add final pose
-        new_poses.append(poses[-1])
-        return Trajectory(new_poses)
+        new_poses.add(poses[-1], len(new_poses))
+        return new_poses
 
 
     @staticmethod
