@@ -138,7 +138,7 @@ class DataAssociation(object):
     """
     def __init__(self):
         self.object_trackers = []
-        self.IOU_THRESH = 0.1
+        self.IOU_THRESH = 0.4
 
     def track(self, image, image_detections):
         # debug variables
