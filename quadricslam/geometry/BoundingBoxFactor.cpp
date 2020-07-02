@@ -100,7 +100,7 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     
     // if error cannot be calculated
     // set error vector and jacobians to zero
-    Vector4 error = Vector4::Zero();
+    Vector4 error = Vector4::Ones()*1000;
     if (H1) {*H1 = Matrix::Zero(4,6);}
     if (H2) {*H2 = Matrix::Zero(4,9);}
     return error;
