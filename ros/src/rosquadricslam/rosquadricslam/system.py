@@ -90,7 +90,8 @@ class ROSQuadricSLAM(Node):
         # set isam parameters
         parameters = gtsam.ISAM2Params()
         parameters.setOptimizationParams(opt_params)
-        parameters.setRelinearizeSkip(10)
+        parameters.setRelinearizeSkip(1)
+        parameters.setRelinearizeThreshold(0.01)
         # parameters.setEnableRelinearization(False)
         parameters.print_("ISAM2 Parameters")
 
