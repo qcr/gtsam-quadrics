@@ -144,6 +144,7 @@ class DataAssociation(object):
     def __init__(self):
         self.object_trackers = []
         self.IOU_THRESH = 0.4
+        self.object_limit = 3
 
     def track(self, image, image_detections, pose_key):
         # store associated detections
@@ -170,6 +171,8 @@ class DataAssociation(object):
 
             # or create new tracker 
             else:
+                if len(self.object_trackers) >= self.object_limit:
+                    continue
                 object_key = len(self.object_trackers)
                 self.object_trackers.append(ObjectTracker(object_key, image, detection.box))
                 new_objects += 1
