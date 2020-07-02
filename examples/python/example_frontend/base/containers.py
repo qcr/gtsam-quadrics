@@ -60,7 +60,7 @@ class Trajectory(Container1):
         for i in range(len(self)-1):
             start_key = pose_keys[i]
             end_key = pose_keys[i+1]
-            rpose = poses[i].between(poses[i+1])
+            rpose = poses.at(start_key).between(poses.at(end_key))
             odometry.add(rpose, start_key, end_key)
             
         return odometry
