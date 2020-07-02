@@ -45,6 +45,7 @@ class ROSQuadricSLAM(Node):
         POSE_SIGMA = 0.001
         BOX_SIGMA = 10.0
         self.VIEW_THRESH = 5
+        self.initialization_method = 'SVD'
 
         # load class names
         classes_path = '/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector/data/coco.names'
@@ -208,21 +209,8 @@ class ROSQuadricSLAM(Node):
                 continue
             
             # initialize object if seen enough
-            if len(object_detections) >= self.VIEW_THRESH:
-
-                object_boxes = [d.box for d in object_detections.values()]
-                object_keys = object_detections.keys()
-                object_poses = self.poses.at_keys(object_keys)
-                quadric_matrix = self.quadric_SVD(object_poses, object_boxes, self.calibration)
-                quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
-
-                # check quadric is okay
-                if self.is_okay(quadric, object_poses, self.calibration):
-
-                    # add quadric to values
-                    quadric.addToValues(local_estimate, self.Q(object_key))
-                    # add weak quadric priors
-                    self.initial_quadrics.add(quadric, object_key)
+            # TODO: use current trajectory instead of initial poses?
+            self.try_initialize_quadric(object_key, object_detections, self.poses, local_estimate)
 
 
         # add measurements if unused
@@ -267,6 +255,38 @@ class ROSQuadricSLAM(Node):
         # draw current map view
         self.current_trajectory = Trajectory.from_values(current_estimate)
         self.current_quadrics = Quadrics.from_values(current_estimate)
+
+
+    def try_initialize_quadric(self, object_key, object_detections, current_trajectory, local_estimate):
+        """ will try to initialize quadric and add to self.initial_quadrics if successful """
+        if self.initialization_method == 'SVD':
+            if len(object_detections) < self.VIEW_THRESH:
+                return
+
+            object_boxes = [d.box for d in object_detections.values()]
+            pose_keys = object_detections.keys()
+            object_poses = current_trajectory.at_keys(pose_keys)
+            quadric_matrix = self.quadric_SVD(object_poses, object_boxes, self.calibration)
+            quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
+
+            # check quadric is okay
+            if self.is_okay(quadric, object_poses, self.calibration):
+
+                # add quadric to values
+                quadric.addToValues(local_estimate, self.Q(object_key))
+                # add weak quadric priors
+                self.initial_quadrics.add(quadric, object_key)
+        else:
+            if len(object_detections) < 15:
+                return
+            abox = list(object_detections.values())[0]
+            apose_key = list(object_detections.keys())[0]
+            apose = current_trajectory.at(apose_key)
+            quadric_pose = apose.compose(gtsam.Pose3(gtsam.Rot3(),gtsam.Point3(0,0,1)))
+            # quadric_pose = gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(-0.742, -0.033, 0.073))
+            quadric = quadricslam.ConstrainedDualQuadric(quadric_pose, np.array([0.01]*3))
+            self.initial_quadrics.add(quadric, object_key)
+            quadric.addToValues(local_estimate, self.Q(object_key))
 
 
     def check_reprojection_errors(self, graph, estimate):
