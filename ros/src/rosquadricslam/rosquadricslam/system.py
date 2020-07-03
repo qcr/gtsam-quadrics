@@ -309,13 +309,12 @@ class ROSQuadricSLAM(Node):
                 # add weak quadric priors
                 self.initial_quadrics.add(quadric, object_key)
         else:
-            if len(object_detections) < 15:
+            if len(object_detections) < self.VIEW_THRESH:
                 return
             abox = list(object_detections.values())[0]
             apose_key = list(object_detections.keys())[0]
             apose = current_trajectory.at(apose_key)
-            quadric_pose = apose.compose(gtsam.Pose3(gtsam.Rot3(),gtsam.Point3(0,0,1)))
-            # quadric_pose = gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(-0.742, -0.033, 0.073))
+            quadric_pose = apose.compose(gtsam.Pose3(gtsam.Rot3(),gtsam.Point3(0,0,0.1)))
             quadric = quadricslam.ConstrainedDualQuadric(quadric_pose, np.array([0.01]*3))
             self.initial_quadrics.add(quadric, object_key)
             quadric.addToValues(local_estimate, self.Q(object_key))
