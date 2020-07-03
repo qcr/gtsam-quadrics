@@ -105,15 +105,15 @@ class ROSQuadricSLAM(Node):
         self.detections = Detections()
         self.initial_quadrics = Quadrics()
 
-        # store DA tracker
-        self.data_association = DataAssociation()
-
         # convert from time stamp to pose_keys
         self.pose_keys = dict()
 
         # store current estimates to draw each frame
         self.current_trajectory = Trajectory()
         self.current_quadrics = Quadrics()
+
+        # initialize data-association module
+        self.data_association = DataAssociation(self.current_quadrics, self.calibration)
 
         # store update count 
         self.count = 0
@@ -231,7 +231,7 @@ class ROSQuadricSLAM(Node):
 
         # associate new measurements with existing keys
         da_start = time.time()
-        associated_detections = self.data_association.track(image, image_detections, pose_key)
+        associated_detections = self.data_association.associate(image, image_detections, camera_pose, pose_key, visualize=True, verbose=True)
         da_end = time.time()
 
         # store new boxes and pose for later initialization and factor adding

@@ -10,6 +10,7 @@ import cv2
 sys.path.append('/home/lachness/git_ws/quadricslam/examples/python/example_frontend/')
 sys.dont_write_bytecode = True
 from base.containers import Detections
+from visualization.drawing import CV2Drawing
 
 # import gtsam and extension
 import gtsam
@@ -77,20 +78,21 @@ class BoxTracker(object):
 
 class ObjectTracker(object):
     """
-    Ensure you call update(image) before checking compatability. 
+    ObjectTracker will track objects frame to frame,
+    Automatically becomes inactive if:
+        - not associated in n updates 
+        - not ok for n updates 
+        - too many trackers
     """
-    def __init__(self, object_key, image, box):
-        self.object_key = object_key
-        
-        # define parameters
+    def __init__(self, image, box):
+
+        # settings
         self.n_active_trackers = 1
         
-        # store trackers
-        tracker = BoxTracker(image, box)
-        self.trackers = [tracker]
-
-        # store last prediction
+        # create a new box tracker 
+        self.trackers = [BoxTracker(image, box)]
         self.predictions = []
+        self.alive = True
 
     def update(self, image):
         # clear previous predictions
@@ -103,95 +105,135 @@ class ObjectTracker(object):
                 self.predictions.append(box)
 
     def compatability(self, box):
-        """
-        Checks how compatible new box is with trackers
-        """
+        """ Returns the best compatability among all invidual box trackers """
         if len(self.predictions) == 0:
             return 0.0
-        ious = [self._iou(predicted_box, box) for predicted_box in self.predictions]
+        ious = [box.iou(predicted_box) for predicted_box in self.predictions]
         return np.max(ious)
 
     def add_tracker(self, box, image):
         tracker = BoxTracker(image, box)
         self.trackers.append(tracker)
 
-    @staticmethod
-    def _iou(boxA, boxB):
-        # determine the (x, y)-coordinates of the intersection rectangle
-        xA = max(boxA.xmin(), boxB.xmin())
-        yA = max(boxA.ymin(), boxB.ymin())
-        xB = min(boxA.xmax(), boxB.xmax())
-        yB = min(boxA.ymax(), boxB.ymax())
 
-        # compute the area of intersection rectangle
-        interArea = max(0, max(0,(xB - xA + 1)) * max(0,(yB - yA + 1)))
-
-        # compute the area of both the prediction and ground-truth boxes
-        boxAArea = (boxA.xmax() - boxA.xmin() + 1) * (boxA.ymax() - boxA.ymin() + 1)
-        boxBArea = (boxB.xmax() - boxB.xmin() + 1) * (boxB.ymax() - boxB.ymin() + 1)
-
-        # compute the intersection over union by taking the intersection
-        # area and dividing it by the sum of prediction + ground-truth
-        # areas - the interesection area
-        iou = interArea / float(boxAArea + boxBArea - interArea)
-        return iou
 
 class DataAssociation(object):
+
     """
-    Detections are assigned to an object key as they come in. 
-    They should not be stored without a key as we never go back to update / arange them.
+    We attempt to track objects until an object can be initialized.
+    From then we use the existing map first to associate new measurements. 
+    TODO: turn trackers off 
+    TODO: enable multiple box trackers
+    TODO: pass updateable version of map to constructor
     """
-    def __init__(self):
-        self.object_trackers = []
+
+    def __init__(self, map, calibration):
+        self.map = map
+        self.calibration = calibration
+        self.object_trackers = {}
+
+        # settings 
         self.IOU_THRESH = 0.4
         self.object_limit = 3
 
-    def track(self, image, image_detections, pose_key):
-        # store associated detections
+
+    def associate(self, image, image_detections, camera_pose, pose_key, visualize=False, verbose=False):
         associated_detections = Detections()
-        
-        # debug variables
-        new_objects = 0
-        tracked_objects = 0
-        
-        # update object trackers with new image
-        # should also turn inactive if not matched in X frames
-        for object_tracker in self.object_trackers:
-            object_tracker.update(image)
 
-        # check compatability between each detection and active trackers
-        for detection in image_detections:
-            compatabilities = [tracker.compatability(detection.box) for tracker in self.object_trackers]
+        # update active trackers with new image 
+        for object_key, object_tracker in self.object_trackers.items():
+            if object_tracker.alive:
 
-            # associate with existing tracker
-            if len(compatabilities) > 0 and np.max(compatabilities) > self.IOU_THRESH:
-                self.object_trackers[np.argmax(compatabilities)].add_tracker(detection.box, image)
-                object_key = self.object_trackers[np.argmax(compatabilities)].object_key
-                tracked_objects += 1
-
-            # or create new tracker 
-            else:
-                if len(self.object_trackers) >= self.object_limit:
+                # turn off if object is in map 
+                if object_key in self.map.keys():
+                    object_tracker.alive = False
                     continue
-                object_key = len(self.object_trackers)
-                self.object_trackers.append(ObjectTracker(object_key, image, detection.box))
-                new_objects += 1
 
-            # add associated detection
+                # update image
+                object_tracker.update(image)
+
+        if visualize:
+            img = image.copy()
+            drawing = CV2Drawing(img)
+
+        if verbose:
+            associations = []
+
+        for detection in image_detections:
+
+            # associate single measurement
+            object_key, association_type = self.associate_detection(image, detection, camera_pose)
+            if association_type == 'failed':
+                continue
+            
+            # append association detection
             associated_detections.add(detection, pose_key, object_key)
 
-        # print 
-        print('DataAssociation: image had {} detections. {} associated | {} new | Total trackers: {}'.format(
-            len(image_detections),
-            tracked_objects,
-            new_objects,
-            len(self.object_trackers),
-        ))
+            if visualize:
+                drawing.box(detection.box, (0,0,255))
+                # drawing.box_and_text(predicted_box, (0,255,0), association_type, (0,0,0))
+
+            if verbose:
+                associations.append(association_type)
+
+        if visualize:
+            cv2.imshow('data-association', img)
+            cv2.waitKey(1)
+
+        # TODO: get actual estimate for number of active trackers
+        if verbose:
+            print('\n --- Data-association --- ')
+            print('  active_trackers: {}'.format(np.sum([t.n_active_trackers for t in self.object_trackers.values() if t.alive])))
+            print('  map_objects:     {}'.format(len(self.map)))
+            print('  associations:    {}'.format(len(image_detections)))
+            print('      tracker: {}'.format(len([t for t in associations if t=='tracker'])))
+            print('      map:     {}'.format(len([t for t in associations if t=='map'])))
+            print('      new:     {}'.format(len([t for t in associations if t=='new'])))
+            
         return associated_detections
 
-    def prints(self):
-        print('DataAssociation: {} objects and {} trackers'.format(
-            len(self.object_trackers),
-            len(self.object_trackers)
-        ))
-    
+
+    def associate_detection(self, image, detection, pose):
+        """ 
+            Tries to associate detection with map and object trackers.
+            If associated with tracker, updates tracker with new measurement. 
+            returns (associated_key, association_type) 
+
+            association_types: [map, tracker, new, failed]
+            TODO: remove nasty list(dict.keys())
+        """
+        
+        # calculate compatability with current map 
+        ious = {}
+        for object_key, quadric in self.map.items():
+
+            # TODO: catch projection failures 
+            dual_conic = quadricslam.QuadricCamera.project(quadric, pose, self.calibration)
+            predicted_box = dual_conic.bounds()
+            ious[object_key] = detection.box.iou(predicted_box)
+
+        # attempt to associate detections with current map
+        if np.any(np.array(list(ious.values())) > self.IOU_THRESH):
+            object_key = list(ious.keys())[np.argmax(list(ious.values()))]
+            return (object_key, 'map')
+
+        # calculate compatability with object trackers 
+        ious = {}
+        for object_key, object_tracker in self.object_trackers.items():
+            if object_tracker.alive:
+                ious[object_key] = object_tracker.compatability(detection.box)
+        
+        # attempt to associate detections with object trackers
+        if np.any(np.array(list(ious.values())) > self.IOU_THRESH):
+            object_key = list(ious.keys())[np.argmax(list(ious.values()))]
+            best_tracker = self.object_trackers[object_key]
+            best_tracker.add_tracker(detection.box, image)
+            return (object_key, 'tracker')
+
+        # create a new landmark for unassociated detections
+        if len(self.object_trackers) >= self.object_limit:
+            return (None, 'failed')
+        object_key = len(self.object_trackers)
+        new_tracker = ObjectTracker(image, detection.box)
+        self.object_trackers[object_key] = new_tracker
+        return (object_key, 'new')
