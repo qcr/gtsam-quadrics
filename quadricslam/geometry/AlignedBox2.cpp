@@ -58,6 +58,29 @@ bool AlignedBox2::intersects(const AlignedBox2& other) const {
 }
 
 /* ************************************************************************* */
+double AlignedBox2::iou(const AlignedBox2& other) const {
+  AlignedBox2 inter_box(
+    std::max(this->xmin(), other.xmin()),
+    std::max(this->ymin(), other.ymin()),
+    std::min(this->xmax(), other.xmax()),
+    std::min(this->ymax(), other.ymax())
+  );
+
+  if ((inter_box.xmax() < inter_box.xmin()) || (inter_box.ymax() < inter_box.ymin())) {
+    return 0.0;
+  }
+
+  double inter_area = inter_box.width() * inter_box.height();
+  double this_area = this->width() * this->height();
+  double other_area = other.width() * other.height();
+
+  double iou = inter_area / (this_area + other_area - inter_area);
+  assert(iou >= 0.0);
+  assert(iou <= 0.0);
+  return iou;
+}
+
+/* ************************************************************************* */
 void AlignedBox2::print(const std::string& s) const {
   cout << s << this->vector().transpose() << endl;  
 }

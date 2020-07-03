@@ -110,6 +110,12 @@ namespace gtsam {
        */
       bool intersects(const AlignedBox2& other) const;
 
+      /**
+       * Calculates the standard intersection over union
+       * between two axis aligned bounding boxes. 
+       */
+      double iou(const AlignedBox2& other) const;
+
       /// @}
       /// @name Testable group traits
       /// @{
