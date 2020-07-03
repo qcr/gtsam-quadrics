@@ -2,6 +2,7 @@
 import os
 import sys
 import numpy as np
+import time
 sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-packages/')
 import cv2
 import atexit
@@ -114,6 +115,9 @@ class ROSQuadricSLAM(Node):
         self.current_trajectory = Trajectory()
         self.current_quadrics = Quadrics()
 
+        # store update count 
+        self.count = 0
+
         # prepare video capture
         if self.record:
             self.video_writer = cv2.VideoWriter('good_performance.mp4', cv2.VideoWriter_fourcc(*'MP4V'), 12.0, (640, 480))
@@ -192,6 +196,11 @@ class ROSQuadricSLAM(Node):
 
     def update(self, image_msg, pose_msg, detections_msg):
 
+        # print('update {}'.format(self.count))
+        self.count += 1
+
+        update_start = time.time()
+
         # convert msgs to data
         image = self.msg2image(image_msg)
         camera_pose = self.msg2pose(pose_msg).inverse()
@@ -215,8 +224,15 @@ class ROSQuadricSLAM(Node):
         if self.record:
             self.video_writer.write(img)
 
+
+
+
+
+
         # associate new measurements with existing keys
+        da_start = time.time()
         associated_detections = self.data_association.track(image, image_detections, pose_key)
+        da_end = time.time()
 
         # store new boxes and pose for later initialization and factor adding
         self.detections.add_detections(associated_detections)
@@ -242,6 +258,7 @@ class ROSQuadricSLAM(Node):
             # initialize object if seen enough
             # TODO: use current trajectory instead of initial poses?
             self.try_initialize_quadric(object_key, object_detections, self.poses, local_estimate)
+
 
 
         # add measurements if unused
@@ -284,7 +301,15 @@ class ROSQuadricSLAM(Node):
         #             print('object {} changed by {}'.format(object_key, local_diff))
                 
 
-        # draw current map view
+        update_end = time.time()
+
+        # print timings
+        # print('pre-da:  {:.3f} s'.format(da_start-update_start))
+        # print('da:      {:.3f} s'.format(da_end-da_start))
+        # print('post-da: {:.3f} s'.format(update_end-da_end))
+        # print('update ended\n')
+            
+        # update current estimate 
         self.current_trajectory = Trajectory.from_values(current_estimate)
         self.current_quadrics = Quadrics.from_values(current_estimate)
 
