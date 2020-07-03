@@ -311,7 +311,8 @@ class ROSQuadricSLAM(Node):
             
         # update current estimate 
         self.current_trajectory = Trajectory.from_values(current_estimate)
-        self.current_quadrics = Quadrics.from_values(current_estimate)
+        self.current_quadrics.clear()
+        self.current_quadrics.update(Quadrics.from_values(current_estimate))
 
 
     def try_initialize_quadric(self, object_key, object_detections, current_trajectory, local_estimate):
