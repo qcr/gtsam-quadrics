@@ -41,7 +41,7 @@ class ROSQuadricSLAM(Node):
         super().__init__('ROSQuadricSLAM')
 
         # settings
-        self.record = False
+        self.record = True
         POSE_SIGMA = 0.001
         BOX_SIGMA = 10.0
         self.VIEW_THRESH = 5
@@ -116,7 +116,7 @@ class ROSQuadricSLAM(Node):
 
         # prepare video capture
         if self.record:
-            self.video_writer = cv2.VideoWriter('good_performance.mp4', cv2.VideoWriter_fourcc(*'MP4V'), 20.0, (640, 480))
+            self.video_writer = cv2.VideoWriter('good_performance.mp4', cv2.VideoWriter_fourcc(*'MP4V'), 12.0, (640, 480))
             atexit.register(self.video_writer.release)
         print('\n~ Awaiting Measurements ~')
 
