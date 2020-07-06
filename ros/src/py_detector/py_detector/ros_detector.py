@@ -41,7 +41,10 @@ class ROSDetector(Node):
         super().__init__('ROSDetector')
 
         # set parameters
-        self.visualize = self.declare_parameter('visualize', True)
+        self.visualize = self.declare_parameter('visualize', True).value
+        weights_path = self.declare_parameter('weights', '/home/lachness/git_ws/PyTorch-YOLOv3/weights/yolov3.weights').value
+        config_path = self.declare_parameter('config', '/home/lachness/git_ws/PyTorch-YOLOv3/config/yolov3.cfg').value
+        classes_path = self.declare_parameter('classes', '/home/lachness/git_ws/PyTorch-YOLOv3/data/coco.names').value
 
         # create image subscriber
         self.subscription = self.create_subscription(Image, 'image', self.listener_callback, 10)
@@ -50,7 +53,7 @@ class ROSDetector(Node):
         self.publisher = self.create_publisher(ObjectDetectionArray, 'detections', 10)
 
         # create object detector 
-        self.detector = Detector()
+        self.detector = Detector(weights_path, config_path, classes_path)
 
         # store cvbridge
         self.bridge = CvBridge()
@@ -86,7 +89,7 @@ class ROSDetector(Node):
         self.publisher.publish(out_detections)
 
         # draw detections
-        if self.visualize.value:
+        if self.visualize:
             self.draw_detections(image, detections)
 
 
