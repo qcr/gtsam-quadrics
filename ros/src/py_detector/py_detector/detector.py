@@ -36,85 +36,6 @@ from utils.datasets import *
 
 
 
-def full_non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.4, scores=False):
-	"""
-	Removes detections with lower object confidence score than 'conf_thres' and performs
-	Non-Maximum Suppression to further filter detections.
-	Returns detections with shape:
-		(x1, y1, x2, y2, object_conf, scores)
-	"""
-
-	# From (center x, center y, width, height) to (x1, y1, x2, y2)
-	prediction[..., :4] = xywh2xyxy(prediction[..., :4])
-
-	output = [None for _ in range(len(prediction))]
-	for image_i, image_pred in enumerate(prediction):
-
-		# append index into prediction
-		image_pred = torch.cat((image_pred, torch.arange(len(image_pred)).unsqueeze(1).float()), 1)
-
-		# convert local image_pred to probabilities
-		if (scores):
-			image_pred[:, 4:-1] = torch.sigmoid(image_pred[:, 4:-1])
-
-		# Filter out confidence scores below threshold
-		image_pred = image_pred[image_pred[:, 4] >= conf_thres]
-
-		# If none are remaining => process next image
-		if not image_pred.size(0):
-			continue
-
-		# Object confidence times class confidence
-		score = image_pred[:, 4] * image_pred[:, 5:-1].max(1)[0]
-
-		# Sort by it
-		image_pred = image_pred[(-score).argsort()]
-		class_confs, class_preds = image_pred[:, 5:-1].max(1, keepdim=True)
-
-		# added index into image predictions
-		detections = torch.cat((image_pred[:, :5], class_confs.float(), class_preds.float(), image_pred[:, -1:]), 1)
-
-		# get only the detections where boxes are valid
-		detections = detections[((detections[:,:4]<1e10).sum(1)>=4), :]
-		# print(detections.shape)
-
-		# Perform non-maximum suppression
-		indicies_per_observation = []
-		while detections.size(0):
-			ious = bbox_iou(detections[0, :4].unsqueeze(0), detections[:, :4])
-			# if (torch.isclose(ious[0], torch.FloatTensor([0])) or torch.isnan(ious).any() or torch.isinf(ious).any()):
-			# 	print('WARNING, inf IOU encountered, skipping\n')#, detections[:,:4])
-			# 	detections = detections[1:]
-			# 	continue
-			large_overlap = ious > nms_thres
-			label_match = detections[0, -2] == detections[:, -2]
-
-			# Indices of boxes with lower confidence scores, large IOUs and matching labels
-			invalid = large_overlap & label_match
-
-			# store indicies of overlapping boxes
-			indicies_per_observation += [detections[invalid,-1]]
-			detections = detections[~invalid]
-
-		# merge overlapping boxes
-		keep_boxes = []
-		for indicies in indicies_per_observation:
-			_detections = prediction[image_i, indicies.long(), :]
-
-			weights = _detections[:,4:5]
-			if (scores):
-				weights = torch.sigmoid(weights)
-
-			_detection = _detections[0]
-			_detection[0:4] = (weights * _detections[:, 0:4]).sum(0) / weights.sum()
-			keep_boxes.append(_detection)
-
-		if keep_boxes:
-			output[image_i] = torch.stack(keep_boxes)
-
-	return output
-
-
 class Detector(object):
     def __init__(self, weights_path, config_path, classes_path):
         self.weights_path = weights_path
@@ -161,9 +82,9 @@ class Detector(object):
             outputs = self.model(input)
 
             # use a modified nms that keeps class scores
-            detections = full_non_max_suppression(outputs, self.conf_thres, self.nms_thres)
+            detections = self.full_non_max_suppression(outputs, self.conf_thres, self.nms_thres)
 
-            # nms returns list [torch(n,7)]*N where N is images and n is detections
+            # nms returns list [torch(n,85)]*N where N is images and n is detections
             detections = detections[0]
 
             # nms returns None for each image if no detections
@@ -177,3 +98,88 @@ class Detector(object):
         detections = detections.cpu().numpy()
         
         return detections
+
+
+    def full_non_max_suppression(self, prediction, conf_thres=0.5, nms_thres=0.4, scores=False):
+        """
+        We have enriched PyTorch-YOLOv3 to perform non maximum supression and store
+        the full class scores, instead of just the winning class probability. 
+
+        Removes detections with lower object confidence score than 'conf_thres' and performs
+        Non-Maximum Suppression to further filter detections.
+        
+        Inputs: prediction [N_images, 10657, 85] tensor 
+        Returns: detections with shape [N_images, N_detections, 85]:
+        Each 85 long detection is stored as: (x1, y1, x2, y2, object_conf, 80_class_scores)
+        """
+
+        # From (center x, center y, width, height) to (x1, y1, x2, y2)
+        prediction[..., :4] = xywh2xyxy(prediction[..., :4])
+
+        output = [None for _ in range(len(prediction))]
+        for image_i, image_pred in enumerate(prediction):
+
+            # append index into prediction
+            image_pred = torch.cat((image_pred, torch.arange(len(image_pred)).unsqueeze(1).float()), 1)
+
+            # convert local image_pred to probabilities
+            if (scores):
+                image_pred[:, 4:-1] = torch.sigmoid(image_pred[:, 4:-1])
+
+            # Filter out confidence scores below threshold
+            image_pred = image_pred[image_pred[:, 4] >= conf_thres]
+
+            # If none are remaining => process next image
+            if not image_pred.size(0):
+                continue
+
+            # Object confidence times class confidence
+            score = image_pred[:, 4] * image_pred[:, 5:-1].max(1)[0]
+
+            # Sort by it
+            image_pred = image_pred[(-score).argsort()]
+            class_confs, class_preds = image_pred[:, 5:-1].max(1, keepdim=True)
+
+            # added index into image predictions
+            detections = torch.cat((image_pred[:, :5], class_confs.float(), class_preds.float(), image_pred[:, -1:]), 1)
+
+            # get only the detections where boxes are valid
+            detections = detections[((detections[:,:4]<1e10).sum(1)>=4), :]
+            # print(detections.shape)
+
+            # Perform non-maximum suppression
+            indicies_per_observation = []
+            while detections.size(0):
+                ious = bbox_iou(detections[0, :4].unsqueeze(0), detections[:, :4])
+                # if (torch.isclose(ious[0], torch.FloatTensor([0])) or torch.isnan(ious).any() or torch.isinf(ious).any()):
+                # 	print('WARNING, inf IOU encountered, skipping\n')#, detections[:,:4])
+                # 	detections = detections[1:]
+                # 	continue
+                large_overlap = ious > nms_thres
+                label_match = detections[0, -2] == detections[:, -2]
+
+                # Indices of boxes with lower confidence scores, large IOUs and matching labels
+                invalid = large_overlap & label_match
+
+                # store indicies of overlapping boxes
+                indicies_per_observation += [detections[invalid,-1]]
+                detections = detections[~invalid]
+
+            # merge overlapping boxes
+            keep_boxes = []
+            for indicies in indicies_per_observation:
+                _detections = prediction[image_i, indicies.long(), :]
+
+                weights = _detections[:,4:5]
+                if (scores):
+                    weights = torch.sigmoid(weights)
+
+                _detection = _detections[0]
+                _detection[0:4] = (weights * _detections[:, 0:4]).sum(0) / weights.sum()
+                keep_boxes.append(_detection)
+
+            if keep_boxes:
+                output[image_i] = torch.stack(keep_boxes)
+
+        return output
+
