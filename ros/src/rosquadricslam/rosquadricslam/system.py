@@ -61,7 +61,7 @@ class ROSQuadricSLAM(Node):
         self.pose_subscription = message_filters.Subscriber(self, PoseStamped, 'poses')
         self.detection_subscription = message_filters.Subscriber(self, ObjectDetectionArray, 'detections')
         self.image_subscription = message_filters.Subscriber(self, Image, 'image')
-        self.time_synchronizer = message_filters.TimeSynchronizer([self.image_subscription, self.pose_subscription, self.detection_subscription], 10)
+        self.time_synchronizer = message_filters.TimeSynchronizer([self.image_subscription, self.pose_subscription, self.detection_subscription], 2)
         self.time_synchronizer.registerCallback(self.update)
 
         # store Image->msg converter
