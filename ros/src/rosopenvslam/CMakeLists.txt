@@ -15,11 +15,6 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-
-
-
-
-
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -27,7 +22,7 @@ find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 
 # openvslam 
-# find_package(openvslam REQUIRED)
+set(openvslam_SRC_DIR "/home/lachness/git_ws/openvslam")
 set(openvslam_INCLUDE_DIRS "/usr/local/include/openvslam")
 include_directories(${openvslam_INCLUDE_DIRS})
 
@@ -57,7 +52,7 @@ set(spdlog_INCLUDE_DIR ${openvslam_INCLUDE_DIRS}/3rd/spdlog/include)
 include_directories(${spdlog_INCLUDE_DIR})
 
 # popl
-set(popl_INCLUDE_DIR /home/lachness/git_ws/openvslam/3rd/popl/include)
+set(popl_INCLUDE_DIR ${openvslam_SRC_DIR}/3rd/popl/include)
 include_directories(${popl_INCLUDE_DIR})
 
 # json
@@ -66,17 +61,12 @@ include_directories(${json_INCLUDE_DIR})
 
 
 
-
-
-
-
-
 # pangolin viewer
 set(USE_PANGOLIN_VIEWER ON CACHE BOOL "Enable Pangolin Viewer")
 if(USE_PANGOLIN_VIEWER)
-    set(Pangolin_Viewer_INCLUDE_DIR /home/lachness/git_ws/openvslam/src/)
+    set(Pangolin_Viewer_INCLUDE_DIR ${openvslam_SRC_DIR}/src)
     include_directories(${Pangolin_Viewer_INCLUDE_DIR})
-    find_library(Pangolin_Viewer_LIB pangolin_viewer HINTS /home/lachness/git_ws/openvslam/build/lib)
+    find_library(Pangolin_Viewer_LIB pangolin_viewer HINTS ${openvslam_SRC_DIR}/build/lib)
     find_package(Pangolin REQUIRED)
 endif()
 
@@ -119,9 +109,7 @@ message(STATUS "BoW framework: ${BOW_FRAMEWORK} (found in ${BOW_INCLUDE_DIRS})")
 
 
 
-
-
-# build executable 
+# build executable target 
 add_executable(run_slam src/run_slam.cpp)
 
 
@@ -137,15 +125,29 @@ elseif(USE_SOCKET_PUBLISHER)
     target_compile_definitions(run_slam PRIVATE -DUSE_SOCKET_PUBLISHER)
     # link viewer
     target_link_libraries(run_slam PRIVATE ${Socket_Publisher_LIB} ${SIOCLIENT_LIBRARY} ${PROTOBUF_LIBRARIES})
+elseif(USE_SOCKET_PUBLISHER)
+    # set macro flag
+    target_compile_definitions(run_slam PRIVATE -DUSE_SOCKET_PUBLISHER)
+    # link viewer
+    target_link_libraries(run_slam PRIVATE ${Socket_Publisher_LIB} ${SIOCLIENT_LIBRARY} ${PROTOBUF_LIBRARIES})
 endif()
 
+# setup stack trace logger
+if(USE_STACK_TRACE_LOGGER)
+    target_compile_definitions(run_slam PRIVATE -DUSE_STACK_TRACE_LOGGER)
+    target_link_libraries(run_slam PRIVATE ${GLOG_LIBRARIES})
+endif()
 
+# setup google-perftools
+if(USE_GOOGLE_PERFTOOLS)
+    target_compile_definitions(run_slam PRIVATE -DUSE_GOOGLE_PERFTOOLS)
+    target_link_libraries(run_slam PRIVATE ${GPERFTOOLS_LIBRARIES})
+endif()
+
+# build and install executable 
 target_include_directories(run_slam PRIVATE ${openvslam_INCLUDE_DIRS} ${rclcpp_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${GTSAM_INCLUDE_DIRS})
 target_link_libraries(run_slam PRIVATE ${OpenVSLAM_LIB} ${rclcpp_LIBRARIES} ${OpenCV_LIBRARIES} ${GTSAM_LIBRARIES} gtsam)
 ament_target_dependencies(run_slam PUBLIC rclcpp cv_bridge image_transport)
-
-# install executable 
-install(TARGETS run_slam
-        DESTINATION lib/${PROJECT_NAME})
+install(TARGETS run_slam DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
