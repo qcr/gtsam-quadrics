@@ -33,6 +33,7 @@ We provide an example of running QuadricSLAM live using odometry measurements fr
     * Clone the ROS2 branch of vision_opencv (for cv_bridge) and image_common (for image_transport)
     * Build the workspace `colcon build --symlink-install`
     * Source the ROS2 overlay `. install/setup.bash` 
+* Specify openvslam_SRC_DIR in [rosopenvslam/CMakeLists.txt](/ros/src/rosopenvslam/CMakeLists.txt) as the /path/to/openvslam 
 * Navigate to /quadricslam/ros/src and build the ros packages with `colcon build --symlink-install`
 * Source the overlay with `. install/setup.bash`
 
