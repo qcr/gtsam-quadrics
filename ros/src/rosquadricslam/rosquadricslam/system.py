@@ -159,11 +159,12 @@ class ROSQuadricSLAM(Node):
         # cv2.waitKey(0)
 
         
-    def msg2detections(self, msg, filters):
+    def msg2detections(self, msg, filters=None):
         detections = []
         for detection in msg.detections:
-            filter_indicies = [self.class_names.index(filter) for filter in filters]
-            if np.argmax(detection.scores) in filter_indicies:
+            if filters is not None:
+                filter_indicies = [self.class_names.index(filter) for filter in filters]
+            if filters is None or np.argmax(detection.scores) in filter_indicies:
                 box = quadricslam.AlignedBox2(detection.box.xmin, detection.box.ymin, detection.box.xmax, detection.box.ymax) 
                 detection = ObjectDetection(box, detection.objectness, detection.scores)
                 detections.append(detection)
@@ -206,7 +207,8 @@ class ROSQuadricSLAM(Node):
         camera_pose = self.msg2pose(pose_msg).inverse()
         float_time = self.msg2time(detections_msg)
         pose_key = self.time2key(float_time)
-        image_detections = self.msg2detections(detections_msg, filters=['cup', 'bowl'])
+        # image_detections = self.msg2detections(detections_msg, filters=['cup', 'bowl'])
+        image_detections = self.msg2detections(detections_msg)
 
         # draw detections
         img = image.copy()
