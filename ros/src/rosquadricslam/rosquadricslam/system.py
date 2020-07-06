@@ -196,11 +196,9 @@ class ROSQuadricSLAM(Node):
 
 
     def update(self, image_msg, pose_msg, detections_msg):
-
-        # print('update {}'.format(self.count))
         self.count += 1
-
         update_start = time.time()
+        self.get_logger().info('Update started')
 
         # convert msgs to data
         image = self.msg2image(image_msg)
@@ -235,6 +233,11 @@ class ROSQuadricSLAM(Node):
         da_start = time.time()
         associated_detections = self.data_association.associate(image, image_detections, camera_pose, pose_key, visualize=True, verbose=True)
         da_end = time.time()
+
+
+
+
+
 
         # store new boxes and pose for later initialization and factor adding
         self.detections.add_detections(associated_detections)
@@ -301,20 +304,28 @@ class ROSQuadricSLAM(Node):
         #         local_diff = np.sum(new_quadric.localCoordinates(old_quadric))
         #         if local_diff > 0:
         #             print('object {} changed by {}'.format(object_key, local_diff))
-                
-
         update_end = time.time()
 
-        # print timings
-        # print('pre-da:  {:.3f} s'.format(da_start-update_start))
-        # print('da:      {:.3f} s'.format(da_end-da_start))
-        # print('post-da: {:.3f} s'.format(update_end-da_end))
-        # print('update ended\n')
-            
+        
+        
+        
+        
         # update current estimate 
         self.current_trajectory = Trajectory.from_values(current_estimate)
         self.current_quadrics.clear()
         self.current_quadrics.update(Quadrics.from_values(current_estimate))
+        extracting_end = time.time()
+
+
+        # print timings
+        self.get_logger().info('Update lasted {:.3f} s'.format(extracting_end-update_start))
+        print('pre-da:  {:.3f} s'.format(da_start-update_start))
+        print('da:      {:.3f} s'.format(da_end-da_start))
+        print('opt:     {:.3f} s'.format(update_end-da_end))
+        print('extract: {:.3f} s'.format(extracting_end-update_end))
+        print('')
+        # print('update ended\n')
+            
 
 
     def try_initialize_quadric(self, object_key, object_detections, current_trajectory, local_estimate):
