@@ -61,7 +61,7 @@ class ROSQuadricSLAM(Node):
         self.calibration = self.load_camera_calibration(self.config_path)
 
         # load class names
-        classes_path = '/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector/data/coco.names'
+        classes_path = '/home/lachness/git_ws/PyTorch-YOLOv3/data/coco.names'
         classes_fp = open(classes_path, "r")
         self.class_names = classes_fp.read().split("\n")[:-1]
 
