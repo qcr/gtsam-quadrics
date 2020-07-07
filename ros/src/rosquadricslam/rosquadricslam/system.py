@@ -7,6 +7,7 @@ sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-p
 import cv2
 import atexit
 import yaml
+import argparse
 
 # import ros libraries
 import rclpy
@@ -38,16 +39,26 @@ import quadricslam
 
 
 class ROSQuadricSLAM(Node):
-    def __init__(self):
+    def __init__(self, args):
         # set node name
         super().__init__('ROSQuadricSLAM')
 
         # settings
-        self.record = True
+        self.config_path = args.config_path
+        self.depth = args.depth
+        self.record = args.record
+        self.minimum_views = args.minimum_views
+        self.initialization_method = args.initialization_method
+
         POSE_SIGMA = 0.001
         BOX_SIGMA = 10.0
-        self.VIEW_THRESH = 5
-        self.initialization_method = 'SVD'
+
+        # parse settings
+        if self.config_path is None:
+            raise RuntimeError('ros parameter "config" is required')
+
+        # load camera calibration
+        self.calibration = self.load_camera_calibration(self.config_path)
 
         # load class names
         classes_path = '/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector/data/coco.names'
@@ -62,20 +73,11 @@ class ROSQuadricSLAM(Node):
         self.pose_subscription = message_filters.Subscriber(self, PoseStamped, 'poses')
         self.detection_subscription = message_filters.Subscriber(self, ObjectDetectionArray, 'detections')
         self.image_subscription = message_filters.Subscriber(self, Image, 'image')
-        self.time_synchronizer = message_filters.TimeSynchronizer([self.image_subscription, self.pose_subscription, self.detection_subscription], 2)
+        self.time_synchronizer = message_filters.TimeSynchronizer([self.image_subscription, self.pose_subscription, self.detection_subscription], self.depth)
         self.time_synchronizer.registerCallback(self.update)
 
         # store Image->msg converter
         self.bridge = CvBridge()
-
-        # temporarily load calibration manually
-        self.calibration = gtsam.Cal3_S2(
-            311.48, 
-            311.26, 
-            0.0, 
-            309.43, 
-            237.72
-        )
 
         # set noise models
         self.prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([POSE_SIGMA]*6, dtype=np.float))
@@ -377,7 +379,7 @@ class ROSQuadricSLAM(Node):
         Returns None if quadric could not be initialized 
         """
         if self.initialization_method == 'SVD':
-            if len(object_detections) >= self.VIEW_THRESH:
+            if len(object_detections) >= self.minimum_views:
 
                 object_boxes = [d.box for d in object_detections.values()]
                 pose_keys = object_detections.keys()
@@ -390,7 +392,7 @@ class ROSQuadricSLAM(Node):
                     return quadric
 
         else:
-            if len(object_detections) >= self.VIEW_THRESH:
+            if len(object_detections) >= self.minimum_views:
                 abox = list(object_detections.values())[0]
                 apose_key = list(object_detections.keys())[0]
                 apose = current_trajectory.at(apose_key)
@@ -588,12 +590,25 @@ class ROSQuadricSLAM(Node):
 
 
 
-def main(args=None):
+def main(main_args=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config', dest='config_path', type=str, required=True ,
+                        help='path to the camera configuartion file')
+    parser.add_argument('--depth', dest='depth', type=int, default=10, 
+                        help='the queue depth to store topic messages')
+    parser.add_argument('--record', dest='record', type=bool, default=False, 
+                        help='boolean to record map visualization')
+    parser.add_argument('--views', dest='minimum_views', type=int, default=5, 
+                        help='minimum views required to initialize object')
+    parser.add_argument('--init', dest='initialization_method', type=str, choices=['SVD', 'other'], default='SVD', 
+                        help='method to use for initialization')
+    args = parser.parse_args()
+    
     # init ros
-    rclpy.init(args=args)
+    rclpy.init(args=main_args)
 
     # create node
-    system = ROSQuadricSLAM()
+    system = ROSQuadricSLAM(args)
 
     # spin node
     rclpy.spin(system)
