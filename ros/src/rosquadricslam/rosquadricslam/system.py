@@ -363,13 +363,12 @@ class ROSQuadricSLAM(Node):
 
 
         # print timings
-        self.get_logger().info('Update lasted {:.3f} s'.format(extracting_end-update_start))
-        print('pre-da:  {:.3f} s'.format(da_start-update_start))
-        print('da:      {:.3f} s'.format(da_end-da_start))
-        print('opt:     {:.3f} s'.format(update_end-da_end))
-        print('extract: {:.3f} s'.format(extracting_end-update_end))
-        print('')
-        # print('update ended\n')
+        # self.get_logger().info('Update lasted {:.3f} s'.format(extracting_end-update_start))
+        # print('pre-da:  {:.3f} s'.format(da_start-update_start))
+        # print('da:      {:.3f} s'.format(da_end-da_start))
+        # print('opt:     {:.3f} s'.format(update_end-da_end))
+        # print('extract: {:.3f} s'.format(extracting_end-update_end))
+        # print('')
             
 
 
