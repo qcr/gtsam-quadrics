@@ -50,24 +50,11 @@ class ROSQuadricSLAM(Node):
         self.minimum_views = args.minimum_views
         self.initialization_method = args.initialization_method
 
-        POSE_SIGMA = 0.001
-        BOX_SIGMA = 10.0
-
-        # parse settings
-        if self.config_path is None:
-            raise RuntimeError('ros parameter "config" is required')
-
         # load camera calibration
         self.calibration = self.load_camera_calibration(self.config_path)
 
         # load class names
-        classes_path = '/home/lachness/git_ws/PyTorch-YOLOv3/data/coco.names'
-        classes_fp = open(classes_path, "r")
-        self.class_names = classes_fp.read().split("\n")[:-1]
-
-        # store constants
-        self.X = lambda i: int(gtsam.symbol(ord('x'), i))
-        self.Q = lambda i: int(gtsam.symbol(ord('q'), i))
+        self.class_names = self.load_class_names('/home/lachness/git_ws/PyTorch-YOLOv3/data/coco.names')
 
         # start subscriptions
         self.pose_subscription = message_filters.Subscriber(self, PoseStamped, 'poses')
@@ -76,31 +63,27 @@ class ROSQuadricSLAM(Node):
         self.time_synchronizer = message_filters.TimeSynchronizer([self.image_subscription, self.pose_subscription, self.detection_subscription], self.depth)
         self.time_synchronizer.registerCallback(self.update)
 
-        # store Image->msg converter
-        self.bridge = CvBridge()
-
-        # set noise models
-        self.prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([POSE_SIGMA]*6, dtype=np.float))
-        self.bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([BOX_SIGMA]*4, dtype=np.float))
-
-        # set graph / estimate
-        self.graph = gtsam.NonlinearFactorGraph()
-        self.estimate = gtsam.Values()
-
-        # set dogleg parameters
+        # create isam2 optimizer 
         opt_params = gtsam.ISAM2DoglegParams()
         # opt_params = gtsam.ISAM2GaussNewtonParams()
-
-        # set isam parameters
         parameters = gtsam.ISAM2Params()
         parameters.setOptimizationParams(opt_params)
         parameters.setRelinearizeSkip(1)
         parameters.setRelinearizeThreshold(0.01)
         # parameters.setEnableRelinearization(False)
         parameters.print_("ISAM2 Parameters")
-
-        # create isam2 optimizer
         self.isam = gtsam.ISAM2(parameters)
+        
+        POSE_SIGMA = 0.001
+        BOX_SIGMA = 10.0
+        self.X = lambda i: int(gtsam.symbol(ord('x'), i))
+        self.Q = lambda i: int(gtsam.symbol(ord('q'), i))
+        self.bridge = CvBridge()
+        self.prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([POSE_SIGMA]*6, dtype=np.float))
+        self.bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([BOX_SIGMA]*4, dtype=np.float))
+        self.graph = gtsam.NonlinearFactorGraph()
+        self.estimate = gtsam.Values()
+
 
         # set measurement storage 
         self.images = dict()
@@ -118,14 +101,15 @@ class ROSQuadricSLAM(Node):
         # initialize data-association module
         self.data_association = DataAssociation(self.current_quadrics, self.calibration)
 
-        # store update count 
-        self.count = 0
-
         # prepare video capture
         if self.record:
             self.video_writer = cv2.VideoWriter('good_performance.mp4', cv2.VideoWriter_fourcc(*'MP4V'), 12.0, (640, 480))
             atexit.register(self.video_writer.release)
         print('\n~ Awaiting Measurements ~')
+
+    def load_class_names(self, path):
+        classes_fp = open(path, 'r')
+        return classes_fp.read().split('\n')[:-1]
 
     def load_camera_calibration(self, path, no_distortion=True):
         """ Loads gtsam calibration from openvslam config format """
@@ -195,7 +179,6 @@ class ROSQuadricSLAM(Node):
 
 
     def update(self, image_msg, pose_msg, detections_msg):
-        self.count += 1
         update_start = time.time()
         self.get_logger().info('Update started')
 
