@@ -131,6 +131,7 @@ class DataAssociation(object):
         self.map = map
         self.calibration = calibration
         self.object_trackers = {}
+        self.object_count = 0
 
         # settings 
         self.IOU_THRESH = 0.4
@@ -237,9 +238,11 @@ class DataAssociation(object):
             return (object_key, 'tracker', predicted_box)
 
         # create a new landmark for unassociated detections
+        # TODO: check only active landmarks
+        object_key = self.object_count
+        self.object_count += 1
         if len(self.object_trackers) >= self.object_limit:
-            return (None, 'failed', None)
-        object_key = len(self.object_trackers)
+            return (object_key, 'new', None)
         new_tracker = ObjectTracker(image, detection.box)
         self.object_trackers[object_key] = new_tracker
         return (object_key, 'new', None)
