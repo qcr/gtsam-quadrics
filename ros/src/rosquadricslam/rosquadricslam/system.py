@@ -257,13 +257,23 @@ class ROSQuadricSLAM(Node):
         for object_key, object_detections in self.detections.per_object():
 
             # no need to re-initialize objects
+            # TODO: use keys from current estimate 
             if object_key in self.initial_quadrics.keys():
                 continue
             
             # initialize object if seen enough
             # TODO: use current trajectory instead of initial poses?
-            self.try_initialize_quadric(object_key, object_detections, self.poses, local_estimate)
+            quadric = self.initialize_quadric(object_key, object_detections, self.poses, local_estimate)
 
+            # continue if not correctly initialized 
+            if quadric is None: 
+                continue
+
+            # add quadric to values 
+            quadric.addToValues(local_estimate, self.Q(object_key))
+
+            # add quadric to storage (not needed in future)
+            self.initial_quadrics.add(quadric, object_key)
 
 
         # add measurements if unused
@@ -274,6 +284,7 @@ class ROSQuadricSLAM(Node):
                 continue            
 
             # add measurements if initialized 
+            # TODO: use keys from current estimate
             if object_key in self.initial_quadrics.keys():
                 bbf = quadricslam.BoundingBoxFactor(detection.box, self.calibration, self.X(pose_key), self.Q(object_key), self.bbox_noise)
                 bbf.addToGraph(local_graph)
@@ -328,35 +339,35 @@ class ROSQuadricSLAM(Node):
             
 
 
-    def try_initialize_quadric(self, object_key, object_detections, current_trajectory, local_estimate):
-        """ will try to initialize quadric and add to self.initial_quadrics if successful """
+    def initialize_quadric(self, object_key, object_detections, current_trajectory, local_estimate):
+        """ 
+        Attempts to initialize the quadric according to self.initialization_method.
+        Returns None if quadric could not be initialized 
+        """
         if self.initialization_method == 'SVD':
-            if len(object_detections) < self.VIEW_THRESH:
-                return
+            if len(object_detections) >= self.VIEW_THRESH:
 
-            object_boxes = [d.box for d in object_detections.values()]
-            pose_keys = object_detections.keys()
-            object_poses = current_trajectory.at_keys(pose_keys)
-            quadric_matrix = self.quadric_SVD(object_poses, object_boxes, self.calibration)
-            quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
+                object_boxes = [d.box for d in object_detections.values()]
+                pose_keys = object_detections.keys()
+                object_poses = current_trajectory.at_keys(pose_keys)
+                quadric_matrix = self.quadric_SVD(object_poses, object_boxes, self.calibration)
+                quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
 
-            # check quadric is okay
-            if self.is_okay(quadric, object_poses, self.calibration):
+                # check quadric is okay
+                if self.is_okay(quadric, object_poses, self.calibration):
+                    return quadric
 
-                # add quadric to values
-                quadric.addToValues(local_estimate, self.Q(object_key))
-                # add weak quadric priors
-                self.initial_quadrics.add(quadric, object_key)
         else:
-            if len(object_detections) < self.VIEW_THRESH:
-                return
-            abox = list(object_detections.values())[0]
-            apose_key = list(object_detections.keys())[0]
-            apose = current_trajectory.at(apose_key)
-            quadric_pose = apose.compose(gtsam.Pose3(gtsam.Rot3(),gtsam.Point3(0,0,0.1)))
-            quadric = quadricslam.ConstrainedDualQuadric(quadric_pose, np.array([0.01]*3))
-            self.initial_quadrics.add(quadric, object_key)
-            quadric.addToValues(local_estimate, self.Q(object_key))
+            if len(object_detections) >= self.VIEW_THRESH:
+                abox = list(object_detections.values())[0]
+                apose_key = list(object_detections.keys())[0]
+                apose = current_trajectory.at(apose_key)
+                quadric_pose = apose.compose(gtsam.Pose3(gtsam.Rot3(),gtsam.Point3(0,0,0.1)))
+                quadric = quadricslam.ConstrainedDualQuadric(quadric_pose, np.array([0.01]*3))
+                return quadric
+                # self.initial_quadrics.add(quadric, object_key)
+                # quadric.addToValues(local_estimate, self.Q(object_key))
+        return None
 
 
 
