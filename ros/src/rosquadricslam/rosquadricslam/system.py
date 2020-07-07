@@ -6,6 +6,7 @@ import time
 sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-packages/')
 import cv2
 import atexit
+import yaml
 
 # import ros libraries
 import rclpy
@@ -126,6 +127,37 @@ class ROSQuadricSLAM(Node):
 
         # debugging 
         # atexit.register(self.debug)
+
+    def load_camera_calibration(self, path, no_distortion=True):
+        """ Loads gtsam calibration from openvslam config format """
+        camera_config = yaml.safe_load(open(path, 'r'))
+
+        camera_model = gtsam.Cal3_S2
+        calibration_list = [
+            camera_config['Camera.fx'],
+            camera_config['Camera.fy'],
+            0.0,
+            camera_config['Camera.cx'],
+            camera_config['Camera.cy'],
+        ]
+
+        if no_distortion:
+            return camera_model(*calibration_list)
+
+        if 'Camera.k1' in camera_config:
+            camera_model = gtsam.Cal3DS2
+            calibration_list += [
+                camera_config['Camera.k1'],
+                camera_config['Camera.k2'],
+            ]
+
+        if 'Camera.p1' in camera_config:
+            calibration_list += [
+                camera_config['Camera.p1'],
+                camera_config['Camera.p2'],
+            ]
+
+        return camera_model(*calibration_list)
 
     def debug(self):
         for quadric_key, quadric in self.current_quadrics.items():
