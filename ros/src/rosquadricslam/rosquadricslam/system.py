@@ -127,9 +127,6 @@ class ROSQuadricSLAM(Node):
             atexit.register(self.video_writer.release)
         print('\n~ Awaiting Measurements ~')
 
-        # debugging 
-        # atexit.register(self.debug)
-
     def load_camera_calibration(self, path, no_distortion=True):
         """ Loads gtsam calibration from openvslam config format """
         camera_config = yaml.safe_load(open(path, 'r'))
@@ -160,38 +157,6 @@ class ROSQuadricSLAM(Node):
             ]
 
         return camera_model(*calibration_list)
-
-    def debug(self):
-        for quadric_key, quadric in self.current_quadrics.items():
-            for pose_key, pose in self.current_trajectory.items():
-                conic = quadricslam.QuadricCamera.project(quadric, pose, self.calibration)
-
-                if conic.isEllipse():
-                    add = 'an ellipse'
-                else:
-                    add = 'not elliptical!'
-                print('(x{},q{}) conic is {}'.format(pose_key, quadric_key, add))
-                print('quadric.isBehind',quadric.isBehind(pose))
-                print('quadric.contains',quadric.contains(pose))
-
-        good_quadric = self.current_quadrics.at(1)
-        bad_quadric = self.current_quadrics.at(0)
-
-        print('good_quadric_pose', good_quadric.pose().matrix())
-        print('good_quadric_radii', good_quadric.radii())
-        print('bad_quadric_pose', bad_quadric.pose().matrix())
-        print('bad_quadric_radii', bad_quadric.radii())
-        
-        # far_pose = gtsam.SimpleCamera.Lookat(gtsam.Point3(5,5,5), bad_quadric.pose().translation(),  gtsam.Point3(0,0,1)).pose()
-        # conic = quadricslam.QuadricCamera.project(bad_quadric, far_pose, self.calibration)
-        # print('test:', conic.isEllipse())
-        # print('test:', conic.bounds().vector())
-        # img = self.images[pose_key]
-        # drawing = CV2Drawing(img)
-        # drawing.quadric(far_pose, bad_quadric, self.calibration, (255,0,255))
-        # cv2.imshow('Current view', img)
-        # cv2.waitKey(0)
-
         
     def msg2detections(self, msg, filters=None):
         detections = []
@@ -328,27 +293,11 @@ class ROSQuadricSLAM(Node):
         self.graph.push_back(local_graph)
         self.estimate.insert(local_estimate)
 
-        # check problem
-        # self.check_reprojection_errors(self.graph, self.estimate)
-        # self.check_problem(self.graph, self.estimate)
-        # self.print_dof(self.graph, self.estimate)
-
         # use local graph / estimate to update isam2
         self.isam.update(local_graph, local_estimate)
 
         # calculate current estimate
         current_estimate = self.isam.calculateEstimate()
-
-        # check if estimate has changed
-        # new_trajectory = Trajectory.from_values(current_estimate)
-        # new_quadrics = Quadrics.from_values(current_estimate)
-        # for object_key in new_quadrics.keys():
-        #     if object_key in self.current_quadrics.keys():
-        #         new_quadric = new_quadrics.at(object_key)
-        #         old_quadric = self.current_quadrics.at(object_key)
-        #         local_diff = np.sum(new_quadric.localCoordinates(old_quadric))
-        #         if local_diff > 0:
-        #             print('object {} changed by {}'.format(object_key, local_diff))
         update_end = time.time()
 
         
@@ -398,127 +347,7 @@ class ROSQuadricSLAM(Node):
                 quadric_pose = apose.compose(gtsam.Pose3(gtsam.Rot3(),gtsam.Point3(0,0,0.1)))
                 quadric = quadricslam.ConstrainedDualQuadric(quadric_pose, np.array([0.01]*3))
                 return quadric
-                # self.initial_quadrics.add(quadric, object_key)
-                # quadric.addToValues(local_estimate, self.Q(object_key))
         return None
-
-
-
-    def print_dof(self, graph, estimate):
-        print('-------------printing factor dofs')
-        box_factors = [quadricslam.BoundingBoxFactor.getFromGraph(graph, i) for i in range(graph.size()) if graph.at(i).keys().size() == 2 and chr(gtsam.symbolChr(graph.at(i).keys().at(1))) == 'q']
-        quadrics = Quadrics.from_values(estimate)
-        poses = Trajectory.from_values(estimate)
-
-        for factor in box_factors:
-            error = factor.error(estimate)
-            quadric = quadrics.at(gtsam.symbolIndex(factor.objectKey()))
-            pose = poses.at(gtsam.symbolIndex(factor.poseKey()))
-            error = factor.evaluateError(pose, quadric)
-            H1 = factor.evaluateH1(pose, quadric)
-            H2 = factor.evaluateH2(pose, quadric)
-            print(H1)
-        print('-------------printing factor dofs--------------')
-
-
-
-
-    def check_reprojection_errors(self, graph, estimate):
-        box_factors = [quadricslam.BoundingBoxFactor.getFromGraph(graph, i) for i in range(graph.size()) if graph.at(i).keys().size() == 2 and chr(gtsam.symbolChr(graph.at(i).keys().at(1))) == 'q']
-        quadrics = Quadrics.from_values(estimate)
-        poses = Poses.from_values(estimate)
-
-        if len(box_factors)==0:
-            return
-        
-        pose_keys = []
-        object_keys = []
-        errors = []
-        for bbf in box_factors:
-            pose_key = gtsam.symbolIndex(bbf.keys().at(0))
-            object_key = gtsam.symbolIndex(bbf.keys().at(1))
-            pose = poses.at(pose_key)
-            quadric = quadrics.at(object_key)
-            error = bbf.evaluateError(pose, quadric).sum()
-
-            pose_keys.append(pose_key)
-            object_keys.append(object_key)
-            errors.append(error)
-
-        max_index = np.argmax(errors)
-        pose = poses.at(pose_keys[max_index])[0]
-        quadric = quadrics.at(object_keys[max_index])
-        bbf = box_factors[max_index]
-        box = self.boxes.at(pose_keys[max_index], object_keys[max_index])[0]
-        image = self.images[pose_keys[max_index]].copy()
-
-
-        drawing = CV2Drawing(image)
-        drawing.quadric(pose, quadric, self.calibration, (0,0,255))
-        drawing.box_and_text(box, (0,255,255), 'err', (0,0,0))
-        cv2.imshow('high error', image)
-        cv2.waitKey(1)
-            
-    def check_problem(self, graph, estimate): 
-
-        # extract variables from estimate
-        quadrics = Quadrics.from_values(estimate)
-        box_factors = [quadricslam.BoundingBoxFactor.getFromGraph(graph, i) for i in range(graph.size()) if graph.at(i).keys().size() == 2 and chr(gtsam.symbolChr(graph.at(i).keys().at(1))) == 'q']
-        box_factor_keys = [int(gtsam.symbolIndex(graph.at(i).keys().at(1))) for i in range(graph.size()) if graph.at(i).keys().size() == 2 and chr(gtsam.symbolChr(graph.at(i).keys().at(1))) == 'q']
-        # pose_factors = [graph.at(i) for i in range(graph.size()) if graph.at(i).keys().size() == 1 and chr(gtsam.symbolChr(graph.at(i).keys().at(0))) == 'x']
-        full_poses = Trajectory.from_values(estimate)
-
-        pose_factor_keys = [int(gtsam.symbolIndex(graph.at(i).keys().at(0))) for i in range(graph.size()) if graph.at(i).keys().size() == 1 and chr(gtsam.symbolChr(graph.at(i).keys().at(0))) == 'x']
-        pose_estimate_keys = [int(gtsam.symbolIndex(estimate.keys().at(i))) for i in range(estimate.keys().size()) if chr(gtsam.symbolChr(estimate.keys().at(i))) == 'x']
-
-        # ensure each pose factor has estimate
-        leftover_keys = list(set(pose_factor_keys).symmetric_difference(pose_estimate_keys))
-        if len(leftover_keys) > 0:
-            print('pose keys {} exist as factor or estimate'.format(leftover_keys))
-            exit()
-            
-        # ensure each object_key has a quadric and at least 3 measurements
-        object_keys = np.unique(quadrics.keys() + box_factor_keys)
-        for object_key in object_keys:
-            if object_key not in quadrics.keys():
-                print('object_key {} not in quadrics'.format(object_key))
-                exit()
-            if len([k for k in box_factor_keys if k==object_key]) < 5:
-                print('object_key {} not as 5+ factors'.format(object_key))
-                exit()
-
-            
-        # check each quadric has enough DOF to be constrained 
-        for object_key, quadric in quadrics.items():
-        
-
-            # extract bbfs targeting this object
-            bbfs = [f for f in box_factors if gtsam.symbolIndex(f.keys().at(1)) == object_key]
-
-            # get associated poses
-            pose_keys = [gtsam.symbolIndex(f.keys().at(0)) for f in bbfs]
-            poses = [full_poses.at(pose_key) for pose_key in pose_keys]
-
-            # calculate error with jacobian 
-            n_H2_rows = []
-            for bbf, pose, pose_key in zip(bbfs, poses, pose_keys):
-                error = bbf.evaluateError(pose, quadric)
-                H1 = bbf.evaluateH1(pose, quadric)
-                H2 = bbf.evaluateH2(pose, quadric)
-
-                H1dof = np.sum(H1.any(1))
-                H2dof = np.sum(H2.any(1))
-                n_H2_rows.append(H2dof)
-
-                # print('  factor q{}->x{} has {},{} DOF'.format(
-                #     object_key, pose_key,
-                #     H1dof, H2dof
-                # ))
-
-            n_dof = np.sum(n_H2_rows)
-            n_dof_expected = len(n_H2_rows)*4
-            if n_dof != n_dof_expected:
-                print('Object {} is missing {} dof'.format(object_key, n_dof_expected-n_dof))
 
     def quadric_SVD(self, poses, object_boxes, calibration):
         """ calculates quadric_matrix using SVD """
