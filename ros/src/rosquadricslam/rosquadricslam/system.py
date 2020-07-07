@@ -239,8 +239,8 @@ class ROSQuadricSLAM(Node):
         camera_pose = self.msg2pose(pose_msg).inverse()
         float_time = self.msg2time(detections_msg)
         pose_key = self.time2key(float_time)
-        # image_detections = self.msg2detections(detections_msg, filters=['cup', 'bowl'])
-        image_detections = self.msg2detections(detections_msg)
+        image_detections = self.msg2detections(detections_msg, filters=['cup', 'bowl'])
+        # image_detections = self.msg2detections(detections_msg)
 
         # draw detections
         img = image.copy()
