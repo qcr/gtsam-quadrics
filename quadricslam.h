@@ -40,7 +40,8 @@
 
 
 
-virtual class NoiseModelFactor;
+virtual class NonlinearFactor;
+virtual class NoiseModelFactor : NonlinearFactor;
 class NonlinearFactorGraph;
 class Cal3_S2;
 class Point2;
