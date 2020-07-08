@@ -34,7 +34,7 @@ class BoxTracker(object):
     if it's failed in the past. 
     """
 
-    def __init__(self, image, box, tracker_type=TrackerType.KCF):
+    def __init__(self, image, box, tracker_type):
         self.tracker_type = tracker_type
         self.tracker = self.new_tracker()
         try:
@@ -84,13 +84,14 @@ class ObjectTracker(object):
         - not ok for n updates 
         - too many trackers
     """
-    def __init__(self, image, box):
+    def __init__(self, image, box, tracker_type):
 
         # settings
+        self.tracker_type = tracker_type
         self.n_active_trackers = 1
         
         # create a new box tracker 
-        self.trackers = [BoxTracker(image, box)]
+        self.trackers = [BoxTracker(image, box, self.tracker_type)]
         self.predictions = []
         self.alive = True
 
@@ -112,7 +113,7 @@ class ObjectTracker(object):
         return max(ious, key=lambda x: x[0])
 
     def add_tracker(self, box, image):
-        tracker = BoxTracker(image, box)
+        tracker = BoxTracker(image, box, self.tracker_type)
         self.trackers.append(tracker)
 
 
@@ -136,6 +137,7 @@ class DataAssociation(object):
         # settings 
         self.IOU_THRESH = 0.4
         self.object_limit = 100
+        self.tracker_type = TrackerType.CSRT
 
 
     def associate(self, image, image_detections, camera_pose, pose_key, visualize=False, verbose=False):
@@ -244,6 +246,6 @@ class DataAssociation(object):
         self.object_count += 1
         if len(self.object_trackers) >= self.object_limit:
             return (object_key, 'new', None)
-        new_tracker = ObjectTracker(image, detection.box)
+        new_tracker = ObjectTracker(image, detection.box, self.tracker_type)
         self.object_trackers[object_key] = new_tracker
         return (object_key, 'new', None)
