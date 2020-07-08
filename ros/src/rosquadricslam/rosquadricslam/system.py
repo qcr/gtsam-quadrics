@@ -328,13 +328,13 @@ class ROSQuadricSLAM(Node):
                     return quadric
 
         else:
-            if len(object_detections) >= self.minimum_views:
-                abox = list(object_detections.values())[0]
-                apose_key = list(object_detections.keys())[0]
-                apose = current_trajectory.at(apose_key)
-                quadric_pose = apose.compose(gtsam.Pose3(gtsam.Rot3(),gtsam.Point3(0,0,0.1)))
-                quadric = quadricslam.ConstrainedDualQuadric(quadric_pose, np.array([0.01]*3))
-                return quadric
+            abox = list(object_detections.values())[0]
+            apose_key = list(object_detections.keys())[0]
+            apose = current_trajectory.at(apose_key)
+            displacement = 0.5
+            quadric_pose = apose.compose(gtsam.Pose3(gtsam.Rot3(),gtsam.Point3(0,0,displacement)))
+            quadric = quadricslam.ConstrainedDualQuadric(quadric_pose, np.array([0.01]*3))
+            return quadric
         return None
 
     def quadric_SVD(self, poses, object_boxes, calibration):
