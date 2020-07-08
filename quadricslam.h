@@ -43,6 +43,7 @@
 virtual class NonlinearFactor;
 virtual class NoiseModelFactor : NonlinearFactor;
 class NonlinearFactorGraph;
+class PriorFactor;
 class Cal3_S2;
 class Point2;
 class Point3;
@@ -101,6 +102,16 @@ virtual class BoundingBoxFactor : NoiseModelFactor {
   Matrix evaluateH2(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
   void addToGraph(NonlinearFactorGraph& graph);
   static gtsam::BoundingBoxFactor getFromGraph(const NonlinearFactorGraph& graph, size_t idx);
+};
+
+#include <gtsam/nonlinear/PriorFactor.h>
+template<T = {gtsam::ConstrainedDualQuadric}>
+virtual class PriorFactor : NoiseModelFactor {
+  PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
+  T prior() const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 #include <quadricslam/geometry/AlignedBox2.h>

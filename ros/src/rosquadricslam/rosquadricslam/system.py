@@ -79,8 +79,9 @@ class ROSQuadricSLAM(Node):
         self.X = lambda i: int(gtsam.symbol(ord('x'), i))
         self.Q = lambda i: int(gtsam.symbol(ord('q'), i))
         self.bridge = CvBridge()
-        self.prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([POSE_SIGMA]*6, dtype=np.float))
+        self.pose_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([POSE_SIGMA]*6, dtype=np.float))
         self.bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([BOX_SIGMA]*4, dtype=np.float))
+        self.quadric_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([100]*9, dtype=np.float))
         self.graph = gtsam.NonlinearFactorGraph()
         self.estimate = gtsam.Values()
 
@@ -232,7 +233,7 @@ class ROSQuadricSLAM(Node):
         
         # add new pose measurements to graph / estimate
         local_estimate.insert(self.X(pose_key), camera_pose)
-        prior_factor = gtsam.PriorFactorPose3(self.X(pose_key), camera_pose, self.prior_noise)
+        prior_factor = gtsam.PriorFactorPose3(self.X(pose_key), camera_pose, self.pose_noise)
         local_graph.add(prior_factor)
 
         # check if we can initialize any new objects
@@ -253,6 +254,10 @@ class ROSQuadricSLAM(Node):
 
             # add quadric to values 
             quadric.addToValues(local_estimate, self.Q(object_key))
+
+            # add weak quadric prior 
+            prior_factor = quadricslam.PriorFactorConstrainedDualQuadric(self.Q(object_key), quadric, self.quadric_noise)
+            local_graph.add(prior_factor)
 
             # add quadric to storage (not needed in future)
             self.initial_quadrics.add(quadric, object_key)
