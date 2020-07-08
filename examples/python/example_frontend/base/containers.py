@@ -17,7 +17,7 @@ from collections import defaultdict
 
 # import gtsam and extension
 import gtsam
-import quadricslam
+import gtsam_quadrics
 
 # modify system path so file will work when run directly or as a module
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -218,7 +218,7 @@ class Detections(Container2_Map):
             noise_vector = np.random.normal(mu, sd, 4)
 
             # construct noisey perturbation
-            noisy_box = quadricslam.AlignedBox2(box.vector() + noise_vector)
+            noisy_box = gtsam_quadrics.AlignedBox2(box.vector() + noise_vector)
 
             # add box to collection
             noisy_boxes.add(noisy_box, pose_key, object_key)

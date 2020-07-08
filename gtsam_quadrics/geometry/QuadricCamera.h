@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include <quadricslam/geometry/ConstrainedDualQuadric.h>
-#include <quadricslam/geometry/DualConic.h>
+#include <gtsam_quadrics/geometry/ConstrainedDualQuadric.h>
+#include <gtsam_quadrics/geometry/DualConic.h>
 
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/PinholePose.h>

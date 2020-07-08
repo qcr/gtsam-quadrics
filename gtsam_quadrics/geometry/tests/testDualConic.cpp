@@ -22,7 +22,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <quadricslam/geometry/DualConic.h>
+#include <gtsam_quadrics/geometry/DualConic.h>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/Vector.h>

@@ -17,7 +17,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <quadricslam/geometry/AlignedBox2.h>
+#include <gtsam_quadrics/geometry/AlignedBox2.h>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/Vector.h>

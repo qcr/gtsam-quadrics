@@ -16,7 +16,7 @@ import numpy as np
 
 # import gtsam and extension
 import gtsam
-import quadricslam
+import gtsam_quadrics
 
 # modify system path so file will work when run directly or as a module
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -65,7 +65,7 @@ class SimulatedSequence(object):
             for object_key, quadric in quadrics.items():
 
                 # get raw box from projection
-                dual_conic = quadricslam.QuadricCamera.project(quadric, pose, self.calibration)
+                dual_conic = gtsam_quadrics.QuadricCamera.project(quadric, pose, self.calibration)
                 raw_box = dual_conic.bounds()
                 # print(raw_box.vector())
 
@@ -94,10 +94,10 @@ class SimulatedSequence(object):
                 percentage = (j+1) / float(n_between+1)
 
                 # provide support for newer gtsam versions
-                if hasattr(quadricslam, 'utils_interpolate'):
-                    ipose = quadricslam.utils_interpolate(poses[i], poses[i+1], percentage)
+                if hasattr(gtsam_quadrics, 'utils_interpolate'):
+                    ipose = gtsam_quadrics.utils_interpolate(poses[i], poses[i+1], percentage)
                 else:
-                    ipose = quadricslam.interpolate(poses[i], poses[i+1], percentage)
+                    ipose = gtsam_quadrics.interpolate(poses[i], poses[i+1], percentage)
 
                 new_poses.add(ipose, len(new_poses))
 
@@ -117,7 +117,7 @@ class SimulatedSequence(object):
         points.append(gtsam.Point3(10,0,0))
 
         quadrics = []
-        quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(), np.array([0.2,0.3,0.4])))
-        quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(0.2,0.2,0.2)), np.array([0.2,0.3,0.4])))
+        quadrics.append(gtsam_quadrics.ConstrainedDualQuadric(gtsam.Pose3(), np.array([0.2,0.3,0.4])))
+        quadrics.append(gtsam_quadrics.ConstrainedDualQuadric(gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(0.2,0.2,0.2)), np.array([0.2,0.3,0.4])))
         sequence = SimulatedSequence(points, quadrics)
         return sequence

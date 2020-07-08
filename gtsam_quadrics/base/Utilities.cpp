@@ -15,7 +15,7 @@
  * @brief a namespace providing a number of useful functions
  */
 
-#include <quadricslam/base/Utilities.h>
+#include <gtsam_quadrics/base/Utilities.h>
 
 #include <iostream>
 

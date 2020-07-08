@@ -17,7 +17,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <quadricslam/geometry/QuadricCamera.h>
+#include <gtsam_quadrics/geometry/QuadricCamera.h>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/Vector.h>

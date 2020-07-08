@@ -20,7 +20,7 @@ from matplotlib.lines import Line2D
 
 # import gtsam and extension
 import gtsam
-import quadricslam
+import gtsam_quadrics
 
 # modify system path so file will work when run directly or as a module
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -47,7 +47,7 @@ class MPLDrawing(object):
         quadrics = Quadrics.from_values(estimate)
 
         # collect nonlinear factors from graph
-        box_factors = [quadricslam.BoundingBoxFactor.getFromGraph(graph, i) for i in range(graph.size()) if graph.at(i).keys().size() == 2 and chr(gtsam.symbolChr(graph.at(i).keys().at(1))) == 'q']
+        box_factors = [gtsam_quadrics.BoundingBoxFactor.getFromGraph(graph, i) for i in range(graph.size()) if graph.at(i).keys().size() == 2 and chr(gtsam.symbolChr(graph.at(i).keys().at(1))) == 'q']
         # odom_factors = [graph.at(i) for i in range(graph.size()) if graph.at(i).keys().size() == 2 and chr(gtsam.symbolChr(graph.at(i).keys().at(1))) == 'x']
 
         # extract x-y positions
@@ -189,7 +189,7 @@ class CV2Drawing(object):
                 return
 
         # project 3D points to 2D
-        P = quadricslam.QuadricCamera.transformToImage(pose, calibration)
+        P = gtsam_quadrics.QuadricCamera.transformToImage(pose, calibration)
         points_3DTH = np.concatenate((points_3D.T, np.ones((1,points_3D.shape[0]))))
         points_2D = P.dot(points_3DTH)
         points_2D = points_2D[0:2,:] / points_2D[2]
@@ -230,7 +230,7 @@ def generate_uv_spherical(quadric, pose, calibration, theta_points=30, phi_point
     points = np.stack((x,y,z))
 
     points_2D = np.zeros((points.shape[1], points.shape[2], 2))
-    transform_to_image = quadricslam.QuadricCamera.transformToImage(pose, calibration)
+    transform_to_image = gtsam_quadrics.QuadricCamera.transformToImage(pose, calibration)
 
     # warp points to quadric (3D) and project to image (2D)
     for i in range(points.shape[1]):

@@ -15,7 +15,7 @@
  * @brief an axis aligned 3D bounding box
  */
 
-#include <quadricslam/geometry/AlignedBox3.h>
+#include <gtsam_quadrics/geometry/AlignedBox3.h>
 
 using namespace std;
 

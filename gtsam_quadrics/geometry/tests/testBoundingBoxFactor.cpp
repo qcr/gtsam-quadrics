@@ -17,7 +17,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <quadricslam/geometry/BoundingBoxFactor.h>
+#include <gtsam_quadrics/geometry/BoundingBoxFactor.h>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/Vector.h>

@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <quadricslam/geometry/ConstrainedDualQuadric.h>
-#include <quadricslam/geometry/AlignedBox2.h>
+#include <gtsam_quadrics/geometry/ConstrainedDualQuadric.h>
+#include <gtsam_quadrics/geometry/AlignedBox2.h>
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/Pose3.h>

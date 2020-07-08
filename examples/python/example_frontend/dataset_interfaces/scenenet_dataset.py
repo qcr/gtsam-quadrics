@@ -20,7 +20,7 @@ from PIL import Image
 
 # import gtsam and extension
 import gtsam
-import quadricslam
+import gtsam_quadrics
 
 # modify system path so file will work when run directly or as a module
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -318,7 +318,7 @@ class SceneNetSequence(object):
             ymin, ymax = np.where(vertical_mask)[0][[0,-1]]
 
             # convert discrete to continious bounds 
-            box = quadricslam.AlignedBox2(xmin,ymin,xmax+1,ymax+1)
+            box = gtsam_quadrics.AlignedBox2(xmin,ymin,xmax+1,ymax+1)
 
             # store box, pose, object keys. 
             image_boxes.add(box, pose_key, int(instance_id))
@@ -441,7 +441,7 @@ class SceneNetSequence(object):
     def bounds_to_quadric(self, bounds):
         radii = bounds.dimensions() / 2.0
         pose = gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(bounds.centroid()))
-        return quadricslam.ConstrainedDualQuadric(pose, radii)
+        return gtsam_quadrics.ConstrainedDualQuadric(pose, radii)
 
     def vertices_bounds(self, vertices):
         min_x = min([v[0] for v in vertices])
@@ -451,7 +451,7 @@ class SceneNetSequence(object):
         min_z = min([v[2] for v in vertices])
         max_z = max([v[2] for v in vertices])
         xxyyzz = np.array([min_x, max_x, min_y, max_y, min_z, max_z])
-        box = quadricslam.AlignedBox3(xxyyzz)
+        box = gtsam_quadrics.AlignedBox3(xxyyzz)
         return box
 
     def load_vertices(self, instance):

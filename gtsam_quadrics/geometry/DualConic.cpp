@@ -15,10 +15,10 @@
  * @brief a dual conic
  */
 
-#include <quadricslam/geometry/DualConic.h>
-#include <quadricslam/geometry/QuadricCamera.h>
-#include <quadricslam/base/Utilities.h>
-#include <quadricslam/base/QuadricProjectionException.h>
+#include <gtsam_quadrics/geometry/DualConic.h>
+#include <gtsam_quadrics/geometry/QuadricCamera.h>
+#include <gtsam_quadrics/base/Utilities.h>
+#include <gtsam_quadrics/base/QuadricProjectionException.h>
 
 #include <gtsam/base/numericalDerivative.h>
 

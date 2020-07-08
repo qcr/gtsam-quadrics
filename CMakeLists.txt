@@ -13,8 +13,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
 
 ###################################################################################
 # set up options
-option(QSLAM_BUILD_PYTHON_WRAP "Enable/Disable building of cython wrapper" OFF)
-set(QSLAM_PYTHON_VERSION "3" CACHE STRING "The version of python to build the cython wrapper for (or Default)")
+option(BUILD_PYTHON_WRAP "Enable/Disable building of cython wrapper" ON)
+set(PYTHON_VERSION "3" CACHE STRING "The version of python to build the cython wrapper for (or Default)")
 
 
 
@@ -31,9 +31,9 @@ include(GtsamTesting)    			# Easy functions for creating unit tests and scripts
 include(GtsamMakeConfigFile) 	# Defines a function for generating config file so package can be found with find_package function
 
 # NOTE: PYTHONPATH must include GTSAM_CYTHON_INSTALL_PATH for gtsam/gtsam.pxd
-if(QSLAM_BUILD_PYTHON_WRAP)
+if(BUILD_PYTHON_WRAP)
 	# python version must be set before including gtsamcythonwrap
-	set(GTSAM_PYTHON_VERSION ${QSLAM_PYTHON_VERSION})
+	set(GTSAM_PYTHON_VERSION ${PYTHON_VERSION})
 	include(GtsamMatlabWrap) # Automatic MATLAB wrapper generation
 	include(GtsamCythonWrap) # Automatic MATLAB wrapper generation
 endif()
@@ -46,19 +46,19 @@ include_directories(BEFORE "${PROJECT_SOURCE_DIR}")
 
 # set source files
 set(SOURCE_FILES
-	./quadricslam/base/Utilities.cpp
-	./quadricslam/geometry/ConstrainedDualQuadric.cpp
-	./quadricslam/geometry/AlignedBox2.cpp
-	./quadricslam/geometry/AlignedBox3.cpp
-	./quadricslam/geometry/BoundingBoxFactor.cpp
-	./quadricslam/geometry/QuadricCamera.cpp
-	./quadricslam/geometry/DualConic.cpp
+	./gtsam_quadrics/base/Utilities.cpp
+	./gtsam_quadrics/geometry/ConstrainedDualQuadric.cpp
+	./gtsam_quadrics/geometry/AlignedBox2.cpp
+	./gtsam_quadrics/geometry/AlignedBox3.cpp
+	./gtsam_quadrics/geometry/BoundingBoxFactor.cpp
+	./gtsam_quadrics/geometry/QuadricCamera.cpp
+	./gtsam_quadrics/geometry/DualConic.cpp
 )
 
 ###################################################################################
 ## Build static library from common sources
 
-set(CONVENIENCE_LIB_NAME "quadricslam")
+set(CONVENIENCE_LIB_NAME "gtsam_quadrics")
 add_library(${CONVENIENCE_LIB_NAME} SHARED ${SOURCE_FILES})
 # set_target_properties(${CONVENIENCE_LIB_NAME} PROPERTIES PREFIX "")
 target_link_libraries(${CONVENIENCE_LIB_NAME} gtsam)
@@ -75,10 +75,10 @@ GtsamMakeConfigFile(QUADRICSLAM)
 # list(APPEND GTSAM_EXPORTED_TARGETS ${CONVENIENCE_LIB_NAME})
 # export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
 
-file(GLOB quadricslam_base_headers "quadricslam/base/*.h")
-install(FILES ${quadricslam_base_headers} DESTINATION include/quadricslam/base)
-file(GLOB quadricslam_geometry_headers "quadricslam/geometry/*.h")
-install(FILES ${quadricslam_geometry_headers} DESTINATION include/quadricslam/geometry)
+file(GLOB gtsam_quadrics_base_headers "gtsam_quadrics/base/*.h")
+install(FILES ${gtsam_quadrics_base_headers} DESTINATION include/gtsam_quadrics/base)
+file(GLOB gtsam_quadrics_geometry_headers "gtsam_quadrics/geometry/*.h")
+install(FILES ${gtsam_quadrics_geometry_headers} DESTINATION include/gtsam_quadrics/geometry)
 
 ###################################################################################
 # uninstall target 
@@ -92,8 +92,8 @@ add_custom_target(uninstall
 
 ###################################################################################
 # Build tests (CMake tracks the dependecy to link with GTSAM through our project's static library)
-gtsamAddTestsGlob("geometry" "quadricslam/geometry/tests/test*.cpp" "" "${CONVENIENCE_LIB_NAME}")
-gtsamAddTestsGlob("geometry" "quadricslam/base/tests/test*.cpp" "" "${CONVENIENCE_LIB_NAME}")
+gtsamAddTestsGlob("geometry" "gtsam_quadrics/geometry/tests/test*.cpp" "" "${CONVENIENCE_LIB_NAME}")
+gtsamAddTestsGlob("geometry" "gtsam_quadrics/base/tests/test*.cpp" "" "${CONVENIENCE_LIB_NAME}")
 
 ###################################################################################
 # Build example files (CMake tracks the dependecy to link with GTSAM through our project's static library)
@@ -111,29 +111,29 @@ add_dependencies(examples examples_folder)
 
 ###################################################################################
 # Build Cython wrapper (CMake tracks the dependecy to link with GTSAM through our project's static library)
-if(QSLAM_BUILD_PYTHON_WRAP)
+if(BUILD_PYTHON_WRAP)
 
 	# include gtsam eigency (handles numpy->eigen conversion)
 	include_directories(${GTSAM_EIGENCY_INSTALL_PATH})
 
-	# create __init__.py to allow build/cython/quadricslam be imported as a python package
-	file(WRITE "${PROJECT_BINARY_DIR}/cython/quadricslam/__init__.py" "from .quadricslam import *")
+	# create __init__.py to allow build/cython/gtsam_quadrics be imported as a python package
+	file(WRITE "${PROJECT_BINARY_DIR}/cython/gtsam_quadrics/__init__.py" "from .gtsam_quadrics import *")
 
-	set(QUADRICSLAM_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
-	if (NOT QUADRICSLAM_CYTHON_INSTALL_PATH)
-		set(QUADRICSLAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython/quadricslam")
+	set(GTSAM_QUADRICS_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
+	if (NOT GTSAM_QUADRICS_CYTHON_INSTALL_PATH)
+		set(GTSAM_QUADRICS_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython/gtsam_quadrics")
 	endif()
 
 	# use gtsams cython wrapping functionality
-	wrap_and_install_library_cython("./quadricslam.h" # interface_header path
+	wrap_and_install_library_cython("./gtsam_quadrics.h" # interface_header path
 									"from gtsam.gtsam cimport *" # extra imports for cython pxd
-									"${QUADRICSLAM_CYTHON_INSTALL_PATH}" # install_path
+									"${gtsam_quadrics_CYTHON_INSTALL_PATH}" # install_path
 									"gtsam;${CONVENIENCE_LIB_NAME}" # libraries to link with
 									"wrap;gtsam;${CONVENIENCE_LIB_NAME}" # dependencies)
 	)
 
 	# install __init__.py so package can be loaded
-	# install_cython_files("${PROJECT_BINARY_DIR}/cython/quadricslam/__init__.py" "${QUADRICSLAM_CYTHON_INSTALL_PATH}")
+	# install_cython_files("${PROJECT_BINARY_DIR}/cython/gtsam_quadrics/__init__.py" "${gtsam_quadrics_CYTHON_INSTALL_PATH}")
 endif()
 
 ###################################################################################

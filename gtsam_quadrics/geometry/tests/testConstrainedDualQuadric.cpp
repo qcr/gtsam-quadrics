@@ -18,9 +18,9 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <quadricslam/geometry/ConstrainedDualQuadric.h>
-#include <quadricslam/geometry/DualConic.h>
-#include <quadricslam/geometry/QuadricCamera.h>
+#include <gtsam_quadrics/geometry/ConstrainedDualQuadric.h>
+#include <gtsam_quadrics/geometry/DualConic.h>
+#include <gtsam_quadrics/geometry/QuadricCamera.h>
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/Vector.h>

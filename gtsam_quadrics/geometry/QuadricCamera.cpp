@@ -15,8 +15,8 @@
  * @brief a class responsible for projecting quadrics
  */
 
-#include <quadricslam/geometry/QuadricCamera.h>
-#include <quadricslam/base/Utilities.h>
+#include <gtsam_quadrics/geometry/QuadricCamera.h>
+#include <gtsam_quadrics/base/Utilities.h>
 
 #include <gtsam/base/numericalDerivative.h>
 

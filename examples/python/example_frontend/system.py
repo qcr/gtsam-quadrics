@@ -19,7 +19,7 @@ import argparse
 
 # import gtsam and extension
 import gtsam
-import quadricslam
+import gtsam_quadrics
 
 # import custom python modules
 sys.dont_write_bytecode = True
@@ -197,7 +197,7 @@ class System(object):
             quadric_matrix = System.quadric_SVD(poses, list(object_boxes.values()), calibration)
 
             # constrain generic dual quadric to be ellipsoidal 
-            quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
+            quadric = gtsam_quadrics.ConstrainedDualQuadric.constrain(quadric_matrix)
 
             # check quadric is okay
             if (System.is_okay(quadric, poses, calibration)):
@@ -220,7 +220,7 @@ class System(object):
             lines = [lines.at(i) for i in range(lines.size())]
 
             # calculate projection matrix
-            P = quadricslam.QuadricCamera.transformToImage(pose, calibration).transpose()
+            P = gtsam_quadrics.QuadricCamera.transformToImage(pose, calibration).transpose()
 
             # project lines to planes
             planes += [P @ line for line in lines]
@@ -266,7 +266,7 @@ class System(object):
                 return False
 
             # conic must be valid and elliptical 
-            conic = quadricslam.QuadricCamera.project(quadric, pose, calibration)
+            conic = gtsam_quadrics.QuadricCamera.project(quadric, pose, calibration)
             if conic.isDegenerate():
                 return False
             if not conic.isEllipse():

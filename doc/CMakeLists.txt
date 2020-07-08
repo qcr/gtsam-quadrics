@@ -1,14 +1,14 @@
-	# quadricslam core subfolders
-	set(quadricslam_doc_subdirs 
-		quadricslam/base
-		quadricslam/geometry
+	# gtsam_quadrics core subfolders
+	set(QUADRICSLAM_doc_subdirs 
+		gtsam_quadrics/base
+		gtsam_quadrics/geometry
 	)
 
-	# set(doc_subdirs ${quadricslam_doc_subdirs})
+	# set(doc_subdirs ${QUADRICSLAM_doc_subdirs})
 
 	# From subfolders, build a list with whitespace separation of paths
 	set(QUADRICSLAM_DOXYGEN_INPUT_PATHS "")
-	foreach(dir ${quadricslam_doc_subdirs})
+	foreach(dir ${QUADRICSLAM_doc_subdirs})
 		set(QUADRICSLAM_DOXYGEN_INPUT_PATHS "${QUADRICSLAM_DOXYGEN_INPUT_PATHS} ${PROJECT_SOURCE_DIR}/${dir}")
 	endforeach()
 

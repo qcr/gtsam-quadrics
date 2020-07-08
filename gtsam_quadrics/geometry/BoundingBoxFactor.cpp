@@ -15,9 +15,9 @@
  * @brief factor between Pose3 and ConstrainedDualQuadric
  */
 
-#include <quadricslam/geometry/BoundingBoxFactor.h>
-#include <quadricslam/geometry/QuadricCamera.h>
-#include <quadricslam/base/QuadricProjectionException.h>
+#include <gtsam_quadrics/geometry/BoundingBoxFactor.h>
+#include <gtsam_quadrics/geometry/QuadricCamera.h>
+#include <gtsam_quadrics/base/QuadricProjectionException.h>
 
 #include <gtsam/base/numericalDerivative.h>
 

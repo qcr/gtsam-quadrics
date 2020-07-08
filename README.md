@@ -40,7 +40,7 @@ To enable the python interface:
 
 * Enable QSLAM_BUILD_PYTHON_WRAP in the CMakeLists.txt
 * Repeat the steps above to build the library
-* Add /build/cython/quadricslam to PYTHONPATH or move to a location on your path
+* Add /build/cython/gtsam_quadrics to PYTHONPATH or move to a location on your path
 
 The provided tests can be run using `make check`
 

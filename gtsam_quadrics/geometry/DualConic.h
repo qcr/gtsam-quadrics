@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <quadricslam/geometry/AlignedBox2.h>
+#include <gtsam_quadrics/geometry/AlignedBox2.h>
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Pose2.h>

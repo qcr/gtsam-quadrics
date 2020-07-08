@@ -15,10 +15,10 @@
  * @brief a constrained dual quadric 
  */
 
-#include <quadricslam/geometry/AlignedBox2.h>
-#include <quadricslam/geometry/ConstrainedDualQuadric.h>
-#include <quadricslam/geometry/QuadricCamera.h>
-#include <quadricslam/base/Utilities.h>
+#include <gtsam_quadrics/geometry/AlignedBox2.h>
+#include <gtsam_quadrics/geometry/ConstrainedDualQuadric.h>
+#include <gtsam_quadrics/geometry/QuadricCamera.h>
+#include <gtsam_quadrics/base/Utilities.h>
 
 #include <Eigen/Eigenvalues>
 #include <iostream>

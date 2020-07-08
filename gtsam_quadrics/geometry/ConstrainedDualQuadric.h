@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <quadricslam/geometry/AlignedBox3.h>
+#include <gtsam_quadrics/geometry/AlignedBox3.h>
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
