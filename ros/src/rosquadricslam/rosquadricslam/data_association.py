@@ -228,7 +228,8 @@ class DataAssociation(object):
             object_key, predicted_box = max(map_ious, key=lambda x: x[0])[1:3]
 
             # turn off tracker to favor map
-            self.object_trackers[object_key].alive = False
+            if object_key in self.object_trackers:
+                self.object_trackers[object_key].alive = False
             return (object_key, 'map', predicted_box)
 
         elif best_map_iou < best_tracker_iou and best_tracker_iou > self.IOU_THRESH:
