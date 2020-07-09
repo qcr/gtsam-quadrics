@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'detect = yolov3_ros.ros_detector:main',
+            'run = yolov3_ros.ros_detector:main',
         ],
     },
 )
