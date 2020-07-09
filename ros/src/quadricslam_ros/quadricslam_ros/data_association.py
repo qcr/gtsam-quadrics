@@ -7,14 +7,14 @@ sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-p
 import cv2
 
 # import custom libraries
-sys.path.append('/home/lachness/git_ws/quadricslam/examples/python/example_frontend/')
+sys.path.append(os.path.dirname(os.path.realpath(__file__)).split('quadricslam/ros')[0]+'quadricslam/quadricslam')
 sys.dont_write_bytecode = True
 from base.containers import Detections
 from visualization.drawing import CV2Drawing
 
 # import gtsam and extension
 import gtsam
-import quadricslam
+import gtsam_quadrics
 
 
 class TrackerType(Enum):
@@ -49,7 +49,7 @@ class BoxTracker(object):
 
     @staticmethod
     def from_cvbox(tlwh):
-        return quadricslam.AlignedBox2(tlwh[0], tlwh[1], tlwh[0]+tlwh[2], tlwh[1]+tlwh[3])
+        return gtsam_quadrics.AlignedBox2(tlwh[0], tlwh[1], tlwh[0]+tlwh[2], tlwh[1]+tlwh[3])
 
     def new_tracker(self):
         if self.tracker_type == TrackerType.BOOSTING:
@@ -211,7 +211,7 @@ class DataAssociation(object):
         for object_key, quadric in self.map.items():
 
             # TODO: catch projection failures 
-            dual_conic = quadricslam.QuadricCamera.project(quadric, pose, self.calibration)
+            dual_conic = gtsam_quadrics.QuadricCamera.project(quadric, pose, self.calibration)
             predicted_box = dual_conic.bounds()
             map_ious.append([detection.box.iou(predicted_box), object_key, predicted_box])
 

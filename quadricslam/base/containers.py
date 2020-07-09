@@ -90,7 +90,7 @@ class Quadrics(Container1):
         for i in range(values.keys().size()):
             key = values.keys().at(i)
             if chr(gtsam.symbolChr(key)) == 'q':
-                quadric = quadricslam.ConstrainedDualQuadric.getFromValues(values, key)
+                quadric = gtsam_quadrics.ConstrainedDualQuadric.getFromValues(values, key)
                 quadrics.add(quadric, gtsam.symbolIndex(key))
         return quadrics
 
@@ -229,7 +229,7 @@ class Detections(Container2_Map):
         And they do not extend past the image dimensions 
         NOTE: assumes type(value) == AlignedBox2
         """
-        image_box = quadricslam.AlignedBox2(0,0,image_dimensions[0],image_dimensions[1])
+        image_box = gtsam_quadrics.AlignedBox2(0,0,image_dimensions[0],image_dimensions[1])
         noisy_boxes = Detections()
         for (pose_key, object_key), box in self.items():
 
@@ -237,20 +237,20 @@ class Detections(Container2_Map):
             noise_vector = np.random.normal(mu, sd, 4)
 
             # construct noisey perturbation
-            nbox = quadricslam.AlignedBox2(box.vector() + noise_vector)
+            nbox = gtsam_quadrics.AlignedBox2(box.vector() + noise_vector)
 
             # ensure nbox right way around
             if nbox.width() < 0:
-                nbox = quadricslam.AlignedBox2(nbox.xmax(), nbox.ymin(), nbox.xmin(), nbox.ymax())
+                nbox = gtsam_quadrics.AlignedBox2(nbox.xmax(), nbox.ymin(), nbox.xmin(), nbox.ymax())
             if nbox.height() < 0:
-                nbox = quadricslam.AlignedBox2(nbox.xmin(), nbox.ymax(), nbox.xmax(), nbox.ymin())
+                nbox = gtsam_quadrics.AlignedBox2(nbox.xmin(), nbox.ymax(), nbox.xmax(), nbox.ymin())
 
             # make sure box is inside image dimensions
             if nbox.intersects(image_box):
                 nbox = nbox.vector()
                 nbox[[0,2]] = np.clip(nbox[[0,2]], image_box.xmin(), image_box.xmax())
                 nbox[[1,3]] = np.clip(nbox[[1,3]], image_box.ymin(), image_box.ymax())
-                nbox = quadricslam.AlignedBox2(nbox)
+                nbox = gtsam_quadrics.AlignedBox2(nbox)
 
             # make sure nbox has width/height
             if nbox.width() >= 0.0 and nbox.width() < 1.0:

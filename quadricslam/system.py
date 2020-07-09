@@ -162,7 +162,7 @@ class System(object):
                     # add measurements
                     valid_objects.append(object_key)
                     for pose_key, box in object_boxes.items():
-                        bbf = quadricslam.BoundingBoxFactor(box, sequence.calibration, System.X(pose_key), System.Q(object_key), bbox_noise)
+                        bbf = gtsam_quadrics.BoundingBoxFactor(box, sequence.calibration, System.X(pose_key), System.Q(object_key), bbox_noise)
                         bbf.addToGraph(graph)
 
         # add initial landmark estimates

@@ -59,7 +59,7 @@ class SimulatedSequence(object):
 
 
     def reproject_quadrics(self, quadrics, trajectory):
-        image_box = quadricslam.AlignedBox2(0,0,self.calibration.px()*2.0, self.calibration.py()*2.0)
+        image_box = gtsam_quadrics.AlignedBox2(0,0,self.calibration.px()*2.0, self.calibration.py()*2.0)
         boxes = Detections()
         for pose_key, pose in trajectory.items():
             for object_key, quadric in quadrics.items():

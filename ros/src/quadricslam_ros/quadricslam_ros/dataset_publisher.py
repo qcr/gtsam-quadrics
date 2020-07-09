@@ -16,7 +16,7 @@ from detection_msgs.msg import AssociatedAlignedBox2DArray
 from cv_bridge import CvBridge
 
 # import custom python modules
-sys.path.append('/home/lachness/git_ws/quadricslam/examples/python/example_frontend')
+sys.path.append(os.path.dirname(os.path.realpath(__file__)).split('quadricslam/ros')[0]+'quadricslam/quadricslam')
 sys.dont_write_bytecode = True
 from dataset_interfaces.scenenet_dataset import SceneNetDataset
 from base.containers import Detections, Trajectory

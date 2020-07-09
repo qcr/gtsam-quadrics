@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'rosquadricslam'
+package_name = 'quadricslam_ros'
 
 setup(
     name=package_name,
@@ -20,9 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'system = rosquadricslam.system:main',
-            'dataset_publisher = rosquadricslam.dataset_publisher:main',
-            'webcam_publisher = rosquadricslam.webcam_publisher:main',
+            'system = quadricslam_ros.system:main',
+            'dataset_publisher = quadricslam_ros.dataset_publisher:main',
+            'webcam_publisher = quadricslam_ros.webcam_publisher:main',
         ],
     },
 )

@@ -1,3 +1,14 @@
+"""
+QuadricSLAM Copyright 2020, ARC Centre of Excellence for Robotic Vision, Queensland University of Technology (QUT)
+Brisbane, QLD 4000
+All Rights Reserved
+
+See LICENSE for the license information
+
+Description: Ros system
+Author: Lachlan Nicholson (Python)
+"""
+
 # import standard libraries
 import os
 import sys
@@ -20,17 +31,16 @@ from cv_bridge import CvBridge
 import message_filters
 
 # import custom python modules
-sys.path.append('/home/lachness/git_ws/quadricslam/ros/src/rosquadricslam/rosquadricslam')
-sys.path.append('/home/lachness/git_ws/quadricslam/examples/python/example_frontend')
+sys.path.append(os.path.dirname(os.path.realpath(__file__)).split('quadricslam/ros')[0]+'quadricslam/quadricslam')
 sys.dont_write_bytecode = True
-from data_association import DataAssociation
+from quadricslam_ros.data_association import DataAssociation
 from dataset_interfaces.scenenet_dataset import SceneNetDataset
 from visualization.drawing import CV2Drawing
 from base.containers import Trajectory, Quadrics, Detections, ObjectDetection
 
 # import gtsam and extension
 import gtsam
-import quadricslam
+import gtsam_quadrics
 
 
 
@@ -149,7 +159,7 @@ class ROSQuadricSLAM(Node):
             if filters is not None:
                 filter_indicies = [self.class_names.index(filter) for filter in filters]
             if filters is None or np.argmax(detection.scores) in filter_indicies:
-                box = quadricslam.AlignedBox2(detection.box.xmin, detection.box.ymin, detection.box.xmax, detection.box.ymax) 
+                box = gtsam_quadrics.AlignedBox2(detection.box.xmin, detection.box.ymin, detection.box.xmax, detection.box.ymax) 
                 detection = ObjectDetection(box, detection.objectness, detection.scores)
                 detections.append(detection)
         return detections
@@ -256,7 +266,7 @@ class ROSQuadricSLAM(Node):
             quadric.addToValues(local_estimate, self.Q(object_key))
 
             # add weak quadric prior 
-            prior_factor = quadricslam.PriorFactorConstrainedDualQuadric(self.Q(object_key), quadric, self.quadric_noise)
+            prior_factor = gtsam_quadrics.PriorFactorConstrainedDualQuadric(self.Q(object_key), quadric, self.quadric_noise)
             local_graph.add(prior_factor)
 
             # add quadric to storage (not needed in future)
@@ -273,7 +283,7 @@ class ROSQuadricSLAM(Node):
             # add measurements if initialized 
             # TODO: use keys from current estimate
             if object_key in self.initial_quadrics.keys():
-                bbf = quadricslam.BoundingBoxFactor(detection.box, self.calibration, self.X(pose_key), self.Q(object_key), self.bbox_noise)
+                bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, self.X(pose_key), self.Q(object_key), self.bbox_noise)
                 bbf.addToGraph(local_graph)
                 self.detections.set_used(True, pose_key, object_key)
 
@@ -321,7 +331,7 @@ class ROSQuadricSLAM(Node):
                 pose_keys = object_detections.keys()
                 object_poses = current_trajectory.at_keys(pose_keys)
                 quadric_matrix = self.quadric_SVD(object_poses, object_boxes, self.calibration)
-                quadric = quadricslam.ConstrainedDualQuadric.constrain(quadric_matrix)
+                quadric = gtsam_quadrics.ConstrainedDualQuadric.constrain(quadric_matrix)
 
                 # check quadric is okay
                 if self.is_okay(quadric, object_poses, self.calibration):
@@ -333,7 +343,7 @@ class ROSQuadricSLAM(Node):
             apose = current_trajectory.at(apose_key)
             displacement = 0.5
             quadric_pose = apose.compose(gtsam.Pose3(gtsam.Rot3(),gtsam.Point3(0,0,displacement)))
-            quadric = quadricslam.ConstrainedDualQuadric(quadric_pose, np.array([0.01]*3))
+            quadric = gtsam_quadrics.ConstrainedDualQuadric(quadric_pose, np.array([0.01]*3))
             return quadric
         return None
 
@@ -351,7 +361,7 @@ class ROSQuadricSLAM(Node):
             lines = [lines.at(i) for i in range(lines.size())]
 
             # calculate projection matrix
-            P = quadricslam.QuadricCamera.transformToImage(pose, calibration).transpose()
+            P = gtsam_quadrics.QuadricCamera.transformToImage(pose, calibration).transpose()
 
             # project lines to planes
             planes += [P @ line for line in lines]
@@ -396,7 +406,7 @@ class ROSQuadricSLAM(Node):
                 return False
 
             # conic must be valid and elliptical 
-            conic = quadricslam.QuadricCamera.project(quadric, pose, calibration)
+            conic = gtsam_quadrics.QuadricCamera.project(quadric, pose, calibration)
             if conic.isDegenerate():
                 return False
             if not conic.isEllipse():
@@ -409,7 +419,7 @@ class ROSQuadricSLAM(Node):
 def main(main_args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', dest='config_path', type=str, required=True ,
-                        help='path to the camera configuartion file')
+                        help='path to the camera configuration file')
     parser.add_argument('--depth', dest='depth', type=int, default=10, 
                         help='the queue depth to store topic messages')
     parser.add_argument('--record', dest='record', type=bool, default=False, 

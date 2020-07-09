@@ -95,7 +95,7 @@ class ROSDetector(Node):
     def draw_detections(self, image, detections):
         drawing = CV2Drawing(image)
         for detection in detections:
-            box = quadricslam.AlignedBox2(*detection[0:4])
+            box = gtsam_quadrics.AlignedBox2(*detection[0:4])
             class_scores = detection[5:] * detection[4]
             text = '{}:{:.2f}'.format(self.detector.classes[np.argmax(class_scores)], np.max(class_scores))
             drawing.box_and_text(box, (255,255,0), text, (0,0,0))
