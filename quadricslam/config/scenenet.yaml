@@ -1,0 +1,15 @@
+# KITTI monocular model for seq.03
+
+#==============#
+# Camera Model #
+#==============#
+
+Camera.name: "FULL HD 1080p"
+Camera.setup: "monocular"
+Camera.model: "perspective"
+
+Camera.fx: 277.128
+Camera.fy: 289.706
+Camera.cx: 160
+Camera.cy: 120
+
