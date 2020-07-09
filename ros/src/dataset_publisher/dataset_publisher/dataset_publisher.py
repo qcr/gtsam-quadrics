@@ -43,7 +43,7 @@ class DatasetPublisher(Node):
         self.true_trajectory = self.sequence.true_trajectory
         self.true_odometry = self.true_trajectory.as_odometry()
         self.noisy_odometry = self.true_odometry.add_noise(mu=0.0, sd=0.001)
-        self.noisy_trajectory = self.noisy_odometry.as_trajectory(self.true_trajectory.data()[0])
+        self.noisy_trajectory = self.noisy_odometry.as_trajectory(self.true_trajectory.values()[0])
 
         # get noisy detections
         self.true_boxes = self.sequence.true_boxes
@@ -96,7 +96,7 @@ class DatasetPublisher(Node):
         detections_msg = AssociatedAlignedBox2DArray()
         detections_msg.header = header
         detections_msg.boxes = []
-        for (pose_key, object_key), box in pose_detections.items():
+        for object_key, box in pose_detections.items():
             box_msg = AssociatedAlignedBox2D()
             box_msg.xmin = box.xmin()
             box_msg.ymin = box.ymin()

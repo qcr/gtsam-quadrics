@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'quadricslam_ros'
+package_name = 'webcam_publisher'
 
 setup(
     name=package_name,
@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'run = quadricslam_ros.quadricslam_ros:main',
+            'run = webcam_publisher.webcam_publisher:main',
         ],
     },
 )
