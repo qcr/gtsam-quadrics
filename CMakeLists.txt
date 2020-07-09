@@ -127,13 +127,13 @@ if(BUILD_PYTHON_WRAP)
 	# use gtsams cython wrapping functionality
 	wrap_and_install_library_cython("./gtsam_quadrics.h" # interface_header path
 									"from gtsam.gtsam cimport *" # extra imports for cython pxd
-									"${gtsam_quadrics_CYTHON_INSTALL_PATH}" # install_path
+									"${GTSAM_QUADRICS_CYTHON_INSTALL_PATH}" # install_path
 									"gtsam;${CONVENIENCE_LIB_NAME}" # libraries to link with
 									"wrap;gtsam;${CONVENIENCE_LIB_NAME}" # dependencies)
 	)
 
 	# install __init__.py so package can be loaded
-	# install_cython_files("${PROJECT_BINARY_DIR}/cython/gtsam_quadrics/__init__.py" "${gtsam_quadrics_CYTHON_INSTALL_PATH}")
+	# install_cython_files("${PROJECT_BINARY_DIR}/cython/gtsam_quadrics/__init__.py" "${GTSAM_QUADRICS_CYTHON_INSTALL_PATH}")
 endif()
 
 ###################################################################################
