@@ -97,8 +97,10 @@ namespace gtsam {
       /// @}
   };
 
+  /** \cond PRIVATE */
   // Add to testable group 
   template <>
   struct traits<AlignedBox3> : public Testable<AlignedBox3> {};
+  /** \endcond */
 
 } // namespace gtsam

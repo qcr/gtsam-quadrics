@@ -168,11 +168,13 @@ namespace gtsam {
       /// @}
   };
 
+  /** \cond PRIVATE */
   // Add ConstrainedDualQuadric to Manifold group
   template <>
   struct traits<ConstrainedDualQuadric> : public internal::Manifold<ConstrainedDualQuadric> {};
 
   template <>
   struct traits<const ConstrainedDualQuadric> : public internal::Manifold<ConstrainedDualQuadric> {};
+  /** \endcond */
 
 } // namespace gtsam

@@ -129,9 +129,11 @@ namespace gtsam {
       /// @}
   };
 
+  /** \cond PRIVATE */
   // Add to testable group 
   template <>
   struct traits<AlignedBox2> : public Testable<AlignedBox2> {};
+  /** \endcond */
 
   // Add vector<> typedef for python wrapper
   typedef std::vector<Vector3> Vector3Vector;

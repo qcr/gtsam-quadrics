@@ -110,8 +110,10 @@ namespace gtsam {
       bool equals(const BoundingBoxFactor& other, double tol = 1e-9) const;
   };
 
+  /** \cond PRIVATE */
   // Add to testable group 
   template <>
   struct traits<BoundingBoxFactor> : public Testable<BoundingBoxFactor> {};
+  /** \endcond */
 
 } // namespace gtsam

@@ -91,8 +91,10 @@ namespace gtsam {
       /// @}
   };
 
+  /** \cond PRIVATE */
   // Add DualConic to Testable group 
   template <>
   struct traits<DualConic> : public Testable<DualConic> {};
+  /** \endcond */
     
 } // namespace gtsam
