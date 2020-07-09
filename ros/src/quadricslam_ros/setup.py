@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'system = quadricslam_ros.system:main',
+            'system = quadricslam_ros.quadricslam_ros:main',
             'dataset_publisher = quadricslam_ros.dataset_publisher:main',
             'webcam_publisher = quadricslam_ros.webcam_publisher:main',
         ],

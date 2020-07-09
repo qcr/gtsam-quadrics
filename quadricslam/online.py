@@ -20,20 +20,9 @@ import atexit
 import yaml
 import argparse
 
-# import ros libraries
-import rclpy
-from rclpy.node import Node
-from std_msgs.msg import Header
-from sensor_msgs.msg import Image
-from geometry_msgs.msg import PoseStamped
-from detection_msgs.msg import ObjectDetectionArray
-from cv_bridge import CvBridge
-import message_filters
-
 # import custom python modules
-sys.path.append(os.path.dirname(os.path.realpath(__file__)).split('quadricslam/ros')[0]+'quadricslam/quadricslam')
 sys.dont_write_bytecode = True
-from quadricslam_ros.data_association import DataAssociation
+from data_association import DataAssociation
 from dataset_interfaces.scenenet_dataset import SceneNetDataset
 from visualization.drawing import CV2Drawing
 from base.containers import Trajectory, Quadrics, Detections, ObjectDetection
@@ -43,35 +32,18 @@ import gtsam
 import gtsam_quadrics
 
 
-
-
-
-
-
-class ROSQuadricSLAM(Node):
-    def __init__(self, args):
-        # set node name
-        super().__init__('ROSQuadricSLAM')
-
-        # settings
-        self.config_path = args.config_path
-        self.depth = args.depth
-        self.record = args.record
-        self.minimum_views = args.minimum_views
-        self.initialization_method = args.initialization_method
+class QuadricSLAM(object):
+    def __init__(self, calibration_path, classes_path, record, minimum_views, initialization_method):
+        # method settings
+        self.record = record
+        self.minimum_views = minimum_views
+        self.initialization_method = initialization_method
 
         # load camera calibration
-        self.calibration = self.load_camera_calibration(self.config_path)
+        self.calibration = self.load_camera_calibration(calibration_path)
 
         # load class names
-        self.class_names = self.load_class_names('/home/lachness/git_ws/PyTorch-YOLOv3/data/coco.names')
-
-        # start subscriptions
-        self.pose_subscription = message_filters.Subscriber(self, PoseStamped, 'poses')
-        self.detection_subscription = message_filters.Subscriber(self, ObjectDetectionArray, 'detections')
-        self.image_subscription = message_filters.Subscriber(self, Image, 'image')
-        self.time_synchronizer = message_filters.TimeSynchronizer([self.image_subscription, self.pose_subscription, self.detection_subscription], self.depth)
-        self.time_synchronizer.registerCallback(self.update)
+        self.class_names = self.load_class_names(classes_path)
 
         # create isam2 optimizer 
         opt_params = gtsam.ISAM2DoglegParams()
@@ -84,17 +56,17 @@ class ROSQuadricSLAM(Node):
         parameters.print_("ISAM2 Parameters")
         self.isam = gtsam.ISAM2(parameters)
         
-        POSE_SIGMA = 0.001
-        BOX_SIGMA = 10.0
         self.X = lambda i: int(gtsam.symbol(ord('x'), i))
         self.Q = lambda i: int(gtsam.symbol(ord('q'), i))
-        self.bridge = CvBridge()
+
+        POSE_SIGMA = 0.001
+        BOX_SIGMA = 10.0
+        QUAD_SIGMA = 100
         self.pose_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([POSE_SIGMA]*6, dtype=np.float))
         self.bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([BOX_SIGMA]*4, dtype=np.float))
-        self.quadric_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([100]*9, dtype=np.float))
+        self.quadric_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([QUAD_SIGMA]*9, dtype=np.float))
         self.graph = gtsam.NonlinearFactorGraph()
         self.estimate = gtsam.Values()
-
 
         # set measurement storage 
         self.images = dict()
@@ -102,12 +74,10 @@ class ROSQuadricSLAM(Node):
         self.detections = Detections()
         self.initial_quadrics = Quadrics()
 
-        # convert from time stamp to pose_keys
-        self.pose_keys = dict()
-
         # store current estimates to draw each frame
         self.current_trajectory = Trajectory()
         self.current_quadrics = Quadrics()
+
 
         # initialize data-association module
         self.data_association = DataAssociation(self.current_quadrics, self.calibration)
@@ -116,7 +86,9 @@ class ROSQuadricSLAM(Node):
         if self.record:
             self.video_writer = cv2.VideoWriter('good_performance.mp4', cv2.VideoWriter_fourcc(*'MP4V'), 12.0, (640, 480))
             atexit.register(self.video_writer.release)
-        print('\n~ Awaiting Measurements ~')
+
+        # print system configuration 
+        self.frames = 0
 
     def load_class_names(self, path):
         classes_fp = open(path, 'r')
@@ -153,53 +125,34 @@ class ROSQuadricSLAM(Node):
 
         return camera_model(*calibration_list)
         
-    def msg2detections(self, msg, filters=None):
-        detections = []
-        for detection in msg.detections:
-            if filters is not None:
-                filter_indicies = [self.class_names.index(filter) for filter in filters]
-            if filters is None or np.argmax(detection.scores) in filter_indicies:
-                box = gtsam_quadrics.AlignedBox2(detection.box.xmin, detection.box.ymin, detection.box.xmax, detection.box.ymax) 
-                detection = ObjectDetection(box, detection.objectness, detection.scores)
-                detections.append(detection)
-        return detections
+    def filter_detections(self, image_detections, names):
+        indicies = [self.class_names.index(name) for name in names]
+        return [d for d in image_detections if np.argmax(d.scores) in indicies]
 
-    def msg2pose(self, msg):
-        point = gtsam.Point3(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
-        rot = gtsam.Rot3.Quaternion(msg.pose.orientation.w, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z)
-        return gtsam.Pose3(rot, point)
+    def update(self, image, image_detections, camera_pose):
+        pose_key = self.frames
+        self.frames += 1
 
-    def msg2image(self, msg):
-        return self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+        # filter object detections
+        image_detections = self.filter_detections(image_detections, ['cup', 'bowl'])
+
+        # draw detections
+        img = image.copy()
+        drawing = CV2Drawing(img)
+        for detection in image_detections:
+            scores = detection.scores
+            text = '{}:{:.2f}'.format(self.class_names[np.argmax(scores)], np.max(scores))
+            drawing.box_and_text(detection.box, (0,0,255), text, (0,0,0))
+
+        # draw current map 
+        for quadric in self.current_quadrics.values():
+            drawing.quadric(camera_pose, quadric, self.calibration, (255,0,255))
+        cv2.imshow('Current view', img)
+        cv2.waitKey(1)
+        if self.record:
+            self.video_writer.write(img)
+
         
-    def msg2time(self, msg):
-        return float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec)*1e-9
-
-    def time2key(self, float_time):
-        try:
-            return self.pose_keys[float_time]
-        except KeyError as key_error:
-            pose_key = len(self.pose_keys)
-            self.pose_keys[float_time] = pose_key
-            return pose_key
-
-
-
-
-
-
-
-    def update(self, image_msg, pose_msg, detections_msg):
-        update_start = time.time()
-        self.get_logger().info('Update started')
-
-        # convert msgs to data
-        image = self.msg2image(image_msg)
-        camera_pose = self.msg2pose(pose_msg).inverse()
-        float_time = self.msg2time(detections_msg)
-        pose_key = self.time2key(float_time)
-        image_detections = self.msg2detections(detections_msg, filters=['cup', 'bowl'])
-        # image_detections = self.msg2detections(detections_msg)
 
         # draw detections
         img = image.copy()
@@ -219,16 +172,10 @@ class ROSQuadricSLAM(Node):
 
 
 
-
-
-
         # associate new measurements with existing keys
         da_start = time.time()
         associated_detections = self.data_association.associate(image, image_detections, camera_pose, pose_key, visualize=True, verbose=True)
         da_end = time.time()
-
-
-
 
 
 
@@ -413,36 +360,3 @@ class ROSQuadricSLAM(Node):
                 return False
                 
         return True
-
-
-
-def main(main_args=None):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', dest='config_path', type=str, required=True ,
-                        help='path to the camera configuration file')
-    parser.add_argument('--depth', dest='depth', type=int, default=10, 
-                        help='the queue depth to store topic messages')
-    parser.add_argument('--record', dest='record', type=bool, default=False, 
-                        help='boolean to record map visualization')
-    parser.add_argument('--views', dest='minimum_views', type=int, default=5, 
-                        help='minimum views required to initialize object')
-    parser.add_argument('--init', dest='initialization_method', type=str, choices=['SVD', 'other'], default='SVD', 
-                        help='method to use for initialization')
-    args = parser.parse_args()
-    
-    # init ros
-    rclpy.init(args=main_args)
-
-    # create node
-    system = ROSQuadricSLAM(args)
-
-    # spin node
-    rclpy.spin(system)
-
-    # shutdown 
-    system.destroy_node()
-    rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()
