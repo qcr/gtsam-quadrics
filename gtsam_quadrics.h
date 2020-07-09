@@ -40,8 +40,10 @@
 
 
 
-virtual class NoiseModelFactor;
+virtual class NonlinearFactor;
+virtual class NoiseModelFactor : NonlinearFactor;
 class NonlinearFactorGraph;
+class PriorFactor;
 class Cal3_S2;
 class Point2;
 class Point3;
@@ -96,8 +98,20 @@ virtual class BoundingBoxFactor : NoiseModelFactor {
   size_t poseKey() const;
   size_t objectKey() const;
   Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
+  Matrix evaluateH1(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
+  Matrix evaluateH2(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
   void addToGraph(NonlinearFactorGraph& graph);
   static gtsam::BoundingBoxFactor getFromGraph(const NonlinearFactorGraph& graph, size_t idx);
+};
+
+#include <gtsam/nonlinear/PriorFactor.h>
+template<T = {gtsam::ConstrainedDualQuadric}>
+virtual class PriorFactor : NoiseModelFactor {
+  PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
+  T prior() const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 #include <gtsam_quadrics/geometry/AlignedBox2.h>
@@ -125,6 +139,7 @@ class AlignedBox2 {
   bool contains(const Point2& point) const;
   bool contains(const AlignedBox2& other) const;
   bool intersects(const AlignedBox2& other) const;
+  double iou(const AlignedBox2& other) const;
   gtsam::Vector3Vector lines() const;
   void print(const string& s) const;
   void print() const;
