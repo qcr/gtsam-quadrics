@@ -27,7 +27,6 @@ from matplotlib.ticker import NullLocator
 
 # import custom modules
 sys.dont_write_bytecode = True
-# sys.path.append('/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector')
 import importlib
 from models import *
 from utils.utils import *

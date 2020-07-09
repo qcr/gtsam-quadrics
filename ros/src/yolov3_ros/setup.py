@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'py_detector'
+package_name = 'yolov3_ros'
 
 setup(
     name=package_name,
@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'detect = py_detector.ros_detector:main',
+            'detect = yolov3_ros.ros_detector:main',
         ],
     },
 )

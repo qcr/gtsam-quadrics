@@ -27,12 +27,11 @@ from cv_bridge import CvBridge
 
 # import custom modules 
 sys.dont_write_bytecode = True
-sys.path.append('/home/lachness/git_ws/quadricslam/ros/src/py_detector/py_detector')
-from detector import Detector
+from yolov3_ros.detector import Detector
 
 # import quadricslam modules
-import quadricslam
-sys.path.append('/home/lachness/git_ws/quadricslam/examples/python/example_frontend')
+import gtsam_quadrics
+sys.path.append(os.path.dirname(os.path.realpath(__file__)).split('quadricslam/ros')[0]+'quadricslam/quadricslam')
 from visualization.drawing import CV2Drawing
 
 class ROSDetector(Node):
