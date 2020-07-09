@@ -110,44 +110,45 @@ message(STATUS "BoW framework: ${BOW_FRAMEWORK} (found in ${BOW_INCLUDE_DIRS})")
 
 
 # build executable target 
-add_executable(run_slam src/run_slam.cpp)
+set(EXEC_NAME "run")
+add_executable(${EXEC_NAME} src/run_slam.cpp)
 
 
 
 # pangolin_viewer is used on a priority basis
 if(USE_PANGOLIN_VIEWER)
     # set macro flag
-    target_compile_definitions(run_slam PRIVATE -DUSE_PANGOLIN_VIEWER)
+    target_compile_definitions(${EXEC_NAME} PRIVATE -DUSE_PANGOLIN_VIEWER)
     # link viewer
-    target_link_libraries(run_slam PRIVATE ${Pangolin_Viewer_LIB} ${Pangolin_LIBRARIES})
+    target_link_libraries(${EXEC_NAME} PRIVATE ${Pangolin_Viewer_LIB} ${Pangolin_LIBRARIES})
 elseif(USE_SOCKET_PUBLISHER)
     # set macro flag
-    target_compile_definitions(run_slam PRIVATE -DUSE_SOCKET_PUBLISHER)
+    target_compile_definitions(${EXEC_NAME} PRIVATE -DUSE_SOCKET_PUBLISHER)
     # link viewer
-    target_link_libraries(run_slam PRIVATE ${Socket_Publisher_LIB} ${SIOCLIENT_LIBRARY} ${PROTOBUF_LIBRARIES})
+    target_link_libraries(${EXEC_NAME} PRIVATE ${Socket_Publisher_LIB} ${SIOCLIENT_LIBRARY} ${PROTOBUF_LIBRARIES})
 elseif(USE_SOCKET_PUBLISHER)
     # set macro flag
-    target_compile_definitions(run_slam PRIVATE -DUSE_SOCKET_PUBLISHER)
+    target_compile_definitions(${EXEC_NAME} PRIVATE -DUSE_SOCKET_PUBLISHER)
     # link viewer
-    target_link_libraries(run_slam PRIVATE ${Socket_Publisher_LIB} ${SIOCLIENT_LIBRARY} ${PROTOBUF_LIBRARIES})
+    target_link_libraries(${EXEC_NAME} PRIVATE ${Socket_Publisher_LIB} ${SIOCLIENT_LIBRARY} ${PROTOBUF_LIBRARIES})
 endif()
 
 # setup stack trace logger
 if(USE_STACK_TRACE_LOGGER)
-    target_compile_definitions(run_slam PRIVATE -DUSE_STACK_TRACE_LOGGER)
-    target_link_libraries(run_slam PRIVATE ${GLOG_LIBRARIES})
+    target_compile_definitions(${EXEC_NAME} PRIVATE -DUSE_STACK_TRACE_LOGGER)
+    target_link_libraries(${EXEC_NAME} PRIVATE ${GLOG_LIBRARIES})
 endif()
 
 # setup google-perftools
 if(USE_GOOGLE_PERFTOOLS)
-    target_compile_definitions(run_slam PRIVATE -DUSE_GOOGLE_PERFTOOLS)
-    target_link_libraries(run_slam PRIVATE ${GPERFTOOLS_LIBRARIES})
+    target_compile_definitions(${EXEC_NAME} PRIVATE -DUSE_GOOGLE_PERFTOOLS)
+    target_link_libraries(${EXEC_NAME} PRIVATE ${GPERFTOOLS_LIBRARIES})
 endif()
 
 # build and install executable 
-target_include_directories(run_slam PRIVATE ${openvslam_INCLUDE_DIRS} ${rclcpp_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${GTSAM_INCLUDE_DIRS})
-target_link_libraries(run_slam PRIVATE ${OpenVSLAM_LIB} ${rclcpp_LIBRARIES} ${OpenCV_LIBRARIES} ${GTSAM_LIBRARIES} gtsam)
-ament_target_dependencies(run_slam PUBLIC rclcpp cv_bridge image_transport)
-install(TARGETS run_slam DESTINATION lib/${PROJECT_NAME})
+target_include_directories(${EXEC_NAME} PRIVATE ${openvslam_INCLUDE_DIRS} ${rclcpp_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${GTSAM_INCLUDE_DIRS})
+target_link_libraries(${EXEC_NAME} PRIVATE ${OpenVSLAM_LIB} ${rclcpp_LIBRARIES} ${OpenCV_LIBRARIES} ${GTSAM_LIBRARIES} gtsam)
+ament_target_dependencies(${EXEC_NAME} PUBLIC rclcpp cv_bridge image_transport)
+install(TARGETS ${EXEC_NAME} DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
