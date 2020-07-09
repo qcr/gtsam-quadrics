@@ -24,10 +24,10 @@
  *  - We have some way of gaining an initial estimate for each quadric
  */
 
-#include <quadricslam/geometry/ConstrainedDualQuadric.h>
-#include <quadricslam/geometry/AlignedBox2.h>
-#include <quadricslam/geometry/QuadricCamera.h>
-#include <quadricslam/geometry/BoundingBoxFactor.h>
+#include <gtsam_quadrics/geometry/ConstrainedDualQuadric.h>
+#include <gtsam_quadrics/geometry/AlignedBox2.h>
+#include <gtsam_quadrics/geometry/QuadricCamera.h>
+#include <gtsam_quadrics/geometry/BoundingBoxFactor.h>
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
