@@ -1,9 +1,13 @@
-# README - QuadricSLAM #
+# QuadricSLAM: Quadric-based SLAM #
 
-## Description ##
-At it's core, quadricslam extends gtsam to provide support for optimizing quadric landmarks. We introduce constrained quadric landmarks on a manifold and the ability to optimize these landmarks when seen from multiple views using boundingbox measurements. We also provide a python interface and a number of c++ and python examples, including an [example python front-end](examples/python/README.md) which can load and run sequences from the SceneNetRGBD dataset (using ground truth data-association). 
+## Overview ##
+This repository contains **gtsam_quadrics**, an extension to the popular [GTSAM](https://github.com/borglab/gtsam) factor graph optimization library which provides support for quadric landmarks constrained from boundingbox measurements typically produced by an object detector. We also provide support for using these extensions in python, alongside a number of c++ and python examples, doxygen documentation and unit tests. 
 
-**Related Paper:**
+Also included in this repository is our **QuadricSLAM** system, able to run both incrementally (with isam2) and offline. The system is written in python and requires a feed images, object detections and odometry information and will estimate the current camera position and quadric map. We provide a ROS2 interface in order to use [OpenVSLAM](https://arxiv.org/abs/1910.01122) (C++) for localization and [Yolov3](https://pjreddie.com/media/files/papers/YOLOv3.pdf) (Python/PyTorch) for object detections. 
+
+If you use QuadricSLAM in your research, please cite our paper with the BibTeX entry shown below. 
+
+## Related Paper ##
 
 L. Nicholson, M. Milford and N. Sünderhauf, "QuadricSLAM: Dual Quadrics From Object Detections as Landmarks in Object-Oriented SLAM," in IEEE Robotics and Automation Letters, vol. 4, no. 1, pp. 1-8, Jan. 2019, doi: 10.1109/LRA.2018.2866205. [PDF](https://arxiv.org/abs/1804.04011).
 
@@ -20,77 +24,131 @@ If you are using this library in academic work, please cite the [publication](ht
     }
 
 
-### Bounding Box Factor ###
-We provide an implementation of a simple error function between quadric landmark and camera pose, although we plan to release the error function described in the paper in future. The key difference is that the simple error function calculates the bounds of the dual conic with no consideration for the image dimensions. Measurements where the objects bounds extend beyond the image boundaries generate a significant error even if the quadric is correctly fitting the object. In practice this means that the noise estimate for the boundingboxfactors should be overestimated. 
 
-## Quick Start ##
+## Requirements ## 
 
-To build the c++ core library:
-
-```sh
-#!bash
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make check (optional, runs unit tests)
-$ make install
-```
-
-To enable the python interface:
-
-* Enable QSLAM_BUILD_PYTHON_WRAP in the CMakeLists.txt
-* Repeat the steps above to build the library
-* Add /build/cython/gtsam_quadrics to PYTHONPATH or move to a location on your path
-
-The provided tests can be run using `make check`
-
-The provided examples can be compiled using `make examples`
-
-The doxygen generated documentation can be build using `make doc` and removed with `make doc_clean`
-
-The headers / library / python module can be installed using `make install` and removed with `make uninstall`
-
-## Dependencies ##
-Core C++ 
-
+### gtsam_quadrics: back-end library ###
 * g++ compiler (`sudo apt-get install build-essential`)
-* cmake (`sudo apt-get install cmake`) 
-* boost (`sudo apt-get install libboost-all-dev`)
+* cmake >= 3.0 (`sudo apt-get install cmake`) 
+* boost >= 1.43 (`sudo apt-get install libboost-all-dev`)
 * metis (`sudo apt-get install libmetis-dev`) <!-- in future, automatically get from gtsam/3rdparty, required when including gtsam/Symbol.h etc, maybe we just need to update some path? -->
-* gtsam 
-  * Intel MKL (*optional*)
-  * Intel TBB (*optional*)
-  * Intel OpenMP (*optional*)
+* [gtsam](https://github.com/borglab/gtsam)
 
-Python Wrapper
-
-* Gtsam Cython toolbox (included on PYTHONPATH and using the same python version)
-* cython (`sudo apt-get install cython`, `pip3 install cython`) <!-- gtsam requisite --> <!-- maybe we can use one and update our CYTHON_PATH? --> <!-- gtsam only needs apt-get version -->
-* python >= 3.0 <!-- gtsam requisite -->
-* numpy <!-- gtsam requisite --> 
-
-Python Front End
-
-* OpenCV2 (`pip3 install opencv-python`)
-* Matplotlib
-
-Required to build Docs
+Optional requirements to build documentation:
 
 * Doxygen (`sudo apt-get install doxygen`)
 * epstopdf (`sudo apt-get install textlive-font-utils`)
 
-Required to test the example_frontend on SceneNetRGBD:
+Requirements to build gtsam_quadrics python module:
+
+* gtsam: build with GTSAM_INSTALL_CYTHON_TOOLBOX=ON, and included on PYTHONPATH
+* cython: both `sudo apt-get install cython` and `pip3 install cython` required <!-- gtsam requisite --> <!-- maybe we can use one and update our CYTHON_PATH? --> <!-- gtsam only needs apt-get version -->
+* python >= 3.0 <!-- gtsam requisite -->
+* numpy <!-- gtsam requisite --> 
+
+### QuadricSLAM: python SLAM system ###
+* OpenCV2 (`pip3 install opencv-python`)
+* Matplotlib (`pip3 install matplotlib`)
+
+Required to test on SceneNetRGBD:
 
 * [pySceneNetRGBD](https://github.com/jmccormac/pySceneNetRGBD)
 * [SceneNetRGBD Data](https://robotvault.bitbucket.io/scenenet-rgbd.html)
-* [ShapeNet Dataset](https://www.shapenet.org/) (optional, required to initialize quadrics using true object dimensions)
+* [ShapeNet Dataset](https://www.shapenet.org/): optional, required to initialize quadrics using true object dimensions
 * Google Protobuf (`pip3 install protobuf`)
 
-## Using QuadricSLAM ##
+Required to test on USB Webcam: 
 
-If you wish to use this package in your own project, you can install the c++ headers and shared library using `make install`. By default the headers and library are installed to /usr/local/include and /usr/local/lib respectively. 
+* [OpenVSLAM](https://github.com/xdspacelab/openvslam)
+* [PyTorch-YOLOv3](https://github.com/eriklindernoren/PyTorch-YOLOv3)
+* [ROS2](https://index.ros.org/doc/ros2/Installation/) w/ packages: [cv_bridge](https://github.com/ros-perception/vision_opencv/tree/ros2), [image_transport](https://github.com/ros-perception/image_common/tree/ros2)
+* Python3 w/ modules: pytorch, pillow, cv2, numpy, matplotlib, pyyaml
 
-The python interface can be used, after building, by adding /build/cython/quadricslam to the PYTHONPATH. Alternatively, `make install` will install the python module, by default, to /usr/local/cython/quadricslam. Ensure you have this folder on your PYTHONPATH before attempting to import quadricslam. 
+
+
+
+
+
+
+## QuadricSLAM: quick start ## 
+
+After installing all required dependencies, build the core c++ gtsam_quadrics library:
+
+```sh
+# clone the repository 
+$ git clone https://github.com/RoboticVisionOrg/quadricslam
+$ cd quadricslam
+
+# create build folder 
+$ mkdir build
+$ cd build
+
+# (if you plan on using QuadricSLAM or want the python library)
+$ cmake -DBUILD_PYTHON_WRAP=ON ..
+# (otherwise, if you only want the gtsam_quadrics c++ library)
+$ cmake -DBUILD_PYTHON_WRAP=OFF ..
+
+# optional: run the c++ unit tests
+$ make check 
+
+# optional: install the c++ and/or python library 
+$ make install
+```
+
+The following table summarizes the available targets 
+| **Command**    | **Description**                                |
+| :---------     |   :-----------------------------------------   |
+| make check     | compile and run optional unit tests            | 
+| make examples  | compiles the c++ examples                      | 
+| make doc       | generates the doxygen documentation            | 
+| make doc_clean | removes the doxygen documentation              | 
+| make install   | installs the gtsam_quadrics c++/python library | 
+
+If you plan to use gtsam_quadrics in python, ensure you have build location (/build/cython/) or the install location (default: /usr/local/cython) on your PYTHONPATH. Assuming you have followed the instructions above, we can austomatically source the gtsam_quadrics library by explicitly adding the following line to your ~/.bashrc file. 
+
+```sh
+# add gtsam_quadrics to PYTHONPATH
+export PYTHONPATH=$PYTHONPATH:/usr/local/cython
+```
+
+If you plan to make changes to the gtsam_quadrics source code, it can be easier to add the build location so you don't have to "make install" each time you recompile. 
+
+
+
+<!-- The following list outlines the many ways to use our software: 
+* Run QuadricSLAM offline on a dataset: 
+* Run QuadricSLAM online in python:
+* Run QuadricSLAM online using ROS2:
+* Create your own system using quadric landmarks (C++):
+* Create your own system using quadric landmarks (Python): -->
+
+
+## QuadricSLAM: offline (dataset) ## 
+
+run `python3 examples/python/example_frontend/system.py --config examples/python/example_frontend/SceneNetConfig.ini`
+
+## QuadricSLAM: online (dataset) ## 
+
+run `python3 examples/python/example_frontend/system.py --config examples/python/example_frontend/SceneNetConfig.ini`
+
+## QuadricSLAM: online (webcam) ## 
+
+run `python3 examples/python/example_frontend/system.py --config examples/python/example_frontend/SceneNetConfig.ini`
+
+## gtsam_quadrics: create your own SLAM system using quadric landmarks (C++) ## 
+
+After building and installing gtsam_quadrics, you can find the c++ headers and library using `find_package(QUADRICSLAM REQUIRED)`
+
+## gtsam_quadrics: create your own SLAM system using quadric landmarks (Python) ## 
+
+
+
+
+
+
+### Bounding Box Factor ###
+We provide an implementation of a simple error function between quadric landmark and camera pose, although we plan to release the error function described in the paper in future. The key difference is that the simple error function calculates the bounds of the dual conic with no consideration for the image dimensions. Measurements where the objects bounds extend beyond the image boundaries generate a significant error even if the quadric is correctly fitting the object. In practice this means that the noise estimate for the boundingboxfactors should be overestimated. 
+
 
 ## Notes ##
 
