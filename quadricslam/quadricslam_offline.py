@@ -30,7 +30,7 @@ from base.evaluation import Evaluation
 from base.containers import *
 
 
-class System(object):
+class QuadricSLAM_Offline(object):
     """
     Python front-end to build graph/estimate from dataset. 
     """

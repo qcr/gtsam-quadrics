@@ -31,7 +31,7 @@ import gtsam
 import gtsam_quadrics
 
 
-class QuadricSLAM(object):
+class QuadricSLAM_Online(object):
     def __init__(self, calibration_path, classes_path, record, minimum_views, initialization_method):
         # method settings
         self.record = record
