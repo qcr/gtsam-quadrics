@@ -22,7 +22,7 @@ import argparse
 
 # import custom python modules
 sys.dont_write_bytecode = True
-from data_association import DataAssociation
+from base.data_association import DataAssociation
 from dataset_interfaces.scenenet_dataset import SceneNetDataset
 from visualization.drawing import CV2Drawing
 from base.containers import Trajectory, Quadrics, Detections, ObjectDetection
