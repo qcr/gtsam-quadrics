@@ -208,35 +208,34 @@ class Detections(Container2_Map):
     def add_noise(self, mu, sd):
         """ 
         compose noisevec onto relative poses 
-        NOTE: assumes type(value) == AlignedBox2
         """
-        noisy_boxes = Detections()
-        for (pose_key, object_key), box in self.items():
+        noisy_detections = Detections()
+        for (pose_key, object_key), detection in self.items():
 
             # get normally distributed doubles 
             noise_vector = np.random.normal(mu, sd, 4)
 
             # construct noisey perturbation
-            noisy_box = gtsam_quadrics.AlignedBox2(box.vector() + noise_vector)
+            noisy_box = gtsam_quadrics.AlignedBox2(detection.box.vector() + noise_vector)
 
             # add box to collection
-            noisy_boxes.add(noisy_box, pose_key, object_key)
-        return noisy_boxes
+            noisy_detection = ObjectDetection(noisy_box, detection.objectness, detection.scores)
+            noisy_detections.add(noisy_detection, pose_key, object_key)
+        return noisy_detections
 
     def add_noise_strict(self, mu, sd, image_dimensions):
         """ Take care to ensure boxes have positive width/height
         And they do not extend past the image dimensions 
-        NOTE: assumes type(value) == AlignedBox2
         """
         image_box = gtsam_quadrics.AlignedBox2(0,0,image_dimensions[0],image_dimensions[1])
-        noisy_boxes = Detections()
-        for (pose_key, object_key), box in self.items():
+        noisy_detections = Detections()
+        for (pose_key, object_key), detection in self.items():
 
             # get normally distributed doubles 
             noise_vector = np.random.normal(mu, sd, 4)
 
             # construct noisey perturbation
-            nbox = gtsam_quadrics.AlignedBox2(box.vector() + noise_vector)
+            nbox = gtsam_quadrics.AlignedBox2(detection.box.vector() + noise_vector)
 
             # ensure nbox right way around
             if nbox.width() < 0:
@@ -257,10 +256,10 @@ class Detections(Container2_Map):
             if nbox.height() >= 0.0 and nbox.height() < 1.0:
                 continue
 
-
             # add nbox to collection
-            noisy_boxes.add(nbox, pose_key, object_key)
-        return noisy_boxes
+            noisy_detection = ObjectDetection(nbox, detection.objectness, detection.scores)
+            noisy_detections.add(noisy_detection, pose_key, object_key)
+        return noisy_detections
 
 
 class Odometry(Container2_Map):

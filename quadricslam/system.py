@@ -115,10 +115,10 @@ class System(object):
         odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([float(config['base']['ODOM_SIGMA'])]*6, dtype=np.float))
         bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([float(config['base']['BOX_SIGMA'])]*4, dtype=np.float))
 
-        # get noisy odometry / boxes 
+        # get noisy odometry / detections 
         true_odometry = sequence.true_trajectory.as_odometry()
         noisy_odometry = true_odometry.add_noise(mu=0.0, sd=float(config['base']['ODOM_NOISE']))
-        noisy_boxes = sequence.true_boxes.add_noise(mu=0.0, sd=float(config['base']['BOX_NOISE']))
+        noisy_detections = sequence.true_detections.add_noise(mu=0.0, sd=float(config['base']['BOX_NOISE']))
 
         # initialize trajectory
         # TODO: ensure aligned in same reference frame
@@ -128,7 +128,7 @@ class System(object):
         # initialize quadrics
         # NOTE: careful initializing with true quadrics and noise traj as it may not make sense
         if config['base']['Initialization'] == 'SVD':
-            initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_boxes, sequence.calibration)
+            initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_detections, sequence.calibration)
         elif config['base']['Initialization'] == 'Dataset':
             initial_quadrics = sequence.true_quadrics
 
@@ -148,21 +148,18 @@ class System(object):
         # add valid box measurements
         valid_objects = []
         initialized_quadrics = initial_quadrics.keys()
-        for object_key in np.unique(noisy_boxes.object_keys()):
+        for object_key, object_detections in noisy_detections.per_object():
 
             # add if quadric initialized
             if object_key in initialized_quadrics:
                 
-                # get all views of quadric
-                object_boxes = noisy_boxes.at_object(object_key)
-
                 # add if enough views
-                if len(object_boxes) > 3:
+                if len(object_detections) > 3:
 
                     # add measurements
                     valid_objects.append(object_key)
-                    for pose_key, box in object_boxes.items():
-                        bbf = gtsam_quadrics.BoundingBoxFactor(box, sequence.calibration, System.X(pose_key), System.Q(object_key), bbox_noise)
+                    for pose_key, detection in object_detections.items():
+                        bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, sequence.calibration, System.X(pose_key), System.Q(object_key), bbox_noise)
                         bbf.addToGraph(graph)
 
         # add initial landmark estimates
@@ -175,18 +172,18 @@ class System(object):
         return graph, initial_estimate
 
     @staticmethod
-    def initialize_quadrics(trajectory, boxes, calibration):
+    def initialize_quadrics(trajectory, detections, calibration):
         """ Uses SVD to initialize quadrics from measurements """
         quadrics = Quadrics()
 
         # loop through object keys
-        for object_key in np.unique(boxes.object_keys()):
+        for object_key, object_detections in detections.per_object():
 
-            # get all detections at object key
-            object_boxes = boxes.at_object(object_key)
+            # get the object boxes from each pose
+            object_boxes = [d.box for d in object_detections.values()]
 
             # get the poses associated with each detection 
-            pose_keys = list(object_boxes.keys())
+            pose_keys = list(object_detections.keys())
             poses = trajectory.at_keys(pose_keys)
 
             # ensure quadric seen from > 3 views
@@ -194,7 +191,7 @@ class System(object):
                 continue
 
             # initialize quadric fomr views using svd
-            quadric_matrix = System.quadric_SVD(poses, list(object_boxes.values()), calibration)
+            quadric_matrix = System.quadric_SVD(poses, object_boxes, calibration)
 
             # constrain generic dual quadric to be ellipsoidal 
             quadric = gtsam_quadrics.ConstrainedDualQuadric.constrain(quadric_matrix)
