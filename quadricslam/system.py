@@ -64,9 +64,9 @@ class System(object):
         initial_ATE = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), sequence.true_trajectory, horn=False)[0]
         estimate_ATE = Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory, horn=False)[0]
         print('Initial ATE w/ horn alignment: {}'.format(initial_ATE_H))
-        print('Final ATE w/ horn alignment: {}'.format(estimate_ATE_H))
+        print('Final ATE w/ horn alignment:   {}'.format(estimate_ATE_H))
         print('Initial ATE w/ weak alignment: {}'.format(initial_ATE))
-        print('Final ATE w/ weak alignment: {}'.format(estimate_ATE))
+        print('Final ATE w/ weak alignment:   {}'.format(estimate_ATE))
 
         # # plot results
         trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory, sequence.true_trajectory]
