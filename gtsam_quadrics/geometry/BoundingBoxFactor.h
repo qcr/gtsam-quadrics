@@ -89,11 +89,6 @@ namespace gtsam {
       /** Evaluates the derivative of the error wrt quadric */
       Matrix evaluateH2(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
 
-      /** 
-       * Retrieve factor from graph at index
-       */
-      static BoundingBoxFactor getFromGraph(const NonlinearFactorGraph& graph, size_t idx);
-
       /// @}
       /// @name Testable group traits
       /// @{

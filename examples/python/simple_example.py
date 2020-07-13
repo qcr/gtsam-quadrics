@@ -81,7 +81,7 @@ if __name__ == '__main__':
             conic = gtsam_quadrics.QuadricCamera.project(quadric, pose, calibration)
             bounds = conic.bounds()
             bbf = gtsam_quadrics.BoundingBoxFactor(bounds, calibration, X(i), Q(j), bbox_noise)
-            bbf.addToGraph(graph)
+            graph.add(bbf)
 
     # define lm parameters
     parameters = gtsam.LevenbergMarquardtParams()

@@ -66,8 +66,8 @@ TEST(BoundingBoxFactor, AddRemoveFromGraph) {
 
 TEST(BoundingBoxFactor, ExplicitAddRemoveFromGraph) {
   BoundingBoxFactor bbf(measured, calibration, poseKey, quadricKey, model);
-  bbf.addToGraph(graph);
-  BoundingBoxFactor bbf2 = BoundingBoxFactor::getFromGraph(graph, 0);
+  graph.add(bbf);
+  BoundingBoxFactor bbf2 = *boost::dynamic_pointer_cast<BoundingBoxFactor>(graph.at(0)).get();
   EXPECT(assert_equal(bbf, bbf2));
 }
 

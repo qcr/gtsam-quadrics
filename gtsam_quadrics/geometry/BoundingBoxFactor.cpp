@@ -123,16 +123,6 @@ Matrix BoundingBoxFactor::evaluateH2(const Pose3& pose, const ConstrainedDualQua
 }
 
 /* ************************************************************************* */
-void BoundingBoxFactor::addToGraph(NonlinearFactorGraph& graph) { 
-  graph.add(*this);
-}
-
-/* ************************************************************************* */
-BoundingBoxFactor BoundingBoxFactor::getFromGraph(const NonlinearFactorGraph& graph, size_t idx) { 
-  return *boost::dynamic_pointer_cast<BoundingBoxFactor>(graph.at(idx)).get();
-}
-
-/* ************************************************************************* */
 void BoundingBoxFactor::print(const std::string& s, const KeyFormatter& keyFormatter) const {
   cout << s << "BoundingBoxFactor(" << keyFormatter(key1()) << "," << keyFormatter(key2()) << ")" << endl;
   measured_.print("    Measured: ");

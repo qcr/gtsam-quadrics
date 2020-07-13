@@ -47,8 +47,11 @@ class MPLDrawing(object):
         quadrics = Quadrics.from_values(estimate)
 
         # collect nonlinear factors from graph
-        box_factors = [gtsam_quadrics.BoundingBoxFactor.getFromGraph(graph, i) for i in range(graph.size()) if graph.at(i).keys().size() == 2 and chr(gtsam.symbolChr(graph.at(i).keys().at(1))) == 'q']
-        # odom_factors = [graph.at(i) for i in range(graph.size()) if graph.at(i).keys().size() == 2 and chr(gtsam.symbolChr(graph.at(i).keys().at(1))) == 'x']
+        box_factors = []
+        for i in range(graph.size()):
+            factor = graph.at(i)
+            if factor.keys().size() == 2 and chr(gtsam.symbolChr(factor.keys().at(1))) == 'q':
+                box_factors.append(gtsam_quadrics.dynamic_cast_BoundingBoxFactor_NonlinearFactor(factor))
 
         # extract x-y positions
         xy = np.array([[pose.x(), pose.y()] for pose in trajectory.values()])
