@@ -230,7 +230,7 @@ class QuadricSLAM(object):
             # TODO: use keys from current estimate
             if object_key in self.initial_quadrics.keys():
                 bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, self.X(pose_key), self.Q(object_key), self.bbox_noise)
-                bbf.addToGraph(local_graph)
+                local_graph.add(bbf)
                 self.detections.set_used(True, pose_key, object_key)
 
         # append local graph / estimate to full graph

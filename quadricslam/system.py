@@ -160,7 +160,7 @@ class System(object):
                     valid_objects.append(object_key)
                     for pose_key, detection in object_detections.items():
                         bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, sequence.calibration, System.X(pose_key), System.Q(object_key), bbox_noise)
-                        bbf.addToGraph(graph)
+                        graph.add(bbf)
 
         # add initial landmark estimates
         for object_key, quadric in initial_quadrics.items():
