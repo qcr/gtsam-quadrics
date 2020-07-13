@@ -27,6 +27,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 # import custom python modules
 sys.dont_write_bytecode = True
+from base.containers import ObjectDetection
 from base.containers import Detections
 from base.containers import Trajectory
 from base.containers import Odometry
@@ -231,7 +232,7 @@ class SceneNetSequence(object):
     Holds video information
     sequence.image_paths -> list
     sequence.images -> SmartImages
-    sequence.true_boxes -> Boxes
+    sequence.true_detections -> Detections
     sequence.true_trajectory -> Trajectory
     sequence.true_quadrics -> Quadrics
     sequence.true_3D_bounds -> dict
@@ -273,8 +274,8 @@ class SceneNetSequence(object):
     # Loading Detections
     ###############################################################
     @cached_property
-    def true_boxes(self):
-        boxes = Detections()
+    def true_detections(self):
+        detections = Detections()
         for index, instance_path in enumerate(self.instance_paths):
 
             # key must align with trajectory keys
@@ -283,21 +284,21 @@ class SceneNetSequence(object):
             # load instance image
             instance_image = np.array(Image.open(instance_path))
 
-            # calculate instance boxes
-            image_boxes = self.boxes_from_instance(instance_image, pose_key)
+            # calculate instance detections
+            image_detections = self.detections_from_instance(instance_image, pose_key)
 
             # add to video_boxes
-            boxes.add_detections(image_boxes)
-        return boxes
+            detections.add_detections(image_detections)
+        return detections
 
-    def boxes_from_instance(self, instance_image, pose_key):
+    def detections_from_instance(self, instance_image, pose_key):
         """
         Calculates discrete bounding box from pixels:
         [0, 0, 0]
         [0, 1, 0] would effectively be (1,1,2,2) 
         [0, 0, 0]
         """
-        image_boxes = Detections()
+        image_detections = Detections()
         for instance_id in np.unique(instance_image):
 
             # only use box if class is valid
@@ -305,8 +306,8 @@ class SceneNetSequence(object):
                 continue
 
             # get class distribution
-            # nyu13_class = instance_to_nyu[instance_id]
-            # distribution = np.eye(13)[nyu13_class]
+            nyu13_class = self.instance_to_nyu[instance_id]
+            distribution = np.eye(13)[nyu13_class]
 
             # get masks
             instance_mask = (instance_image == instance_id)
@@ -319,10 +320,23 @@ class SceneNetSequence(object):
 
             # convert discrete to continious bounds 
             box = gtsam_quadrics.AlignedBox2(xmin,ymin,xmax+1,ymax+1)
+            detection = ObjectDetection(box, 1.0, distribution)
 
             # store box, pose, object keys. 
-            image_boxes.add(box, pose_key, int(instance_id))
-        return image_boxes
+            image_detections.add(detection, pose_key, int(instance_id))
+        return image_detections
+
+    @cached_property
+    def instance_to_nyu(self) -> dict:
+        """
+        Converts all Instances that are in WNID_TO_NYU and are RANDOM_OBJECTS
+        into an nyu13 class.
+        """
+        instance_to_nyu = {}
+        for instance in self.sequence_data.instances:
+            if self.is_valid(instance.instance_id):
+                instance_to_nyu[instance.instance_id] = (WNID_TO_NYU[str(instance.semantic_wordnet_id)] -1)
+        return instance_to_nyu
 
     def is_valid(self, instance_id):
         """ 
@@ -561,15 +575,15 @@ class SceneNetPlayer(InteractivePlayer):
         """ draw measurements at image/pose """
         image = self.sequence.images[self.image_index]
         current_pose = self.sequence.true_trajectory[self.image_index]
-        image_boxes = self.sequence.true_boxes.at_pose(self.image_index)
+        image_detections = self.sequence.true_detections.at_pose(self.image_index)
         quadrics = self.sequence.true_quadrics
         calibration = self.sequence.calibration
         boxes_3D = self.sequence.true_3D_bounds
         drawing = CV2Drawing(image)
 
-        # draw boxes
-        # for (pose_key, object_key), box in image_boxes.items():
-        #     drawing.box_and_text(box, (255,0,255), '{}'.format(object_key), (255,255,255))
+        # draw detections
+        # for (pose_key, object_key), detection in image_detections.items():
+        #     drawing.box_and_text(detection.box, (255,0,255), '{}'.format(object_key), (255,255,255))
 
         # draw quadrics if:
         # - infront of camera

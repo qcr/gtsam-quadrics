@@ -31,7 +31,7 @@ import message_filters
 sys.path.append(os.path.dirname(os.path.realpath(__file__)).split('quadricslam/ros')[0]+'quadricslam/quadricslam')
 sys.dont_write_bytecode = True
 from base.containers import ObjectDetection
-from online import QuadricSLAM
+from quadricslam_online import QuadricSLAM_Online
 
 # import gtsam and extension
 import gtsam
@@ -53,7 +53,7 @@ class ROSQuadricSLAM(Node):
         self.bridge = CvBridge()
 
         # create instance of quadricslam system
-        self.SLAM = QuadricSLAM(args.config_path, args.classes_path, args.record, args.minimum_views, args.initialization_method)
+        self.SLAM = QuadricSLAM_Online(args.config_path, args.classes_path, args.record, args.minimum_views, args.initialization_method)
 
     def msg2detections(self, msg):
         detections = []

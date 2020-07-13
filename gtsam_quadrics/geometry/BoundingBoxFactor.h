@@ -90,11 +90,6 @@ namespace gtsam {
       Matrix evaluateH2(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
 
       /** 
-       * Add this factor to given graph 
-       */
-      void addToGraph(NonlinearFactorGraph& graph);
-
-      /** 
        * Retrieve factor from graph at index
        */
       static BoundingBoxFactor getFromGraph(const NonlinearFactorGraph& graph, size_t idx);

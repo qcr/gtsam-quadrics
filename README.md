@@ -157,12 +157,7 @@ When using the python interface, ConstrainedDualQuadrics can be added or retriev
     quadric.addToValues(values, key)
     quadric = quadricslam.ConstrainedDualQuadric.getFromValues(values, key)
 ```
-
-Similarly, the boundingbox factor can be used with:
-```Python
-    bbf.addToGraph(graph)
-    bbf = BoundingBoxFactor.getFromGraph(graph, index)
-```
+Since GTSAM 4.0 the python interface for Values manually specializes each type, and we have not yet found a clean way to add our custom Quadric classes to the gtsam::Values object in python. In future we plan to derive the gtsam::Values class and add the insert/at methods for ConstrainedDualQuadric, however, the class is currently not polymorphic. 
 
 ## Common Issues ##
 

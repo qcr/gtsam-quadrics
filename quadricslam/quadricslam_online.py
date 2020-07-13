@@ -14,7 +14,6 @@ import os
 import sys
 import numpy as np
 import time
-sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-packages/')
 import cv2
 import atexit
 import yaml
@@ -22,7 +21,7 @@ import argparse
 
 # import custom python modules
 sys.dont_write_bytecode = True
-from data_association import DataAssociation
+from base.data_association import DataAssociation
 from dataset_interfaces.scenenet_dataset import SceneNetDataset
 from visualization.drawing import CV2Drawing
 from base.containers import Trajectory, Quadrics, Detections, ObjectDetection
@@ -32,7 +31,7 @@ import gtsam
 import gtsam_quadrics
 
 
-class QuadricSLAM(object):
+class QuadricSLAM_Online(object):
     def __init__(self, calibration_path, classes_path, record, minimum_views, initialization_method):
         # method settings
         self.record = record
@@ -152,24 +151,6 @@ class QuadricSLAM(object):
         if self.record:
             self.video_writer.write(img)
 
-        
-
-        # draw detections
-        img = image.copy()
-        drawing = CV2Drawing(img)
-        for detection in image_detections:
-            scores = detection.scores
-            text = '{}:{:.2f}'.format(self.class_names[np.argmax(scores)], np.max(scores))
-            drawing.box_and_text(detection.box, (0,0,255), text, (0,0,0))
-
-        # draw current map 
-        for quadric in self.current_quadrics.values():
-            drawing.quadric(camera_pose, quadric, self.calibration, (255,0,255))
-        cv2.imshow('Current view', img)
-        cv2.waitKey(1)
-        if self.record:
-            self.video_writer.write(img)
-
 
 
         # associate new measurements with existing keys
@@ -231,7 +212,7 @@ class QuadricSLAM(object):
             # TODO: use keys from current estimate
             if object_key in self.initial_quadrics.keys():
                 bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, self.X(pose_key), self.Q(object_key), self.bbox_noise)
-                bbf.addToGraph(local_graph)
+                local_graph.add(bbf)
                 self.detections.set_used(True, pose_key, object_key)
 
         # append local graph / estimate to full graph

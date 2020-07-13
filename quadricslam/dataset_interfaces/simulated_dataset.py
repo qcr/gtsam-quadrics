@@ -26,6 +26,7 @@ sys.dont_write_bytecode = True
 from base.containers import Trajectory
 from base.containers import Quadrics
 from base.containers import Detections
+from base.containers import ObjectDetection
 
 
 # TODO: ensure calibration / dimensions are linked correctly
@@ -55,12 +56,12 @@ class SimulatedSequence(object):
             self.true_quadrics.add(quadric, key)
 
         # create box measurements
-        self.true_boxes = self.reproject_quadrics(self.true_quadrics, self.true_trajectory)
+        self.true_detections = self.reproject_quadrics(self.true_quadrics, self.true_trajectory)
 
 
     def reproject_quadrics(self, quadrics, trajectory):
         image_box = gtsam_quadrics.AlignedBox2(0,0,self.calibration.px()*2.0, self.calibration.py()*2.0)
-        boxes = Detections()
+        detections = Detections()
         for pose_key, pose in trajectory.items():
             for object_key, quadric in quadrics.items():
 
@@ -69,9 +70,10 @@ class SimulatedSequence(object):
                 raw_box = dual_conic.bounds()
                 # print(raw_box.vector())
 
-                # only add boxes that project inside fov completely
+                # only add detections that project inside fov completely
                 if image_box.contains(raw_box):
-                    boxes.add(raw_box, pose_key, object_key)
+                    detection = ObjectDetection(raw_box, 1.0, 1.0)
+                    detections.add(detection, pose_key, object_key)
 
                 # correctly project partials to screen dimensions
                 # elif image_box.intersects(raw_box):
@@ -79,8 +81,8 @@ class SimulatedSequence(object):
                 #     v[[0,2]] = np.clip(v[[0,2]], 0, self.image_dimensions[0])
                 #     v[[1,3]] = np.clip(v[[1,3]], 0, self.image_dimensions[1])
                 #     raw_box = AlignedBox2(v)
-                #     boxes.add(box, pose_key, object_key)
-        return boxes
+                #     detections.add(box, pose_key, object_key)
+        return detections
 
     def interpolate_poses(self, poses, n_between):
         new_poses = Trajectory()
