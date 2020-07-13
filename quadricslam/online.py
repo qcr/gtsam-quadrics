@@ -151,24 +151,6 @@ class QuadricSLAM(object):
         if self.record:
             self.video_writer.write(img)
 
-        
-
-        # draw detections
-        img = image.copy()
-        drawing = CV2Drawing(img)
-        for detection in image_detections:
-            scores = detection.scores
-            text = '{}:{:.2f}'.format(self.class_names[np.argmax(scores)], np.max(scores))
-            drawing.box_and_text(detection.box, (0,0,255), text, (0,0,0))
-
-        # draw current map 
-        for quadric in self.current_quadrics.values():
-            drawing.quadric(camera_pose, quadric, self.calibration, (255,0,255))
-        cv2.imshow('Current view', img)
-        cv2.waitKey(1)
-        if self.record:
-            self.video_writer.write(img)
-
 
 
         # associate new measurements with existing keys
