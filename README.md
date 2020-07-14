@@ -104,11 +104,11 @@ The following table summarizes the available targets
 | make doc_clean | removes the doxygen documentation              | 
 | make install   | installs the gtsam_quadrics c++/python library | 
 
-If you plan to use gtsam_quadrics in python, ensure you have build location (/build/cython/) or the install location (default: /usr/local/cython) on your PYTHONPATH. Assuming you have followed the instructions above, we can austomatically source the gtsam_quadrics library by explicitly adding the following line to your ~/.bashrc file. 
+If you plan to use gtsam_quadrics in python, ensure you have build location (/build/cython/gtsam_quadrics) or the install location (default: /usr/local/cython/gtsam_quadrics) on your PYTHONPATH. Assuming you have followed the instructions above, we can austomatically source the gtsam_quadrics library by explicitly adding the following line to your ~/.bashrc file. 
 
 ```sh
 # add gtsam_quadrics to PYTHONPATH
-export PYTHONPATH=$PYTHONPATH:/usr/local/cython
+export PYTHONPATH=$PYTHONPATH:/usr/local/cython/gtsam_quadrics
 ```
 
 If you plan to make changes to the gtsam_quadrics source code, it can be easier to add the build location so you don't have to "make install" each time you recompile. 
