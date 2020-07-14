@@ -28,7 +28,7 @@ from cv_bridge import CvBridge
 import message_filters
 
 # import custom python modules
-sys.path.append(os.path.dirname(os.path.realpath(__file__)).split('quadricslam/ros')[0]+'quadricslam/quadricslam')
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../../quadricslam'))
 sys.dont_write_bytecode = True
 from base.containers import ObjectDetection
 from quadricslam_online import QuadricSLAM_Online

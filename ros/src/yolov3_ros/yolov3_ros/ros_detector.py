@@ -31,7 +31,7 @@ from yolov3_ros.detector import Detector
 
 # import quadricslam modules
 import gtsam_quadrics
-sys.path.append(os.path.dirname(os.path.realpath(__file__)).split('quadricslam/ros')[0]+'quadricslam/quadricslam')
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../../quadricslam'))
 from visualization.drawing import CV2Drawing
 
 class ROSDetector(Node):

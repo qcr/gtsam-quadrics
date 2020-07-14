@@ -7,7 +7,6 @@ sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-p
 import cv2
 
 # import custom libraries
-sys.path.append(os.path.dirname(os.path.realpath(__file__)).split('quadricslam/ros')[0]+'quadricslam/quadricslam')
 sys.dont_write_bytecode = True
 from base.containers import Detections
 from visualization.drawing import CV2Drawing
