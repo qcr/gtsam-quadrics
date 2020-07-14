@@ -18,21 +18,22 @@ class WebcamPublisher(Node):
         super().__init__('webcam_publisher')
 
         # declare parameters
-        self.width = self.declare_parameter('width', 320.0)
-        self.height = self.declare_parameter('height', 240.0)
-        self.max_fps = self.declare_parameter('fps', 10.0)
+        self.width = self.declare_parameter('width', 320.0).value
+        self.height = self.declare_parameter('height', 240.0).value
+        self.max_fps = self.declare_parameter('fps', 10.0).value
+        self.n = self.declare_parameter('n', 0).value
 
         # create camera capture
-        self.camera = cv2.VideoCapture(0)
-        self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.width.value)
-        self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height.value)
+        self.camera = cv2.VideoCapture(self.n)
+        self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+        self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
         self.bridge = CvBridge()
 
         # create publishers
         self.image_publisher = self.create_publisher(Image, 'image', 10)
 
         # create timer
-        timer_period = 1.0/self.max_fps.value  # seconds
+        timer_period = 1.0/self.max_fps  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.n_images = 0
 
