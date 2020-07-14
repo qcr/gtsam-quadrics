@@ -16,16 +16,6 @@ import gtsam
 import gtsam_quadrics
 
 
-class TrackerType(Enum):
-    BOOSTING = 1
-    MIL = 2
-    KCF = 3
-    TLD = 4
-    MEDIANFLOW = 5
-    GOTURN = 6
-    MOSSE = 7
-    CSRT = 8
-
 class BoxTracker(object):
     """
     Wrapper around cv2.tracker to convert box types and control tracker type.
@@ -51,22 +41,22 @@ class BoxTracker(object):
         return gtsam_quadrics.AlignedBox2(tlwh[0], tlwh[1], tlwh[0]+tlwh[2], tlwh[1]+tlwh[3])
 
     def new_tracker(self):
-        if self.tracker_type == TrackerType.BOOSTING:
-            return cv2.TrackerBoosting_create() #'BOOSTING'
-        elif self.tracker_type == TrackerType.MIL:
-            return cv2.TrackerMIL_create() #'MIL'
-        elif self.tracker_type == TrackerType.KCF:
-            return cv2.TrackerKCF_create() #'KCF'
-        elif self.tracker_type == TrackerType.TLD:
-            return cv2.TrackerTLD_create() #'TLD'
-        elif self.tracker_type == TrackerType.MEDIANFLOW:
-            return cv2.TrackerMedianFlow_create() #'MEDIANFLOW'
-        elif self.tracker_type == TrackerType.GOTURN:
-            return cv2.TrackerGOTURN_create() #'GOTURN'
-        elif self.tracker_type == TrackerType.MOSSE:
-            return cv2.TrackerMOSSE_create() #'MOSSE'
-        elif self.tracker_type == TrackerType.CSRT:
-            return cv2.TrackerCSRT_create() #"CSRT"
+        if self.tracker_type == 'BOOSTING':
+            return cv2.TrackerBoosting_create()
+        elif self.tracker_type == 'MIL':
+            return cv2.TrackerMIL_create()
+        elif self.tracker_type == 'KCF':
+            return cv2.TrackerKCF_create()
+        elif self.tracker_type == 'TLD':
+            return cv2.TrackerTLD_create()
+        elif self.tracker_type == 'MEDIANFLOW':
+            return cv2.TrackerMedianFlow_create()
+        elif self.tracker_type == 'GOTURN':
+            return cv2.TrackerGOTURN_create()
+        elif self.tracker_type == 'MOSSE':
+            return cv2.TrackerMOSSE_create()
+        elif self.tracker_type == 'CSRT':
+            return cv2.TrackerCSRT_create()
         else:
             raise ValueError('BoxTracker new_tracker called with unknown self.tracker_type')
 
@@ -127,19 +117,18 @@ class DataAssociation(object):
     TODO: pass updateable version of map to constructor
     """
 
-    def __init__(self, map, calibration):
-        self.map = map
+    def __init__(self, calibration, config):
         self.calibration = calibration
         self.object_trackers = {}
         self.object_count = 0
 
         # settings 
-        self.IOU_THRESH = 0.4
-        self.object_limit = 100
-        self.tracker_type = TrackerType.CSRT
+        self.iou_thresh = config['DataAssociation.iou_thresh']
+        self.object_limit = config['DataAssociation.object_limit']
+        self.tracker_type = config['DataAssociation.tracker_type']
 
 
-    def associate(self, image, image_detections, camera_pose, pose_key, visualize=False, verbose=False):
+    def associate(self, image, image_detections, camera_pose, pose_key, map, visualize=False, verbose=False):
         associated_detections = Detections()
 
         # update active trackers with new image 
@@ -159,7 +148,7 @@ class DataAssociation(object):
         for detection in image_detections:
 
             # associate single measurement
-            object_key, association_type, predicted_box = self.associate_detection(image, detection, camera_pose)
+            object_key, association_type, predicted_box = self.associate_detection(image, detection, camera_pose, map)
             if association_type == 'failed':
                 continue
             
@@ -185,7 +174,7 @@ class DataAssociation(object):
         if verbose:
             print('\n --- Data-association --- ')
             print('  active_trackers: {}'.format(np.sum([t.n_active_trackers for t in self.object_trackers.values() if t.alive])))
-            print('  map_objects:     {}'.format(len(self.map)))
+            print('  map_objects:     {}'.format(len(map)))
             print('  measurements:    {}'.format(len(image_detections)))
             print('      tracker: {}'.format(len([t for t in associations if t=='tracker'])))
             print('      map:     {}'.format(len([t for t in associations if t=='map'])))
@@ -194,7 +183,7 @@ class DataAssociation(object):
         return associated_detections
 
 
-    def associate_detection(self, image, detection, pose):
+    def associate_detection(self, image, detection, pose, map):
         """ 
             Tries to associate detection with map and object trackers.
             If associated with tracker, updates tracker with new measurement. 
@@ -207,7 +196,7 @@ class DataAssociation(object):
         
         # calculate compatability with current map 
         map_ious = []
-        for object_key, quadric in self.map.items():
+        for object_key, quadric in map.items():
 
             # TODO: catch projection failures 
             dual_conic = gtsam_quadrics.QuadricCamera.project(quadric, pose, self.calibration)
@@ -225,7 +214,7 @@ class DataAssociation(object):
         best_map_iou = 0.0 if not map_ious else max(map_ious, key=lambda x: x[0])[0]
         best_tracker_iou = 0.0 if not tracker_ious else max(tracker_ious, key=lambda x: x[0])[0]
         
-        if best_map_iou >= best_tracker_iou and best_map_iou > self.IOU_THRESH:
+        if best_map_iou >= best_tracker_iou and best_map_iou > self.iou_thresh:
             object_key, predicted_box = max(map_ious, key=lambda x: x[0])[1:3]
 
             # turn off tracker to favor map
@@ -233,7 +222,7 @@ class DataAssociation(object):
                 self.object_trackers[object_key].alive = False
             return (object_key, 'map', predicted_box)
 
-        elif best_map_iou < best_tracker_iou and best_tracker_iou > self.IOU_THRESH:
+        elif best_map_iou < best_tracker_iou and best_tracker_iou > self.iou_thresh:
             object_key, predicted_box = max(tracker_ious, key=lambda x: x[0])[1:3]
             best_tracker = self.object_trackers[object_key]
             best_tracker.add_tracker(detection.box, image)

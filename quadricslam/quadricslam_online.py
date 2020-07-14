@@ -32,38 +32,28 @@ import gtsam_quadrics
 
 
 class QuadricSLAM_Online(object):
-    def __init__(self, calibration_path, classes_path, record, minimum_views, initialization_method):
-        # method settings
-        self.record = record
-        self.minimum_views = minimum_views
-        self.initialization_method = initialization_method
-
+    def __init__(self, config):
+        self.config = config
+        
         # load camera calibration
-        self.calibration = self.load_camera_calibration(calibration_path)
+        self.calibration = self.load_calibration(config)
 
         # load class names
-        self.class_names = self.load_class_names(classes_path)
+        self.class_names = self.load_class_names(config['QuadricSLAM.classes_path'])
 
         # create isam2 optimizer 
-        opt_params = gtsam.ISAM2DoglegParams()
-        # opt_params = gtsam.ISAM2GaussNewtonParams()
-        parameters = gtsam.ISAM2Params()
-        parameters.setOptimizationParams(opt_params)
-        parameters.setRelinearizeSkip(1)
-        parameters.setRelinearizeThreshold(0.01)
-        # parameters.setEnableRelinearization(False)
-        parameters.print_("ISAM2 Parameters")
-        self.isam = gtsam.ISAM2(parameters)
+        self.isam = self.create_optimizer(config)
         
+        # define gtsam macros 
         self.X = lambda i: int(gtsam.symbol(ord('x'), i))
         self.Q = lambda i: int(gtsam.symbol(ord('q'), i))
 
-        POSE_SIGMA = 0.001
-        BOX_SIGMA = 10.0
-        QUAD_SIGMA = 100
-        self.pose_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([POSE_SIGMA]*6, dtype=np.float))
-        self.bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([BOX_SIGMA]*4, dtype=np.float))
-        self.quadric_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([QUAD_SIGMA]*9, dtype=np.float))
+        # declare noise models
+        self.pose_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.pose_sd']]*6, dtype=np.float))
+        self.bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.box_sd']]*4, dtype=np.float))
+        self.quadric_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.quad_sd']]*9, dtype=np.float))
+
+        # store the full graph and estimate 
         self.graph = gtsam.NonlinearFactorGraph()
         self.estimate = gtsam.Values()
 
@@ -73,30 +63,41 @@ class QuadricSLAM_Online(object):
         self.detections = Detections()
         self.initial_quadrics = Quadrics()
 
-        # store current estimates to draw each frame
+        # store current estimates
         self.current_trajectory = Trajectory()
         self.current_quadrics = Quadrics()
 
-
         # initialize data-association module
-        self.data_association = DataAssociation(self.current_quadrics, self.calibration)
+        self.data_association = DataAssociation(self.calibration, config)
 
         # prepare video capture
-        if self.record:
-            self.video_writer = cv2.VideoWriter('good_performance.mp4', cv2.VideoWriter_fourcc(*'MP4V'), 12.0, (640, 480))
+        if config['Recording.record']:
+            self.video_writer = cv2.VideoWriter('performance.mp4', cv2.VideoWriter_fourcc(*'MP4V'), 12.0, (640, 480))
             atexit.register(self.video_writer.release)
 
-        # print system configuration 
+        # store processed frames for pose_key
         self.frames = 0
+
+    def create_optimizer(self, config):
+        if config['Optimizer.dogleg']:
+            opt_params = gtsam.ISAM2DoglegParams()
+        else:
+            opt_params = gtsam.ISAM2GaussNewtonParams()
+        parameters = gtsam.ISAM2Params()
+        parameters.setOptimizationParams(opt_params)
+        parameters.setEnableRelinearization(config['Optimizer.relinearization'])
+        parameters.setRelinearizeThreshold(config['Optimizer.relinearize_thresh'])
+        parameters.setRelinearizeSkip(config['Optimizer.relinearize_skip'])
+        parameters.print_("ISAM2 Parameters")
+        isam = gtsam.ISAM2(parameters)
+        return isam
 
     def load_class_names(self, path):
         classes_fp = open(path, 'r')
         return classes_fp.read().split('\n')[:-1]
 
-    def load_camera_calibration(self, path, no_distortion=True):
+    def load_calibration(self, camera_config, no_distortion=True):
         """ Loads gtsam calibration from openvslam config format """
-        camera_config = yaml.safe_load(open(path, 'r'))
-
         camera_model = gtsam.Cal3_S2
         calibration_list = [
             camera_config['Camera.fx'],
@@ -124,8 +125,8 @@ class QuadricSLAM_Online(object):
 
         return camera_model(*calibration_list)
         
-    def filter_detections(self, image_detections, names):
-        indicies = [self.class_names.index(name) for name in names]
+    def filter_detections(self, image_detections):
+        indicies = [self.class_names.index(name) for name in self.config['QuadricSLAM.viable_classes']]
         return [d for d in image_detections if np.argmax(d.scores) in indicies]
 
     def update(self, image, image_detections, camera_pose):
@@ -133,7 +134,7 @@ class QuadricSLAM_Online(object):
         self.frames += 1
 
         # filter object detections
-        image_detections = self.filter_detections(image_detections, ['cup', 'bowl'])
+        image_detections = self.filter_detections(image_detections)
 
         # draw detections
         img = image.copy()
@@ -148,14 +149,16 @@ class QuadricSLAM_Online(object):
             drawing.quadric(camera_pose, quadric, self.calibration, (255,0,255))
         cv2.imshow('Current view', img)
         cv2.waitKey(1)
-        if self.record:
+
+        # record map + detections
+        if self.config['Recording.record']:
             self.video_writer.write(img)
 
 
 
         # associate new measurements with existing keys
         da_start = time.time()
-        associated_detections = self.data_association.associate(image, image_detections, camera_pose, pose_key, visualize=True, verbose=True)
+        associated_detections = self.data_association.associate(image, image_detections, camera_pose, pose_key, self.current_quadrics, visualize=True, verbose=True)
         da_end = time.time()
 
 
@@ -252,8 +255,8 @@ class QuadricSLAM_Online(object):
         Attempts to initialize the quadric according to self.initialization_method.
         Returns None if quadric could not be initialized 
         """
-        if self.initialization_method == 'SVD':
-            if len(object_detections) >= self.minimum_views:
+        if self.config['QuadricSLAM.init_method'] == 'SVD':
+            if len(object_detections) >= self.config['QuadricSLAM.min_views']:
 
                 object_boxes = [d.box for d in object_detections.values()]
                 pose_keys = object_detections.keys()
