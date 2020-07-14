@@ -16,6 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import configparser
 import argparse
+import yaml
 
 # import gtsam and extension
 import gtsam
@@ -41,14 +42,14 @@ class QuadricSLAM_Offline(object):
     def run(sequence, config):
 
         # build graph / estimate
-        graph, initial_estimate = System.build_graph(sequence, config)
+        graph, initial_estimate = QuadricSLAM_Offline.build_graph(sequence, config)
 
         # draw initial system
         plotting = MPLDrawing('initial_problem')
         plotting.plot_system(graph, initial_estimate)
 
         # optimize using c++ back-end
-        estimate = System.optimize(graph, initial_estimate, sequence.calibration)
+        estimate = QuadricSLAM_Offline.optimize(graph, initial_estimate)
 
         # draw estimation
         plotting = MPLDrawing('final_solution')
@@ -68,15 +69,15 @@ class QuadricSLAM_Offline(object):
         print('Initial ATE w/ weak alignment: {}'.format(initial_ATE))
         print('Final ATE w/ weak alignment:   {}'.format(estimate_ATE))
 
-        # # plot results
+        # plot results
         trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory, sequence.true_trajectory]
-        maps = [Quadrics.from_values(initial_estimate), estimated_quadrics, sequence.true_quadrics]
+        maps = [Quadrics.from_values(initial_estimate), estimated_quadrics]
         colors = ['r', 'm', 'g']; names = ['initial_estimate', 'final_estimate', 'ground_truth']
         plotting.plot_result(trajectories, maps, colors, names)
            
     
     @staticmethod
-    def optimize(graph, initial_estimate, calibration):
+    def optimize(graph, initial_estimate):
 
         # create optimizer parameters
         params = gtsam.LevenbergMarquardtParams()
@@ -110,40 +111,38 @@ class QuadricSLAM_Offline(object):
         graph = gtsam.NonlinearFactorGraph()
         initial_estimate = gtsam.Values()
 
+        # load camera calibration
+        calibration = QuadricSLAM_Offline.load_calibration(config)
+
         # declare noise models
-        prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([float(config['base']['PRIOR_SIGMA'])]*6, dtype=np.float))
-        odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([float(config['base']['ODOM_SIGMA'])]*6, dtype=np.float))
-        bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([float(config['base']['BOX_SIGMA'])]*4, dtype=np.float))
+        prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.prior_sd']]*6, dtype=np.float))
+        odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.odom_sd']]*6, dtype=np.float))
+        bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.box_sd']]*4, dtype=np.float))
 
         # get noisy odometry / detections 
         true_odometry = sequence.true_trajectory.as_odometry()
-        noisy_odometry = true_odometry.add_noise(mu=0.0, sd=float(config['base']['ODOM_NOISE']))
-        noisy_detections = sequence.true_detections.add_noise(mu=0.0, sd=float(config['base']['BOX_NOISE']))
+        noisy_odometry = true_odometry.add_noise(mu=0.0, sd=config['Noise.odom_sd'])
+        noisy_detections = sequence.true_detections.add_noise(mu=0.0, sd=config['Noise.box_sd'])
 
         # initialize trajectory
         # TODO: ensure aligned in same reference frame
         initial_trajectory = noisy_odometry.as_trajectory(sequence.true_trajectory.values()[0])
-        # initial_trajectory = noisy_odometry.as_trajectory()
 
         # initialize quadrics
-        # NOTE: careful initializing with true quadrics and noise traj as it may not make sense
-        if config['base']['Initialization'] == 'SVD':
-            initial_quadrics = System.initialize_quadrics(initial_trajectory, noisy_detections, sequence.calibration)
-        elif config['base']['Initialization'] == 'Dataset':
-            initial_quadrics = sequence.true_quadrics
+        initial_quadrics = QuadricSLAM_Offline.initialize_quadrics(initial_trajectory, noisy_detections, calibration)
 
         # add prior pose
-        prior_factor = gtsam.PriorFactorPose3(System.X(0), initial_trajectory.at(0), prior_noise)
+        prior_factor = gtsam.PriorFactorPose3(QuadricSLAM_Offline.X(0), initial_trajectory.at(0), prior_noise)
         graph.add(prior_factor)
 
         # add odometry measurements
         for (start_key, end_key), rpose in noisy_odometry.items():
-            odometry_factor = gtsam.BetweenFactorPose3(System.X(start_key), System.X(end_key), rpose, odometry_noise)
+            odometry_factor = gtsam.BetweenFactorPose3(QuadricSLAM_Offline.X(start_key), QuadricSLAM_Offline.X(end_key), rpose, odometry_noise)
             graph.add(odometry_factor)
 
         # add initial pose estimates
         for pose_key, pose in initial_trajectory.items():
-            initial_estimate.insert(System.X(pose_key), pose)
+            initial_estimate.insert(QuadricSLAM_Offline.X(pose_key), pose)
 
         # add valid box measurements
         valid_objects = []
@@ -159,7 +158,7 @@ class QuadricSLAM_Offline(object):
                     # add measurements
                     valid_objects.append(object_key)
                     for pose_key, detection in object_detections.items():
-                        bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, sequence.calibration, System.X(pose_key), System.Q(object_key), bbox_noise)
+                        bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, calibration, QuadricSLAM_Offline.X(pose_key), QuadricSLAM_Offline.Q(object_key), bbox_noise)
                         graph.add(bbf)
 
         # add initial landmark estimates
@@ -167,9 +166,21 @@ class QuadricSLAM_Offline(object):
 
             # add if seen > 3 times
             if (object_key in valid_objects):
-                quadric.addToValues(initial_estimate, System.Q(object_key))
+                quadric.addToValues(initial_estimate, QuadricSLAM_Offline.Q(object_key))
 
         return graph, initial_estimate
+
+    @staticmethod
+    def load_calibration(config):
+        camera_model = gtsam.Cal3_S2
+        calibration_list = [
+            config['Camera.fx'],
+            config['Camera.fy'],
+            0.0,
+            config['Camera.cx'],
+            config['Camera.cy'],
+        ]
+        return camera_model(*calibration_list)
 
     @staticmethod
     def initialize_quadrics(trajectory, detections, calibration):
@@ -191,13 +202,13 @@ class QuadricSLAM_Offline(object):
                 continue
 
             # initialize quadric fomr views using svd
-            quadric_matrix = System.quadric_SVD(poses, object_boxes, calibration)
+            quadric_matrix = QuadricSLAM_Offline.quadric_SVD(poses, object_boxes, calibration)
 
             # constrain generic dual quadric to be ellipsoidal 
             quadric = gtsam_quadrics.ConstrainedDualQuadric.constrain(quadric_matrix)
 
             # check quadric is okay
-            if (System.is_okay(quadric, poses, calibration)):
+            if (QuadricSLAM_Offline.is_okay(quadric, poses, calibration)):
                 quadrics.add(quadric, object_key)
 
         return quadrics
@@ -282,42 +293,31 @@ if __name__ == '__main__':
     parser.add_argument('--config', help='path to config file', required=True)
     args = parser.parse_args()
 
-    # load config
-    config = configparser.ConfigParser()
-    # default_config = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.ini')
-    config.read(args.config)
+    # load system configuration
+    config = yaml.safe_load(open(args.config, 'r'))
 
-    # validate config 
-    if config['base']['Dataset'] == 'SceneNet':
+    # validate configuration 
+    if config['Dataset.name'] == 'SceneNet':
 
-        # ensure scenenet paths provided
-        if 'SceneNet' not in config or \
-                'path_to_data' not in config['SceneNet'] or \
-                'path_to_protobufs' not in config['SceneNet'] or \
-                'path_to_protobuf_definition' not in config['SceneNet']:
+        # if SceneNet, ensure all paths are provided 
+        required_settings = ['Dataset.data', 'Dataset.protobufs', 'Dataset.protobuf_definition', 'Dataset.sequence_n']
+        if not all(setting in config for setting in required_settings):
             raise RuntimeError("If SceneNet selected as dataset, must provide path to SceneNet files.")
 
-        # ensure shapenet enabled if initializing from SceneNet
-        if config['base']['Initialization'] == 'Dataset' and \
-                config['base']['Dataset'] == 'SceneNet' and \
-                'ShapeNet' not in config:
-            raise RuntimeError("ShapeNet required to initialize landmarks from SceneNet dataset.")
-
-    # set seed
-    np.random.seed(int(config['base']['Seed']))
+    # set experiment seed 
+    np.random.seed(config['Noise.seed'])
 
     # load dataset
-    if config['base']['Dataset'] == 'SceneNet':
+    if config['Dataset.name'] == 'SceneNet':
         dataset = SceneNetDataset(
-            dataset_path = config['SceneNet']['path_to_data'],
-            protobuf_folder = config['SceneNet']['path_to_protobufs'],
-            reader_path = config['SceneNet']['path_to_protobuf_definition'],
-            shapenet_path = None if 'ShapeNet' not in config else config['ShapeNet']['path_to_shapenet']
+            dataset_path = config['Dataset.data'],
+            protobuf_folder = config['Dataset.protobufs'],
+            reader_path = config['Dataset.protobuf_definition'],
         )
-        sequence = dataset[int(config['SceneNet']['sequence_n'])]
+        sequence = dataset[config['Dataset.sequence_n']]
     else:
         sequence = SimulatedSequence.sequence1()
 
     # run system on sequence 
-    System.run(sequence, config)
+    QuadricSLAM_Offline.run(sequence, config)
 

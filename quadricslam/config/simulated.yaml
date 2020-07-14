@@ -1,0 +1,27 @@
+# offline configuration settings
+#==============#
+# Camera Model #
+#==============#
+Camera.fx: 525.0
+Camera.fy: 525.0
+Camera.cx: 160.0
+Camera.cy: 120.0
+
+#==============#
+# QuadricSLAM  #
+#==============#
+QuadricSLAM.prior_sd: 1e-1
+QuadricSLAM.odom_sd: 0.05
+QuadricSLAM.box_sd: 0.1
+
+#================#
+# Noise Settings #
+#================#
+Noise.seed: 121
+Noise.odom_sd: 0.05
+Noise.box_sd: 0.0
+
+#===================#
+# Simulated Dataset #
+#===================#
+Dataset.name: "Simulated"

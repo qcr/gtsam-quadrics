@@ -1,15 +1,31 @@
-# KITTI monocular model for seq.03
-
+# offline configuration settings
 #==============#
 # Camera Model #
 #==============#
-
-Camera.name: "FULL HD 1080p"
-Camera.setup: "monocular"
-Camera.model: "perspective"
-
 Camera.fx: 277.128
 Camera.fy: 289.706
 Camera.cx: 160
 Camera.cy: 120
 
+#==============#
+# QuadricSLAM  #
+#==============#
+QuadricSLAM.prior_sd: 1e-1
+QuadricSLAM.odom_sd: 0.01
+QuadricSLAM.box_sd: 20.0
+
+#================#
+# Noise Settings #
+#================#
+Noise.seed: 121
+Noise.odom_sd: 0.01
+Noise.box_sd: 3.0 
+
+#==================#
+# SceneNet Dataset #
+#==================#
+Dataset.name: "SceneNet"
+Dataset.data: "/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/data/train"
+Dataset.protobufs: "/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/data/train_protobufs"
+Dataset.protobuf_definition: "/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py"
+Dataset.sequence_n: 0
