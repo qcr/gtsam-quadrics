@@ -134,7 +134,8 @@ class QuadricSLAM_Online(object):
         self.frames += 1
 
         # filter object detections
-        image_detections = self.filter_detections(image_detections)
+        if self.config['QuadricSLAM.filter_measurements']:
+            image_detections = self.filter_detections(image_detections)
 
         # draw detections
         img = image.copy()
