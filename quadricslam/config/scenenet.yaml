@@ -10,7 +10,8 @@ Camera.cy: 120
 #==============#
 # QuadricSLAM  #
 #==============#
-QuadricSLAM.prior_sd: 1e-1
+QuadricSLAM.min_views: 3
+QuadricSLAM.prior_sd: 1.0e-1
 QuadricSLAM.odom_sd: 0.01
 QuadricSLAM.box_sd: 20.0
 
@@ -20,6 +21,18 @@ QuadricSLAM.box_sd: 20.0
 Noise.seed: 121
 Noise.odom_sd: 0.01
 Noise.box_sd: 3.0 
+
+#====================#
+# Optimizer Settings #
+#====================#
+# Verbosity: SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA : VALUES, ERROR 
+Optimizer.verbosity: "SUMMARY"
+Optimizer.max_iterations: 100
+Optimizer.lambda_initial: 1.0e-5
+Optimizer.lambda_upper_bound: 1.0e+10
+Optimizer.lambda_lower_bound: 1.0e-8
+Optimizer.relative_error_tol: 1.0e-5
+Optimizer.absolute_error_tol: 1.0e-5
 
 #==================#
 # SceneNet Dataset #

@@ -38,18 +38,35 @@ class QuadricSLAM_Offline(object):
     X = lambda i: int(gtsam.symbol(ord('x'), i))
     Q = lambda i: int(gtsam.symbol(ord('q'), i))
 
-    @staticmethod
-    def run(sequence, config):
+    def __init__(self, config):
+        # create optimizer parameters
+        self.params = gtsam.LevenbergMarquardtParams()
+        self.params.setVerbosityLM(config['Optimizer.verbosity'])    
+        self.params.setMaxIterations(config['Optimizer.max_iterations'])
+        self.params.setlambdaInitial(config['Optimizer.lambda_initial'])
+        self.params.setlambdaUpperBound(config['Optimizer.lambda_upper_bound'])
+        self.params.setlambdaLowerBound(config['Optimizer.lambda_lower_bound'])
+        self.params.setRelativeErrorTol(config['Optimizer.relative_error_tol'])
+        self.params.setAbsoluteErrorTol(config['Optimizer.absolute_error_tol'])
+
+        # load calibration from config
+        self.calibration = self.load_calibration(config)
+
+        # store config for later
+        self.config = config
+
+    def run(self, sequence):
 
         # build graph / estimate
-        graph, initial_estimate = QuadricSLAM_Offline.build_graph(sequence, config)
+        graph, initial_estimate = self.build_graph(sequence)
 
         # draw initial system
         plotting = MPLDrawing('initial_problem')
         plotting.plot_system(graph, initial_estimate)
 
         # optimize using c++ back-end
-        estimate = QuadricSLAM_Offline.optimize(graph, initial_estimate)
+        optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, self.params)
+        estimate = optimizer.optimize()
 
         # draw estimation
         plotting = MPLDrawing('final_solution')
@@ -75,33 +92,8 @@ class QuadricSLAM_Offline(object):
         colors = ['r', 'm', 'g']; names = ['initial_estimate', 'final_estimate', 'ground_truth']
         plotting.plot_result(trajectories, maps, colors, names)
            
-    
-    @staticmethod
-    def optimize(graph, initial_estimate):
 
-        # create optimizer parameters
-        params = gtsam.LevenbergMarquardtParams()
-        params.setVerbosityLM("SUMMARY")    # SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA : VALUES, ERROR 
-        params.setMaxIterations(100)
-        params.setlambdaInitial(1e-5)
-        params.setlambdaUpperBound(1e10)
-        params.setlambdaLowerBound(1e-8)
-        params.setRelativeErrorTol(1e-5)
-        params.setAbsoluteErrorTol(1e-5)
-  
-        # create optimizer
-        optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)
-
-        # run optimizer
-        print('starting optimization')
-        estimate = optimizer.optimize()
-        print('optimization finished')
-
-        return estimate
-
-
-    @staticmethod
-    def build_graph(sequence, config):
+    def build_graph(self, sequence):
         """
         Adds noise to sequence variables / measurements. 
         Returns graph, initial_estimate
@@ -111,25 +103,22 @@ class QuadricSLAM_Offline(object):
         graph = gtsam.NonlinearFactorGraph()
         initial_estimate = gtsam.Values()
 
-        # load camera calibration
-        calibration = QuadricSLAM_Offline.load_calibration(config)
-
         # declare noise models
-        prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.prior_sd']]*6, dtype=np.float))
-        odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.odom_sd']]*6, dtype=np.float))
-        bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.box_sd']]*4, dtype=np.float))
+        prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([self.config['QuadricSLAM.prior_sd']]*6, dtype=np.float))
+        odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([self.config['QuadricSLAM.odom_sd']]*6, dtype=np.float))
+        bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([self.config['QuadricSLAM.box_sd']]*4, dtype=np.float))
 
         # get noisy odometry / detections 
         true_odometry = sequence.true_trajectory.as_odometry()
-        noisy_odometry = true_odometry.add_noise(mu=0.0, sd=config['Noise.odom_sd'])
-        noisy_detections = sequence.true_detections.add_noise(mu=0.0, sd=config['Noise.box_sd'])
+        noisy_odometry = true_odometry.add_noise(mu=0.0, sd=self.config['Noise.odom_sd'])
+        noisy_detections = sequence.true_detections.add_noise(mu=0.0, sd=self.config['Noise.box_sd'])
 
         # initialize trajectory
         # TODO: ensure aligned in same reference frame
         initial_trajectory = noisy_odometry.as_trajectory(sequence.true_trajectory.values()[0])
 
         # initialize quadrics
-        initial_quadrics = QuadricSLAM_Offline.initialize_quadrics(initial_trajectory, noisy_detections, calibration)
+        initial_quadrics = self.initialize_quadrics(initial_trajectory, noisy_detections, self.calibration)
 
         # add prior pose
         prior_factor = gtsam.PriorFactorPose3(QuadricSLAM_Offline.X(0), initial_trajectory.at(0), prior_noise)
@@ -153,12 +142,12 @@ class QuadricSLAM_Offline(object):
             if object_key in initialized_quadrics:
                 
                 # add if enough views
-                if len(object_detections) > 3:
+                if len(object_detections) > self.config['QuadricSLAM.min_views']:
 
                     # add measurements
                     valid_objects.append(object_key)
                     for pose_key, detection in object_detections.items():
-                        bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, calibration, QuadricSLAM_Offline.X(pose_key), QuadricSLAM_Offline.Q(object_key), bbox_noise)
+                        bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, QuadricSLAM_Offline.X(pose_key), QuadricSLAM_Offline.Q(object_key), bbox_noise)
                         graph.add(bbf)
 
         # add initial landmark estimates
@@ -170,8 +159,7 @@ class QuadricSLAM_Offline(object):
 
         return graph, initial_estimate
 
-    @staticmethod
-    def load_calibration(config):
+    def load_calibration(self, config):
         camera_model = gtsam.Cal3_S2
         calibration_list = [
             config['Camera.fx'],
@@ -182,8 +170,7 @@ class QuadricSLAM_Offline(object):
         ]
         return camera_model(*calibration_list)
 
-    @staticmethod
-    def initialize_quadrics(trajectory, detections, calibration):
+    def initialize_quadrics(self, trajectory, detections, calibration):
         """ Uses SVD to initialize quadrics from measurements """
         quadrics = Quadrics()
 
@@ -197,24 +184,23 @@ class QuadricSLAM_Offline(object):
             pose_keys = list(object_detections.keys())
             poses = trajectory.at_keys(pose_keys)
 
-            # ensure quadric seen from > 3 views
-            if len(np.unique(pose_keys)) < 3:
+            # ensure quadric seen from enough views
+            if len(np.unique(pose_keys)) < self.config['QuadricSLAM.min_views']:
                 continue
 
             # initialize quadric fomr views using svd
-            quadric_matrix = QuadricSLAM_Offline.quadric_SVD(poses, object_boxes, calibration)
+            quadric_matrix = self.quadric_SVD(poses, object_boxes, calibration)
 
             # constrain generic dual quadric to be ellipsoidal 
             quadric = gtsam_quadrics.ConstrainedDualQuadric.constrain(quadric_matrix)
 
             # check quadric is okay
-            if (QuadricSLAM_Offline.is_okay(quadric, poses, calibration)):
+            if (self.is_okay(quadric, poses, calibration)):
                 quadrics.add(quadric, object_key)
 
         return quadrics
 
-    @staticmethod
-    def quadric_SVD(poses, object_boxes, calibration):
+    def quadric_SVD(self, poses, object_boxes, calibration):
         """ calculates quadric_matrix using SVD """
 
         # iterate through box/pose data
@@ -251,8 +237,7 @@ class QuadricSLAM_Offline(object):
 
         return dual_quadric
 
-    @staticmethod
-    def is_okay(quadric, poses, calibration):
+    def is_okay(self, quadric, poses, calibration):
         """
         Checks quadric is valid:
             quadric constrained correctly
@@ -319,5 +304,5 @@ if __name__ == '__main__':
         sequence = SimulatedSequence.sequence1()
 
     # run system on sequence 
-    QuadricSLAM_Offline.run(sequence, config)
-
+    system = QuadricSLAM_Offline(config)
+    system.run(sequence)
