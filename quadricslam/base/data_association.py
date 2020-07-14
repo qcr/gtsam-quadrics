@@ -107,6 +107,17 @@ class ObjectTracker(object):
 
 
 
+# class ObjectTracker(object):
+#     def __init__(self, image, box):
+
+
+
+
+
+
+
+
+
 class DataAssociation(object):
 
     """
@@ -193,47 +204,57 @@ class DataAssociation(object):
             TODO: remove nasty list(dict.keys())
             TODO: use a datatype that will help us get the best predicted box
         """
-        
+        compatabilities = []
+
         # calculate compatability with current map 
-        map_ious = []
         for object_key, quadric in map.items():
 
             # TODO: catch projection failures 
             dual_conic = gtsam_quadrics.QuadricCamera.project(quadric, pose, self.calibration)
             predicted_box = dual_conic.bounds()
-            map_ious.append([detection.box.iou(predicted_box), object_key, predicted_box])
+            iou = detection.box.iou(predicted_box)
+
+            # append to compatabilities
+            compatabilities.append({
+                'compatability': iou,
+                'object_key': object_key,
+                'type': 'map',
+            })
 
         # calculate compatability with object trackers 
-        tracker_ious = []
         for object_key, object_tracker in self.object_trackers.items():
             if object_tracker.alive:
-                iou, predicted_box = object_tracker.compatability(detection.box)
-                tracker_ious.append([iou, object_key, predicted_box])
+                comp, predicted_box = object_tracker.compatability(detection.box)
 
-        # attempt to associate detection to map/trackers
-        best_map_iou = 0.0 if not map_ious else max(map_ious, key=lambda x: x[0])[0]
-        best_tracker_iou = 0.0 if not tracker_ious else max(tracker_ious, key=lambda x: x[0])[0]
-        
-        if best_map_iou >= best_tracker_iou and best_map_iou > self.iou_thresh:
-            object_key, predicted_box = max(map_ious, key=lambda x: x[0])[1:3]
+                # append to compatabilities
+                compatabilities.append({
+                    'compatability': comp,
+                    'object_key': object_key,
+                    'type': 'tracker',
+                })
 
-            # turn off tracker to favor map
-            if object_key in self.object_trackers:
-                self.object_trackers[object_key].alive = False
-            return (object_key, 'map', predicted_box)
+        if len(compatabilities) > 0:
 
-        elif best_map_iou < best_tracker_iou and best_tracker_iou > self.iou_thresh:
-            object_key, predicted_box = max(tracker_ious, key=lambda x: x[0])[1:3]
-            best_tracker = self.object_trackers[object_key]
-            best_tracker.add_tracker(detection.box, image)
-            return (object_key, 'tracker', predicted_box)
+            # get the best association
+            best_frame = max(compatabilities, key=lambda x: x['compatability'])
+            
+            # associate with map
+            if best_frame['compatability'] >= self.iou_thresh and best_frame['type'] == 'map':
+                return best_frame['object_key']
+                
+            # associate with tracker
+            elif best_frame['compatability'] >= self.iou_thresh and best_frame['type'] == 'tracker':
+                best_tracker = self.object_trackers[best_frame['object_key']]
+                best_tracker.add_tracker(detection.box, image)
+                return best_frame['object_key']
 
-        # create a new landmark for unassociated detections
-        # TODO: check only active landmarks
+        # otherwise create new tracker
+        # get a new object key
         object_key = self.object_count
         self.object_count += 1
-        if len(self.object_trackers) >= self.object_limit:
-            return (object_key, 'new', None)
+
+        # create a new tracker
         new_tracker = ObjectTracker(image, detection.box, self.tracker_type)
         self.object_trackers[object_key] = new_tracker
-        return (object_key, 'new', None)
+
+        return object_key
