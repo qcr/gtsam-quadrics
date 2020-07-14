@@ -159,23 +159,10 @@ class DataAssociation(object):
         for detection in image_detections:
 
             # associate single measurement
-            object_key, association_type, predicted_box = self.associate_detection(image, detection, camera_pose, map)
-            if association_type == 'failed':
-                continue
+            object_key = self.associate_detection(image, detection, camera_pose, map)
             
             # append association detection
             associated_detections.add(detection, pose_key, object_key)
-
-            if visualize:
-                if association_type == 'map' or association_type == 'tracker':
-                    drawing.box(detection.box, (0,0,255))
-                    color = (0,255,0) if association_type == 'map' else (255,255,0)
-                    drawing.box_and_text(predicted_box, (0,255,0), association_type, (0,0,0))
-                if association_type == 'new':
-                    drawing.box(detection.box, (0,0,255))
-
-            if verbose:
-                associations.append(association_type)
 
         if visualize:
             cv2.imshow('data-association', img)
