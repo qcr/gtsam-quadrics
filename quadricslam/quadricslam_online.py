@@ -155,14 +155,8 @@ class QuadricSLAM_Online(object):
         if self.config['Recording.record']:
             self.video_writer.write(img)
 
-
-
         # associate new measurements with existing keys
-        da_start = time.time()
         associated_detections = self.data_association.associate(image, image_detections, camera_pose, pose_key, self.current_quadrics, visualize=True, verbose=True)
-        da_end = time.time()
-
-
 
         # store new boxes and pose for later initialization and factor adding
         self.detections.add_detections(associated_detections)
@@ -228,28 +222,10 @@ class QuadricSLAM_Online(object):
 
         # calculate current estimate
         current_estimate = self.isam.calculateEstimate()
-        update_end = time.time()
-
-        
-        
-        
         
         # update current estimate 
         self.current_trajectory = Trajectory.from_values(current_estimate)
-        self.current_quadrics.clear()
-        self.current_quadrics.update(Quadrics.from_values(current_estimate))
-        extracting_end = time.time()
-
-
-        # print timings
-        # self.get_logger().info('Update lasted {:.3f} s'.format(extracting_end-update_start))
-        # print('pre-da:  {:.3f} s'.format(da_start-update_start))
-        # print('da:      {:.3f} s'.format(da_end-da_start))
-        # print('opt:     {:.3f} s'.format(update_end-da_end))
-        # print('extract: {:.3f} s'.format(extracting_end-update_end))
-        # print('')
-            
-
+        self.current_quadrics = Quadrics.from_values(current_estimate)
 
     def initialize_quadric(self, object_key, object_detections, current_trajectory, local_estimate):
         """ 
