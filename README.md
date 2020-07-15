@@ -24,6 +24,14 @@ L. Nicholson, M. Milford and N. Sünderhauf, "QuadricSLAM: Dual Quadrics From Ob
       pages={1-8},
     }
 
+## Limitations 
+Although the effectiveness of quadric-based SLAM can be demonstrated to perform quite well under certain conditions, data-association remains a key limitation to the robustness of our system. The offline version requires that a dataset provides instance level 2D annotations, and the online system uses cv2 object trackers for data-association. To make it easier for the data-association strategy when working from a webcam, we have filtered out a subset of measurements corrosponding to certain object classes (i.e, cup, bowl, mouse). What this means is that if this filtering is turned off, the current data-association strategy will often fail to associate measurements correctly leading to duplicate quadric landmarks. 
+
+Similarly, for our front-end, quadric initialization could also use some improvement, as listed in our [future work section](#planned-developments). Currently SVD is not very accurate unless used over a large baseline or with a high number of measurements. When data-association is accurate, the system performs well even with poor initialization. However, if a landmark only receives a few measurements after initialization, as is the case when data-association sends the measurements to a different landmark, the quadric will remain frozen and innacurately represent the objects bounds. We plan to use depth information or semantic priors to address this in the future.
+
+The current back-end implementation of the BoundingBoxFactor uses a simple error function with analytical jacobians. Compared to the error function described in our paper, the simple error function calculates the bounds of the dual conic with no consideration for the image dimensions and therefore doesn't handle partially visible objects well. In practice, large objects that are often partially visible and will have their quadric bounds shrunk. To remidy this, the noise estimate for the boundingboxfactors should be overestimated. We plan to release the more advanced error function with analytical jacobians in the future. 
+<!-- this error function will generate significant errors for measurements where the objects bounds extend beyond the image boundaries.  -->
+
 ## QuadricSLAM: quick start ## 
 
 After installing the required dependencies, build the core c++ gtsam_quadrics library:
@@ -119,9 +127,6 @@ When using the python interface, ConstrainedDualQuadrics can be added or retriev
 quadric.addToValues(values, key)
 quadric = quadricslam.ConstrainedDualQuadric.getFromValues(values, key)
 ```
-
-### Bounding Box Factor ###
-We provide an implementation of a simple error function between quadric landmark and camera pose, although we plan to release the error function described in the paper in future. The key difference is that the simple error function calculates the bounds of the dual conic with no consideration for the image dimensions. Measurements where the objects bounds extend beyond the image boundaries generate a significant error even if the quadric is correctly fitting the object. In practice this means that the noise estimate for the boundingboxfactors should be overestimated. 
 
 
 ## Common Issues ##
