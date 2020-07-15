@@ -54,7 +54,6 @@ class QuadricSLAM_Online(object):
         self.quadric_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.quad_sd']]*9, dtype=np.float))
 
         # set measurement storage 
-        self.images = dict()
         self.poses = Trajectory()
         self.detections = Detections()
         self.initial_quadrics = Quadrics()
@@ -161,7 +160,6 @@ class QuadricSLAM_Online(object):
         # store new boxes and pose for later initialization and factor adding
         self.detections.add_detections(associated_detections)
         self.poses.add(camera_pose, pose_key)
-        self.images[pose_key] = image
 
         # create local graph and estimate
         local_graph = gtsam.NonlinearFactorGraph()
