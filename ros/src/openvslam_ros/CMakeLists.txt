@@ -26,6 +26,10 @@ set(openvslam_SRC_DIR "/home/lachness/git_ws/openvslam")
 set(openvslam_INCLUDE_DIRS "/usr/local/include/openvslam")
 include_directories(${openvslam_INCLUDE_DIRS})
 
+if(openvslam_SRC_DIR STREQUAL "")
+    message(FATAL_ERROR "Please specify openvslam_SRC_DIR as the path to OpenVSLAM src directory")
+endif()
+
 # thread library
 find_package(Threads REQUIRED)
 
