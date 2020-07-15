@@ -1,27 +1,3 @@
-# dataset_publisher
-
-Loads SceneNetRGBD and publishes to /image /detections /poses
-
-## Dependencies 
-* numpy 
-* cv2
-* matplotlib
-* ROS2
-* cv_bridge
-* detection_msgs
-* example_frontend (for containers and scenenet interface)
-
-## Parameters
-
-* delay (float): time in seconds between publishing dataset frames 
-
-## Usage
-
-First ensure you have sourced ROS2 overlays with the cv_bridge package. 
-Then you can use `ros2 run rosquadricslam dataset_publisher` to start the dataset publisher.
-Alternatively `ros2 run rosquadricslam dataset_publisher --ros-args -p delay:=0.2` to change the rate. 
-
-
 # webcam_publisher 
 
 ## Dependencies 

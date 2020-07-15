@@ -87,10 +87,6 @@ We provide an example of running QuadricSLAM live using odometry measurements fr
 * Start OpenVSLAM tracking: `ros2 run rosopenvslam run_slam -v /path/to/orb_vocab.dbow2 -c /path/to/webcam_config.yaml`
 * Start QuadricSLAM mapping: `ros2 run rosquadricslam system` 
 
-## Usage with PyScenenetRGBD
-
-* Start the dataset publisher: `ros2 run rosquadricslam dataset_publisher`
-* Start QuadricSLAM mapping: `ros2 run rosquadricslam system` 
 
 ## Common Issues
 
