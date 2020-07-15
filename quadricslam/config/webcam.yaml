@@ -12,7 +12,7 @@ Camera.cy: 237.721368
 #==============#
 QuadricSLAM.pose_sd: 0.001
 QuadricSLAM.box_sd: 10.0
-QuadricSLAM.quad_sd: 100
+QuadricSLAM.quad_sd: 1000
 QuadricSLAM.filter_measurements: False
 QuadricSLAM.viable_classes: ['cup', 'bowl']
 QuadricSLAM.classes_path: "/home/lachness/git_ws/PyTorch-YOLOv3/data/coco.names"
