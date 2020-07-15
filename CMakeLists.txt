@@ -1,6 +1,6 @@
-project(quadricslam)
+project(gtsam_quadrics)
 cmake_minimum_required(VERSION 3.0)
-set(QUADRICSLAM_VERSION 1.0.0)
+set(GTSAM_QUADRICS_VERSION 1.0.0)
 
 
 # we want to use some C++11 features
@@ -34,7 +34,7 @@ if(BUILD_PYTHON_WRAP)
 endif()
 
 ###################################################################################
-# add quadricslam
+# add gtsam_quadrics
 
 # include headers, ensure that local folder is searched before library folders
 include_directories(BEFORE "${PROJECT_SOURCE_DIR}")
@@ -62,11 +62,11 @@ target_link_libraries(${CONVENIENCE_LIB_NAME} gtsam)
 # install library and PACKAGEConfig.cmake
 install(
 	TARGETS ${CONVENIENCE_LIB_NAME} 
-	EXPORT QUADRICSLAM-exports
+	EXPORT GTSAM_QUADRICS-exports
 	LIBRARY DESTINATION lib 
 	ARCHIVE DESTINATION lib 
 	RUNTIME DESTINATION bin)
-GtsamMakeConfigFile(QUADRICSLAM)
+GtsamMakeConfigFile(GTSAM_QUADRICS)
 # list(APPEND GTSAM_EXPORTED_TARGETS ${CONVENIENCE_LIB_NAME})
 # export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
 
