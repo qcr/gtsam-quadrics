@@ -6,6 +6,7 @@ Camera.fx: 311.487764
 Camera.fy: 311.262275
 Camera.cx: 309.428522
 Camera.cy: 237.721368
+Camera.fps: 12
 
 #==============#
 # QuadricSLAM  #

@@ -138,7 +138,7 @@ class QuadricSLAM_Online(object):
         # record map + detections
         if self.config['Recording.record']:
             if self.video_writer is None:
-                self.video_writer = cv2.VideoWriter('performance.mp4', cv2.VideoWriter_fourcc(*'MP4V'), 12.0, (image.shape[1], image.shape[0]))
+                self.video_writer = cv2.VideoWriter('performance.mp4', cv2.VideoWriter_fourcc(*'MP4V'), self.config['Camera.fps'], (image.shape[1], image.shape[0]))
                 atexit.register(self.video_writer.release)
             self.video_writer.write(img)
 
