@@ -17,7 +17,7 @@ We provide an example of running QuadricSLAM live using odometry measurements fr
 
 ### Instructions
 
-* Clone and build [QuadricSLAM](/README.md) with QSLAM_BUILD_PYTHON_WRAP set ON
+* Clone and build [QuadricSLAM](/README.md) with BUILD_PYTHON_WRAP set ON
     * Test QuadricSLAM is working with `python3 examples/python/simple_example.py`
 * Clone and build OpenCV with contrib modules:
 
@@ -83,6 +83,8 @@ We provide an example of running QuadricSLAM live using odometry measurements fr
 
 ## Usage with USB Camera
 
+Ensure you have correctly source the overlay containing cv_bridge and image_common, and our ROS overlay (ros/install/setup.bash) then:
+
 * Start the webcam publisher: `ros2 run webcam_publisher run --ros-args -p width:=640 -p height:=480 -p n:=0`
 * Start the object detector:  `ros2 run yolov3_ros run --ros-args -p weights:=/path/to/yolov3.weights -p config:=/path/to/yolov3.cfg -p classes:=/path/to/coco.names`
 * Start OpenVSLAM tracking: `ros2 run openvslam_ros run -v /path/to/orb_vocab.dbow2 -c /path/to/webcam_config.yaml`
@@ -91,4 +93,6 @@ We provide an example of running QuadricSLAM live using odometry measurements fr
 
 ## Common Issues
 
-If you find that quadricslam_ros is not receiving any messages from /image, /detections and /poses, it might be because the TimeSynchronizer is giving up because the py_detector is taking too long to republish /detections. Ensure you have built pytorch with GPU support. 
+* If python struggles to import quadricslam modules from the ros node, ensure you have built the ros libraries with `colcon build --symlink-install`. 
+
+* If you find that quadricslam_ros is not receiving any messages from /image, /detections and /poses, it might be because the TimeSynchronizer is giving up because the py_detector is taking too long to republish /detections. Ensure you have built pytorch with GPU support. 
