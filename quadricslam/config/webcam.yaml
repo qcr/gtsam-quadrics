@@ -38,4 +38,4 @@ Optimizer.relinearize_thresh: 0.01
 DataAssociation.iou_thresh: 0.4
 DataAssociation.object_limit: 100
 # BOOSTING, MIL, KCF, TLD, MEDIANFLOW, GOTURN, MOSSE, CSRT
-DataAssociation.tracker_type: "CSRT"
+DataAssociation.tracker_type: "MEDIANFLOW"
