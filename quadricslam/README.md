@@ -27,4 +27,4 @@ To run the online system from a webcam, we require:
 
 Out of the box, we provide the ability to run QuadricSLAM from a webcam using [OpenVSLAM](https://github.com/xdspacelab/openvslam) for camera positions, [Yolov3](https://github.com/eriklindernoren/PyTorch-YOLOv3) for object detections, and [ROS2](https://index.ros.org/doc/ros2/Installation/) to tie everything together. We understand that installing ROS2 packages can be difficult for those new to ROS, and provide [detailed installation instructions here.](/ros/README.md)
 
-With a source of images, camera positions and object detections on the topics `image`, `poses`, `detections` respectively, our online system can be run using: `ros2 run quadricslam_ros run --config /path/to/quadricslam/config/webcam.yaml`. 
+With a source of images, camera positions and object detections on the topics `image`, `poses`, `detections` respectively, our online system can be run using: `ros2 run quadricslam_ros run --config /path/to/quadricslam/config/webcam.yaml`. Ensure you modify `webcam.yaml` to include the correct path to the `coco.names` file. 

@@ -80,6 +80,7 @@ We provide an example of running QuadricSLAM live using odometry measurements fr
 * Specify openvslam_SRC_DIR in [openvslam_ros/CMakeLists.txt](/ros/src/openvslam_ros/CMakeLists.txt) as the /path/to/openvslam 
 * Navigate to /quadricslam/ros and build the ros packages with `colcon build --symlink-install`
 * Source the overlay with `. install/setup.bash`
+* Modify `quadricslam/config/webcam.yaml` to use correct path to the `coco.names` file
 
 ## Usage with USB Camera
 
