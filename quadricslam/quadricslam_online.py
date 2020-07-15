@@ -53,10 +53,6 @@ class QuadricSLAM_Online(object):
         self.bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.box_sd']]*4, dtype=np.float))
         self.quadric_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.quad_sd']]*9, dtype=np.float))
 
-        # store the full graph and estimate 
-        self.graph = gtsam.NonlinearFactorGraph()
-        self.estimate = gtsam.Values()
-
         # set measurement storage 
         self.images = dict()
         self.poses = Trajectory()
@@ -216,10 +212,6 @@ class QuadricSLAM_Online(object):
                 bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, self.X(pose_key), self.Q(object_key), self.bbox_noise)
                 local_graph.add(bbf)
                 self.detections.set_used(True, pose_key, object_key)
-
-        # append local graph / estimate to full graph
-        self.graph.push_back(local_graph)
-        self.estimate.insert(local_estimate)
 
         # use local graph / estimate to update isam2
         self.isam.update(local_graph, local_estimate)
