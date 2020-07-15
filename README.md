@@ -103,6 +103,13 @@ Required to test on USB Webcam:
 * Python3 w/ modules: pytorch, pillow, cv2, numpy, matplotlib, pyyaml
 
 
+## Planned developments
+* A BoundingBoxFactor error function robust to partially visible objects
+* Faster and more robust data-association strategy 
+* Easy webcam running (without ROS2) by using a python based odometry system
+* Depth-based initialization for quadrics
+* Semantic factors 
+
 ## Notes ##
 
 ### Adding Quadrics to gtsam::Values ###
