@@ -1,5 +1,7 @@
 # QuadricSLAM: Quadric-based SLAM #
 
+![System Performance Gif](https://s7.gifyu.com/images/performance_20_07_03_512.gif)
+
 ## Overview ##
 This repository contains **gtsam_quadrics**, an extension to the popular [GTSAM](https://github.com/borglab/gtsam) factor graph optimization library which provides support for quadric landmarks constrained from boundingbox measurements typically produced by an object detector. We also provide support for using these extensions in python, alongside a number of c++ and python examples, doxygen documentation and unit tests. 
 
