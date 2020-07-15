@@ -107,14 +107,6 @@ class ObjectTracker(object):
 
 
 
-# class ObjectTracker(object):
-#     def __init__(self, image, box):
-
-
-
-
-
-
 
 
 
@@ -163,6 +155,10 @@ class DataAssociation(object):
             
             # append association detection
             associated_detections.add(detection, pose_key, object_key)
+
+            # draw associated detection
+            if visualize:
+                drawing.box_and_text(detection.box, (255,255,0), '{}'.format(object_key), (255,255,255))
 
         if visualize:
             cv2.imshow('data-association', img)
