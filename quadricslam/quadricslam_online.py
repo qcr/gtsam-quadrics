@@ -63,12 +63,10 @@ class QuadricSLAM_Online(object):
         # initialize data-association module
         self.data_association = DataAssociation(self.calibration, config)
 
-        # prepare video capture
-        if config['Recording.record']:
-            self.video_writer = cv2.VideoWriter('performance.mp4', cv2.VideoWriter_fourcc(*'MP4V'), 12.0, (640, 480))
-            atexit.register(self.video_writer.release)
+        # prepare video capture (initialized on first use)
+        self.video_writer = None
 
-        # store processed frames for pose_key
+        # store processed frames to number pose_keys
         self.frames = 0
 
     def create_optimizer(self, config):
@@ -139,6 +137,9 @@ class QuadricSLAM_Online(object):
 
         # record map + detections
         if self.config['Recording.record']:
+            if self.video_writer is None:
+                self.video_writer = cv2.VideoWriter('performance.mp4', cv2.VideoWriter_fourcc(*'MP4V'), 12.0, (image.shape[1], image.shape[0]))
+                atexit.register(self.video_writer.release)
             self.video_writer.write(img)
 
     def update(self, image, image_detections, camera_pose):
