@@ -5,7 +5,7 @@ All Rights Reserved
 
 See LICENSE for the license information
 
-Description: System (front-end) interface 
+Description: Offline Quadric SLAM Front-end
 Author: Lachlan Nicholson (Python)
 """
 

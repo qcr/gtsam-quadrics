@@ -5,7 +5,7 @@ All Rights Reserved
 
 See LICENSE for the license information
 
-Description: Ros system
+Description: Online Quadric SLAM system
 Author: Lachlan Nicholson (Python)
 """
 
