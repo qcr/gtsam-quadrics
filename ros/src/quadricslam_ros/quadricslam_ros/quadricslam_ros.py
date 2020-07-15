@@ -81,7 +81,7 @@ class ROSQuadricSLAM(Node):
 
         # convert msgs to data
         image = self.msg2image(image_msg)
-        camera_pose = self.msg2pose(pose_msg).inverse()
+        camera_pose = self.msg2pose(pose_msg)
         float_time = self.msg2time(detections_msg)
         image_detections = self.msg2detections(detections_msg)
 

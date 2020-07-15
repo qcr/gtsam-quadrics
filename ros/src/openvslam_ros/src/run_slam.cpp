@@ -86,6 +86,7 @@ void mono_tracking(const std::shared_ptr<openvslam::config>& cfg, const std::str
 
             // convert to gtsam pose 
             gtsam::Pose3 pose(pose_matrix);
+            pose = pose.inverse();
 
             /// TODO: get current tracking state from tracker module 
             bool tracking = !(pose.rotation().matrix().array() < 1e-100).all();
