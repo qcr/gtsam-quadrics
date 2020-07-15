@@ -16,7 +16,7 @@ QuadricSLAM.box_sd: 10.0
 QuadricSLAM.quad_sd: 1000
 QuadricSLAM.filter_measurements: True
 QuadricSLAM.viable_classes: ['cup', 'bowl']
-QuadricSLAM.classes_path: "/home/lachness/git_ws/PyTorch-YOLOv3/data/coco.names"
+QuadricSLAM.classes_path: "/path/to/PyTorch-YOLOv3/data/coco.names"
 QuadricSLAM.init_method: "SVD"
 QuadricSLAM.min_views: 5
 

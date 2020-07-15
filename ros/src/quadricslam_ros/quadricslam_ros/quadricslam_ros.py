@@ -14,7 +14,6 @@ import os
 import sys
 import numpy as np
 import time
-sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-packages/')
 import argparse
 import yaml
 

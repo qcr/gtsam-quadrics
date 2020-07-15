@@ -12,7 +12,6 @@ Author: Lachlan Nicholson (Python)
 # import standard libraries
 import os
 import sys
-sys.path.append('/home/lachness/.pyenv/versions/382_generic/lib/python3.8/site-packages/')
 import numpy as np
 from PIL import Image
 import cv2

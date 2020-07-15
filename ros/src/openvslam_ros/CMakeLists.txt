@@ -22,7 +22,7 @@ find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 
 # openvslam 
-set(openvslam_SRC_DIR "/home/lachness/git_ws/openvslam")
+set(openvslam_SRC_DIR "")
 set(openvslam_INCLUDE_DIRS "/usr/local/include/openvslam")
 include_directories(${openvslam_INCLUDE_DIRS})
 
