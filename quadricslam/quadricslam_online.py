@@ -55,7 +55,6 @@ class QuadricSLAM_Online(object):
 
         # set measurement storage 
         self.detections = Detections()
-        self.initial_quadrics = Quadrics()
 
         # store current estimates
         self.current_trajectory = Trajectory()
@@ -176,8 +175,7 @@ class QuadricSLAM_Online(object):
         for object_key, object_detections in self.detections.per_object():
 
             # no need to re-initialize objects
-            # TODO: use keys from current estimate 
-            if object_key in self.initial_quadrics.keys():
+            if object_key in self.current_quadrics.keys():
                 continue
             
             # initialize object if seen enough
@@ -194,8 +192,9 @@ class QuadricSLAM_Online(object):
             prior_factor = gtsam_quadrics.PriorFactorConstrainedDualQuadric(self.Q(object_key), quadric, self.quadric_noise)
             local_graph.add(prior_factor)
 
-            # add quadric to storage (not needed in future)
-            self.initial_quadrics.add(quadric, object_key)
+            # add quadric to current quadrics
+            # we do this to avoid reinitialization and as a flag to add new measurements
+            self.current_quadrics.add(quadric, object_key)
 
 
         # add measurements if unused
@@ -206,8 +205,7 @@ class QuadricSLAM_Online(object):
                 continue            
 
             # add measurements if initialized 
-            # TODO: use keys from current estimate
-            if object_key in self.initial_quadrics.keys():
+            if object_key in self.current_quadrics.keys():
                 bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, self.X(pose_key), self.Q(object_key), self.bbox_noise)
                 local_graph.add(bbf)
                 self.detections.set_used(True, pose_key, object_key)
