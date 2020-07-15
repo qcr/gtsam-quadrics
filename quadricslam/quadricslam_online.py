@@ -129,14 +129,7 @@ class QuadricSLAM_Online(object):
         indicies = [self.class_names.index(name) for name in self.config['QuadricSLAM.viable_classes']]
         return [d for d in image_detections if np.argmax(d.scores) in indicies]
 
-    def update(self, image, image_detections, camera_pose):
-        pose_key = self.frames
-        self.frames += 1
-
-        # filter object detections
-        if self.config['QuadricSLAM.filter_measurements']:
-            image_detections = self.filter_detections(image_detections)
-
+    def visualize(self, image, image_detections, camera_pose):
         # draw detections
         img = image.copy()
         drawing = CV2Drawing(img)
@@ -154,6 +147,17 @@ class QuadricSLAM_Online(object):
         # record map + detections
         if self.config['Recording.record']:
             self.video_writer.write(img)
+
+    def update(self, image, image_detections, camera_pose):
+        pose_key = self.frames
+        self.frames += 1
+
+        # filter object detections
+        if self.config['QuadricSLAM.filter_measurements']:
+            image_detections = self.filter_detections(image_detections)
+
+        # draw current map and measurements
+        self.visualize(image, image_detections, camera_pose)
 
         # associate new measurements with existing keys
         associated_detections = self.data_association.associate(image, image_detections, camera_pose, pose_key, self.current_quadrics, visualize=True, verbose=True)
