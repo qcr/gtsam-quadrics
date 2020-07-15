@@ -54,7 +54,6 @@ class QuadricSLAM_Online(object):
         self.quadric_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.quad_sd']]*9, dtype=np.float))
 
         # set measurement storage 
-        self.poses = Trajectory()
         self.detections = Detections()
         self.initial_quadrics = Quadrics()
 
@@ -157,9 +156,12 @@ class QuadricSLAM_Online(object):
         # associate new measurements with existing keys
         associated_detections = self.data_association.associate(image, image_detections, camera_pose, pose_key, self.current_quadrics, visualize=True, verbose=True)
 
-        # store new boxes and pose for later initialization and factor adding
+        # store new boxes for later initialization and factor adding
         self.detections.add_detections(associated_detections)
-        self.poses.add(camera_pose, pose_key)
+
+        # add new camera pose to current estimate
+        # we do this so we can access the current pose for initialization
+        self.current_trajectory.add(camera_pose, pose_key)
 
         # create local graph and estimate
         local_graph = gtsam.NonlinearFactorGraph()
@@ -179,8 +181,7 @@ class QuadricSLAM_Online(object):
                 continue
             
             # initialize object if seen enough
-            # TODO: use current trajectory instead of initial poses?
-            quadric = self.initialize_quadric(object_key, object_detections, self.poses, local_estimate)
+            quadric = self.initialize_quadric(object_key, object_detections, self.current_trajectory, local_estimate)
 
             # continue if not correctly initialized 
             if quadric is None: 
