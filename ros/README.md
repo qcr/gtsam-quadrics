@@ -2,9 +2,10 @@
 We provide an example of running QuadricSLAM live using odometry measurements from OpenVSLAM (C++) and object detections from Yolov3 (Python/PyTorch). We have chosen to use ROS2 in order to make the system easily modified to use odometry / detections from any source. We provide 4 ROS packages outlined below:
 
 * detection_msgs: contains object detection messages published at '/detections' from the py_detector 
-* py_detector: wraps eriklindernoren's pytorch implementation of yolov3, but can be easily modified to use any existing pytorch detector. Subscribes to '/image' and publishes detections to '/detections'. 
-* rosopenvslam: wraps openvslam to subscribe to '/image' and publish to '/poses'. 
-* rosquadricslam: provides a webcam publisher (similar to image_tools cam2image but with correct timestamps), a dataset publisher, and the core slam system. 
+* webcam_publisher: similar to image_tools cam2image but with correct timestamps, publishes to '/images'
+* yolov3_ros: wraps [eriklindernoren's](https://github.com/eriklindernoren) pytorch implementation of yolov3, but can be easily modified to use any existing pytorch detector. Subscribes to '/image' and publishes detections to '/detections'. 
+* openvslam_ros: wraps openvslam to subscribe to '/image' and publish to '/poses'. 
+* quadricslam_ros: wraps the core quadricslam_online.py system. Subscribes to '/image', '/poses', '/detections'. 
 
 ## Installation 
 ### Dependencies
@@ -82,12 +83,12 @@ We provide an example of running QuadricSLAM live using odometry measurements fr
 
 ## Usage with USB Camera
 
-* Start the webcam publisher: `ros2 run rosquadricslam webcam_publisher --ros-args -p width:=640 -p height:=480`
-* Start the object detector:  `ros2 run py_detector detect --ros-args -p weights:=/path/to/yolov3.weights -p config:=/path/to/yolov3.cfg -p classes:=/path/to/coco.names`
-* Start OpenVSLAM tracking: `ros2 run rosopenvslam run_slam -v /path/to/orb_vocab.dbow2 -c /path/to/webcam_config.yaml`
-* Start QuadricSLAM mapping: `ros2 run rosquadricslam system` 
+* Start the webcam publisher: `ros2 run webcam_publisher run --ros-args -p width:=640 -p height:=480 -p n:=0`
+* Start the object detector:  `ros2 run yolov3_ros run --ros-args -p weights:=/path/to/yolov3.weights -p config:=/path/to/yolov3.cfg -p classes:=/path/to/coco.names`
+* Start OpenVSLAM tracking: `ros2 run openvslam_ros run -v /path/to/orb_vocab.dbow2 -c /path/to/webcam_config.yaml`
+* Start QuadricSLAM mapping: `ros2 run quadricslam_ros run --config /path/to/quadricslam/config/webcam.yaml` 
 
 
 ## Common Issues
 
-If you find that ROSQuadricSLAM is not receiving any messages from /image, /detections and /poses, it might be because the TimeSynchronizer is giving up because the py_detector is taking too long to republish /detections. Ensure you have built pytorch with GPU support. 
+If you find that quadricslam_ros is not receiving any messages from /image, /detections and /poses, it might be because the TimeSynchronizer is giving up because the py_detector is taking too long to republish /detections. Ensure you have built pytorch with GPU support. 
