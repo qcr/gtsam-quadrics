@@ -1,3 +1,14 @@
+"""
+QuadricSLAM Copyright 2020, ARC Centre of Excellence for Robotic Vision, Queensland University of Technology (QUT)
+Brisbane, QLD 4000
+All Rights Reserved
+
+See LICENSE for the license information
+
+Description: Contains DataAssociation class for association ObjectDetections with object trackers or existing quadrics
+Author: Lachlan Nicholson (Python)
+"""
+
 # import standard libraries
 import os
 import sys
