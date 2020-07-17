@@ -38,62 +38,55 @@ class QuadricSLAM_Offline(object):
     X = lambda i: int(gtsam.symbol(ord('x'), i))
     Q = lambda i: int(gtsam.symbol(ord('q'), i))
 
-    def __init__(self, config):
-        # create optimizer parameters
-        self.params = gtsam.LevenbergMarquardtParams()
-        self.params.setVerbosityLM(config['Optimizer.verbosity'])    
-        self.params.setMaxIterations(config['Optimizer.max_iterations'])
-        self.params.setlambdaInitial(config['Optimizer.lambda_initial'])
-        self.params.setlambdaUpperBound(config['Optimizer.lambda_upper_bound'])
-        self.params.setlambdaLowerBound(config['Optimizer.lambda_lower_bound'])
-        self.params.setRelativeErrorTol(config['Optimizer.relative_error_tol'])
-        self.params.setAbsoluteErrorTol(config['Optimizer.absolute_error_tol'])
-
-        # load calibration from config
-        self.calibration = self.load_calibration(config)
-
-        # store config for later
+    def __init__(self, calibration, params, config):
+        self.calibration = calibration 
+        self.params = params
         self.config = config
 
-    def run(self, sequence):
+    def run(self, noisy_trajectory, noisy_detections, true_detections=None, evaluate=False, visualize=False):
 
         # build graph / estimate
-        graph, initial_estimate = self.build_graph(sequence)
+        graph, initial_estimate = self.build_graph(noisy_trajectory, noisy_detections)
 
         # draw initial system
-        plotting = MPLDrawing('initial_problem')
-        plotting.plot_system(graph, initial_estimate)
+        if visualize:
+            plotting = MPLDrawing('initial_problem')
+            plotting.plot_system(graph, initial_estimate)
 
         # optimize using c++ back-end
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, self.params)
         estimate = optimizer.optimize()
 
         # draw estimation
-        plotting = MPLDrawing('final_solution')
-        plotting.plot_system(graph, estimate)
+        if visualize:
+            plotting = MPLDrawing('final_solution')
+            plotting.plot_system(graph, estimate)
 
         # extract quadrics / trajectory 
         estimated_trajectory = Trajectory.from_values(estimate)
         estimated_quadrics = Quadrics.from_values(estimate)
 
         # evaluate results
-        initial_ATE_H = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), sequence.true_trajectory, horn=True)[0]
-        estimate_ATE_H = Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory, horn=True)[0]
-        initial_ATE = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), sequence.true_trajectory, horn=False)[0]
-        estimate_ATE = Evaluation.evaluate_trajectory(estimated_trajectory, sequence.true_trajectory, horn=False)[0]
-        print('Initial ATE w/ horn alignment: {}'.format(initial_ATE_H))
-        print('Final ATE w/ horn alignment:   {}'.format(estimate_ATE_H))
-        print('Initial ATE w/ weak alignment: {}'.format(initial_ATE))
-        print('Final ATE w/ weak alignment:   {}'.format(estimate_ATE))
+        if evaluate:
+            initial_ATE_H = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), true_trajectory, horn=True)[0]
+            estimate_ATE_H = Evaluation.evaluate_trajectory(estimated_trajectory, true_trajectory, horn=True)[0]
+            initial_ATE = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), true_trajectory, horn=False)[0]
+            estimate_ATE = Evaluation.evaluate_trajectory(estimated_trajectory, true_trajectory, horn=False)[0]
+            print('Initial ATE w/ horn alignment: {}'.format(initial_ATE_H))
+            print('Final ATE w/ horn alignment:   {}'.format(estimate_ATE_H))
+            print('Initial ATE w/ weak alignment: {}'.format(initial_ATE))
+            print('Final ATE w/ weak alignment:   {}'.format(estimate_ATE))
 
         # plot results
-        trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory, sequence.true_trajectory]
-        maps = [Quadrics.from_values(initial_estimate), estimated_quadrics]
-        colors = ['r', 'm', 'g']; names = ['initial_estimate', 'final_estimate', 'ground_truth']
-        plotting.plot_result(trajectories, maps, colors, names)
+        if visualize:
+            trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory, true_trajectory]
+            maps = [Quadrics.from_values(initial_estimate), estimated_quadrics]
+            colors = ['r', 'm', 'g']; names = ['initial_estimate', 'final_estimate', 'ground_truth']
+            plotting.plot_result(trajectories, maps, colors, names)
            
+        return estimated_trajectory, estimated_quadrics
 
-    def build_graph(self, sequence):
+    def build_graph(self, initial_trajectory, noisy_detections):
         """
         Adds noise to sequence variables / measurements. 
         Returns graph, initial_estimate
@@ -107,15 +100,6 @@ class QuadricSLAM_Offline(object):
         prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([self.config['QuadricSLAM.prior_sd']]*6, dtype=np.float))
         odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([self.config['QuadricSLAM.odom_sd']]*6, dtype=np.float))
         bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([self.config['QuadricSLAM.box_sd']]*4, dtype=np.float))
-
-        # get noisy odometry / detections 
-        true_odometry = sequence.true_trajectory.as_odometry()
-        noisy_odometry = true_odometry.add_noise(mu=0.0, sd=self.config['Noise.odom_sd'])
-        noisy_detections = sequence.true_detections.add_noise(mu=0.0, sd=self.config['Noise.box_sd'])
-
-        # initialize trajectory
-        # TODO: ensure aligned in same reference frame
-        initial_trajectory = noisy_odometry.as_trajectory(sequence.true_trajectory.values()[0])
 
         # initialize quadrics
         initial_quadrics = self.initialize_quadrics(initial_trajectory, noisy_detections, self.calibration)
@@ -158,17 +142,6 @@ class QuadricSLAM_Offline(object):
                 quadric.addToValues(initial_estimate, QuadricSLAM_Offline.Q(object_key))
 
         return graph, initial_estimate
-
-    def load_calibration(self, config):
-        camera_model = gtsam.Cal3_S2
-        calibration_list = [
-            config['Camera.fx'],
-            config['Camera.fy'],
-            0.0,
-            config['Camera.cx'],
-            config['Camera.cy'],
-        ]
-        return camera_model(*calibration_list)
 
     def initialize_quadrics(self, trajectory, detections, calibration):
         """ Uses SVD to initialize quadrics from measurements """
@@ -269,6 +242,38 @@ class QuadricSLAM_Offline(object):
 
 
 
+def load_calibration(config):
+    calibration = gtsam.Cal3_S2(
+        config['Camera.fx'],
+        config['Camera.fy'],
+        0.0,
+        config['Camera.cx'],
+        config['Camera.cy'],
+    )
+    return calibration
+
+def load_optimizer_parms(config):
+    params = gtsam.LevenbergMarquardtParams()
+    params.setVerbosityLM(config['Optimizer.verbosity'])    
+    params.setMaxIterations(config['Optimizer.max_iterations'])
+    params.setlambdaInitial(config['Optimizer.lambda_initial'])
+    params.setlambdaUpperBound(config['Optimizer.lambda_upper_bound'])
+    params.setlambdaLowerBound(config['Optimizer.lambda_lower_bound'])
+    params.setRelativeErrorTol(config['Optimizer.relative_error_tol'])
+    params.setAbsoluteErrorTol(config['Optimizer.absolute_error_tol'])
+    return params
+
+def load_sequence(config):
+    if config['Dataset.name'] == 'SceneNet':
+        dataset = SceneNetDataset(
+            dataset_path = config['Dataset.data'],
+            protobuf_folder = config['Dataset.protobufs'],
+            reader_path = config['Dataset.protobuf_definition'],
+        )
+        sequence = dataset[config['Dataset.sequence_n']]
+    else:
+        sequence = SimulatedSequence.sequence1()
+    return sequence
 
 
 
@@ -289,20 +294,27 @@ if __name__ == '__main__':
         if not all(setting in config for setting in required_settings):
             raise RuntimeError("If SceneNet selected as dataset, must provide path to SceneNet files.")
 
+    # load data from config
+    opt_params = load_optimizer_parms(config)
+    calibration = load_calibration(config)
+    sequence = load_sequence(config)
+
     # set experiment seed 
     np.random.seed(config['Noise.seed'])
 
-    # load dataset
-    if config['Dataset.name'] == 'SceneNet':
-        dataset = SceneNetDataset(
-            dataset_path = config['Dataset.data'],
-            protobuf_folder = config['Dataset.protobufs'],
-            reader_path = config['Dataset.protobuf_definition'],
-        )
-        sequence = dataset[config['Dataset.sequence_n']]
-    else:
-        sequence = SimulatedSequence.sequence1()
+    # get true trajectory and detections
+    true_trajectory = sequence.true_trajectory
+    true_detections = sequence.true_detections
 
-    # run system on sequence 
-    system = QuadricSLAM_Offline(config)
-    system.run(sequence)
+    # inject noise into trajectory
+    true_odometry = true_trajectory.as_odometry()
+    noisy_odometry = true_odometry.add_noise(mu=0.0, sd=config['Noise.odom_sd'])
+    noisy_trajectory = noisy_odometry.as_trajectory(true_trajectory.values()[0])
+    
+    # inject noise into detections
+    noisy_detections = true_detections.add_noise(mu=0.0, sd=config['Noise.box_sd'])
+
+
+    # run system on data
+    system = QuadricSLAM_Offline(calibration, opt_params, config)
+    system.run(noisy_trajectory, noisy_detections, true_trajectory, True, True)
