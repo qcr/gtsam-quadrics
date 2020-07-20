@@ -121,28 +121,20 @@ class QuadricSLAM_Offline(object):
             initial_estimate.insert(QuadricSLAM_Offline.X(pose_key), pose)
 
         # add valid box measurements
-        valid_objects = []
         initialized_quadrics = initial_quadrics.keys()
         for object_key, object_detections in noisy_detections.per_object():
 
             # add if quadric initialized
             if object_key in initialized_quadrics:
                 
-                # add if enough views
-                if len(object_detections) > self.config['QuadricSLAM.min_views']:
+                # add measurements
+                for pose_key, detection in object_detections.items():
+                    bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, QuadricSLAM_Offline.X(pose_key), QuadricSLAM_Offline.Q(object_key), bbox_noise)
+                    graph.add(bbf)
 
-                    # add measurements
-                    valid_objects.append(object_key)
-                    for pose_key, detection in object_detections.items():
-                        bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, QuadricSLAM_Offline.X(pose_key), QuadricSLAM_Offline.Q(object_key), bbox_noise)
-                        graph.add(bbf)
-
-        # add initial landmark estimates
+        # add initial landmark estimates if constrained and initialized
         for object_key, quadric in initial_quadrics.items():
-
-            # add if seen > 3 times
-            if (object_key in valid_objects):
-                quadric.addToValues(initial_estimate, QuadricSLAM_Offline.Q(object_key))
+            quadric.addToValues(initial_estimate, QuadricSLAM_Offline.Q(object_key))
 
         return graph, initial_estimate
 
