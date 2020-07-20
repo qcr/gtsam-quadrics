@@ -101,6 +101,9 @@ class QuadricSLAM_Offline(object):
         odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([self.config['QuadricSLAM.odom_sd']]*6, dtype=np.float))
         bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([self.config['QuadricSLAM.box_sd']]*4, dtype=np.float))
 
+        # calculate odometry from trajectory
+        noisy_odometry = initial_trajectory.as_odometry()
+
         # initialize quadrics
         initial_quadrics = self.initialize_quadrics(initial_trajectory, noisy_detections, self.calibration)
 
