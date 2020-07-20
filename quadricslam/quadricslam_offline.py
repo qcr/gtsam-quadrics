@@ -43,7 +43,7 @@ class QuadricSLAM_Offline(object):
         self.params = params
         self.config = config
 
-    def run(self, noisy_trajectory, noisy_detections, true_detections=None, evaluate=False, visualize=False):
+    def run(self, noisy_trajectory, noisy_detections, true_trajectory=None, evaluate=False, visualize=False):
 
         # build graph / estimate
         graph, initial_estimate = self.build_graph(noisy_trajectory, noisy_detections)
