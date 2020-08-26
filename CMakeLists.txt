@@ -114,10 +114,7 @@ if(BUILD_PYTHON_WRAP)
 	# create __init__.py to allow build/cython/gtsam_quadrics be imported as a python package
 	file(WRITE "${PROJECT_BINARY_DIR}/cython/gtsam_quadrics/__init__.py" "from .gtsam_quadrics import *")
 
-	set(GTSAM_QUADRICS_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
-	if (NOT GTSAM_QUADRICS_CYTHON_INSTALL_PATH)
-		set(GTSAM_QUADRICS_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython/gtsam_quadrics")
-	endif()
+	set(GTSAM_QUADRICS_CYTHON_INSTALL_PATH "${PROJECT_BINARY_DIR}/cython/gtsam_quadrics" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
 
 	# use gtsams cython wrapping functionality
 	wrap_and_install_library_cython("./gtsam_quadrics.h" # interface_header path
