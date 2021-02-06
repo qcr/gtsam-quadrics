@@ -76,7 +76,7 @@ double AlignedBox2::iou(const AlignedBox2& other) const {
 
   double iou = inter_area / (this_area + other_area - inter_area);
   assert(iou >= 0.0);
-  assert(iou <= 0.0);
+  assert(iou <= 1.0);
   return iou;
 }
 

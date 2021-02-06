@@ -35,6 +35,11 @@ from base.containers import Quadrics
 from visualization.drawing import CV2Drawing
 from visualization.interactive_player import InteractivePlayer
 
+import re
+def natural_sort(list_data):
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
+    return sorted(list_data, key=alphanum_key)
 
 class SceneNetDataset(object):
     """
@@ -71,7 +76,11 @@ class SceneNetDataset(object):
         return len(self.sequence_paths)
 
     def __getitem__(self, index):
-        return self.get_sequence(index)
+        sequence = self.get_sequence(index)
+        sequence_ID = int(sequence.sequence_path.split('/')[-1])
+        if sequence_ID != index:
+            raise Exception("sequence_n doesn't match render path")
+        return sequence
 
     def get_sequence(self, index):
         """ load videos path and protofbuf data """
@@ -88,7 +97,7 @@ class SceneNetDataset(object):
         video_paths = [os.path.join(dataset_path, pf, vf) for pf in render_folders
                                     for vf in os.listdir(os.path.join(dataset_path, pf))
                                         if (not '.' in vf)]
-        return video_paths
+        return natural_sort(video_paths)
 
     def load_protobuf_reader(self, protobuf_def_path):
         # extract folder / file information
@@ -173,11 +182,7 @@ class cached_property(object):
 
 
 
-import re
-def natural_sort(list_data):
-    convert = lambda text: int(text) if text.isdigit() else text.lower()
-    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
-    return sorted(list_data, key=alphanum_key)
+
 
 
 

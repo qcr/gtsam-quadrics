@@ -119,7 +119,9 @@ AlignedBox3 ConstrainedDualQuadric::bounds() const {
   double x_max = (dE(0,3) - std::sqrt(dE(0,3) * dE(0,3) - (dE(0,0) * dE(3,3)))) / dE(3,3);
   double y_max = (dE(1,3) - std::sqrt(dE(1,3) * dE(1,3) - (dE(1,1) * dE(3,3)))) / dE(3,3);
   double z_max = (dE(2,3) - std::sqrt(dE(2,3) * dE(2,3) - (dE(2,2) * dE(3,3)))) / dE(3,3);
-  return AlignedBox3((Vector6() << x_min, y_min, z_min, x_max, y_max, z_max).finished());
+  return AlignedBox3((Vector6() << std::min(x_min, x_max), std::max(x_min, x_max), 
+                                   std::min(y_min, y_max), std::max(y_min, y_max), 
+                                   std::min(z_min, z_max), std::max(z_min, z_max)).finished());
 }
 
 /* ************************************************************************* */

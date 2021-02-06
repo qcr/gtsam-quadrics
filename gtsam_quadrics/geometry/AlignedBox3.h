@@ -84,6 +84,15 @@ namespace gtsam {
       /** Returns box centroid as x,y,z vector */
       Vector3 centroid() const;
 
+      /** calculates volume, assuming ordered correctly */
+      double volume() const {return (xmax()-xmin())*(ymax()-ymin())*(zmax()-zmin());}
+
+      /**
+       * Calculates the standard intersection over union
+       * between two axis aligned bounding boxes. 
+       */
+      double iou(const AlignedBox3& other) const;
+
       /// @}
       /// @name Testable group traits
       /// @{

@@ -94,12 +94,16 @@ virtual class BoundingBoxFactor : NoiseModelFactor {
   BoundingBoxFactor();
   BoundingBoxFactor(const AlignedBox2& measured, const Cal3_S2* calibration,
     const size_t& poseKey, const size_t& quadricKey, const gtsam::noiseModel::Base* model);
+  BoundingBoxFactor(const AlignedBox2& measured, const Cal3_S2* calibration,
+    const size_t& poseKey, const size_t& quadricKey, const gtsam::noiseModel::Base* model, const string& errorString);
   gtsam::AlignedBox2 measurement() const;
   size_t poseKey() const;
   size_t objectKey() const;
   Vector evaluateError(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
   Matrix evaluateH1(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
   Matrix evaluateH2(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
+  Matrix evaluateH1(const Values& x) const;
+  Matrix evaluateH2(const Values& x) const;
 };
 
 #include <gtsam/nonlinear/PriorFactor.h>
@@ -160,6 +164,8 @@ class AlignedBox3 {
   Vector vector() const;
   Vector dimensions() const;
   Vector centroid() const;
+  double volume() const;
+  double iou(const AlignedBox3& other) const;
   void print(const string& s) const;
   void print() const;
   bool equals(const AlignedBox3& other, double tol) const;

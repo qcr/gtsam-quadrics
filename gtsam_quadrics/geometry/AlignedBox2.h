@@ -79,10 +79,10 @@ namespace gtsam {
       Point2 maxPoint() const {return Vector2(xmax(), ymax());}
 
       /** Returns box width */
-      double width() const { return xmax()-xmin();}
+      double width() const { return std::abs(xmax()-xmin());}
 
       /** Returns box height */
-      double height() const { return ymax()-ymin();}
+      double height() const { return std::abs(ymax()-ymin());}
 
       /// @}
       /// @name Class methods

@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import configparser
 import argparse
 import yaml
+import code
 
 # import gtsam and extension
 import gtsam
@@ -43,10 +44,19 @@ class QuadricSLAM_Offline(object):
         self.params = params
         self.config = config
 
-    def run(self, noisy_trajectory, noisy_detections, true_trajectory=None, evaluate=False, visualize=False):
+    def run(self, noisy_trajectory, noisy_detections, initial_quadrics=None, true_trajectory=None, evaluate=False, visualize=False, robust_estimator=None, custom_noise=False):
 
+        # initialize constrainable quadrics
+        if initial_quadrics is None:
+            initial_quadrics = self.initialize_quadrics(noisy_trajectory, noisy_detections, self.calibration)
+        else:
+            views_per_object = dict(zip(*np.unique(noisy_detections.object_keys(), return_counts=True)))
+            constrained_objects = [k for k,v in views_per_object.items() if v >= self.config['QuadricSLAM.min_views']]
+            initial_quadrics = initial_quadrics.keep_keys(constrained_objects)
+            
         # build graph / estimate
-        graph, initial_estimate = self.build_graph(noisy_trajectory, noisy_detections)
+        graph = self.build_graph(noisy_trajectory, noisy_detections, initial_quadrics, robust_estimator, custom_noise)
+        initial_estimate = self.build_estimate(noisy_trajectory, initial_quadrics)
 
         # draw initial system
         if visualize:
@@ -54,8 +64,7 @@ class QuadricSLAM_Offline(object):
             plotting.plot_system(graph, initial_estimate)
 
         # optimize using c++ back-end
-        optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, self.params)
-        estimate = optimizer.optimize()
+        estimate = self.optimize(graph, initial_estimate)
 
         # draw estimation
         if visualize:
@@ -68,10 +77,10 @@ class QuadricSLAM_Offline(object):
 
         # evaluate results
         if evaluate:
-            initial_ATE_H = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), true_trajectory, horn=True)[0]
-            estimate_ATE_H = Evaluation.evaluate_trajectory(estimated_trajectory, true_trajectory, horn=True)[0]
-            initial_ATE = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), true_trajectory, horn=False)[0]
-            estimate_ATE = Evaluation.evaluate_trajectory(estimated_trajectory, true_trajectory, horn=False)[0]
+            initial_ATE_H = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), true_trajectory, type='horn')[0]
+            estimate_ATE_H = Evaluation.evaluate_trajectory(estimated_trajectory, true_trajectory, type='horn')[0]
+            initial_ATE = Evaluation.evaluate_trajectory(Trajectory.from_values(initial_estimate), true_trajectory, type='weak')[0]
+            estimate_ATE = Evaluation.evaluate_trajectory(estimated_trajectory, true_trajectory, type='weak')[0]
             print('Initial ATE w/ horn alignment: {}'.format(initial_ATE_H))
             print('Final ATE w/ horn alignment:   {}'.format(estimate_ATE_H))
             print('Initial ATE w/ weak alignment: {}'.format(initial_ATE))
@@ -86,26 +95,28 @@ class QuadricSLAM_Offline(object):
            
         return estimated_trajectory, estimated_quadrics
 
-    def build_graph(self, initial_trajectory, noisy_detections):
-        """
-        Adds noise to sequence variables / measurements. 
-        Returns graph, initial_estimate
-        """
+    def optimize(self, graph, initial_estimate):
+        optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, self.params)
+        estimate = optimizer.optimize()
+        return estimate
 
-        # create empty graph / estimate
+    def build_graph(self, initial_trajectory, noisy_detections, initial_quadrics, robust_estimator=None, custom_noise=False):
+        # create empty graph
         graph = gtsam.NonlinearFactorGraph()
-        initial_estimate = gtsam.Values()
 
         # declare noise models
         prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([self.config['QuadricSLAM.prior_sd']]*6, dtype=np.float))
         odometry_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([self.config['QuadricSLAM.odom_sd']]*6, dtype=np.float))
         bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([self.config['QuadricSLAM.box_sd']]*4, dtype=np.float))
 
+        # convert to robust estimators
+        if robust_estimator is not None:
+            prior_noise = gtsam.noiseModel_Robust(robust_estimator, prior_noise)
+            odometry_noise = gtsam.noiseModel_Robust(robust_estimator, odometry_noise)
+            bbox_noise = gtsam.noiseModel_Robust(robust_estimator, bbox_noise)
+
         # calculate odometry from trajectory
         noisy_odometry = initial_trajectory.as_odometry()
-
-        # initialize quadrics
-        initial_quadrics = self.initialize_quadrics(initial_trajectory, noisy_detections, self.calibration)
 
         # add prior pose
         prior_factor = gtsam.PriorFactorPose3(QuadricSLAM_Offline.X(0), initial_trajectory.at(0), prior_noise)
@@ -116,27 +127,48 @@ class QuadricSLAM_Offline(object):
             odometry_factor = gtsam.BetweenFactorPose3(QuadricSLAM_Offline.X(start_key), QuadricSLAM_Offline.X(end_key), rpose, odometry_noise)
             graph.add(odometry_factor)
 
+        # add valid box measurements
+        for object_key, object_detections in noisy_detections.per_object():
+
+            # add if quadric initialized and constrained
+            if object_key in initial_quadrics.keys():
+                
+                # calculate width / height std
+                if custom_noise:
+                    dimensions = np.array([[detection.box.width(), detection.box.height()] for detection in object_detections.values()])
+                    sigma = dimensions.std(0).sum()
+                    bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([sigma]*4, dtype=np.float))
+                    if robust_estimator is not None:
+                        bbox_noise = gtsam.noiseModel_Robust(robust_estimator, bbox_noise)
+
+                # add measurements
+                for pose_key, detection in object_detections.items():
+                    bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, QuadricSLAM_Offline.X(pose_key), QuadricSLAM_Offline.Q(object_key), bbox_noise, self.config['QuadricSLAM.error_type'])
+                    graph.add(bbf)
+
+
+        # add weak quadric priors
+        # for object_key, quadric in initial_quadrics.items():
+        #     quadric_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([10]*9, dtype=np.float))
+        #     prior_factor = gtsam_quadrics.PriorFactorConstrainedDualQuadric(QuadricSLAM_Offline.Q(object_key), quadric, quadric_noise)
+        #     graph.add(prior_factor)
+
+
+        return graph
+
+    def build_estimate(self, initial_trajectory, initial_quadrics):
+        # create initial estimate
+        initial_estimate = gtsam.Values()
+
         # add initial pose estimates
         for pose_key, pose in initial_trajectory.items():
             initial_estimate.insert(QuadricSLAM_Offline.X(pose_key), pose)
-
-        # add valid box measurements
-        initialized_quadrics = initial_quadrics.keys()
-        for object_key, object_detections in noisy_detections.per_object():
-
-            # add if quadric initialized
-            if object_key in initialized_quadrics:
-                
-                # add measurements
-                for pose_key, detection in object_detections.items():
-                    bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, QuadricSLAM_Offline.X(pose_key), QuadricSLAM_Offline.Q(object_key), bbox_noise)
-                    graph.add(bbf)
 
         # add initial landmark estimates if constrained and initialized
         for object_key, quadric in initial_quadrics.items():
             quadric.addToValues(initial_estimate, QuadricSLAM_Offline.Q(object_key))
 
-        return graph, initial_estimate
+        return initial_estimate
 
     def initialize_quadrics(self, trajectory, detections, calibration):
         """ Uses SVD to initialize quadrics from measurements """

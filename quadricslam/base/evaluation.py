@@ -13,18 +13,85 @@ Author: Lachlan Nicholson (Python)
 import os
 import sys
 import numpy as np
+import code
 
 # import gtsam and extension
 import gtsam
+import gtsam_quadrics
 
 class Evaluation(object):
     @staticmethod
-    def evaluate_trajectory(estimated_trajectory, true_trajectory, horn=True):
+    def evaluate_map(estimated_quadrics, true_bounds, estimated_trajectory, true_trajectory, type):
+        """
+        Aligns quadrics->bounds using trajectory. 
+        Calculates:
+            1. RMSE centroid error
+            2. IOU
+            3. Aligned IOU
+            4. width,height,length error 
+        """
+        # calculate transform to align trajectories
+        transform = Evaluation.calculate_transform(estimated_trajectory, true_trajectory, type=type)
+
+        # align quadrics with transform
+        aligned_quadrics = estimated_quadrics.apply_transform(transform)
+
+        # convert quadrics -> alignedbounds3
+        estimated_bounds = {k:v.bounds() for k,v in aligned_quadrics.items()}
+
+        trans_error = Evaluation.centroid_error(estimated_bounds, true_bounds)
+        global_iou = Evaluation.global_overlap(estimated_bounds, true_bounds)
+        aligned_iou = Evaluation.aligned_overlap(estimated_bounds, true_bounds)
+        shape_error = Evaluation.shape_error(estimated_bounds, true_bounds)
+        # code.interact(local=locals())
+
+        return [trans_error, global_iou, aligned_iou, shape_error]
+        
+    @staticmethod
+    def centroid_error(estimated_bounds, true_bounds):
+        centroid_errors = []
+        for object_key in estimated_bounds.keys():
+            est = estimated_bounds[object_key]
+            gt = true_bounds[object_key]
+            centroid_errors.append( np.linalg.norm(est.centroid()-gt.centroid()) )
+        centroid_errors = np.array(centroid_errors)
+        return np.mean(centroid_errors)
+
+    @staticmethod
+    def global_overlap(estimated_bounds, true_bounds): 
+        ious = []
+        for object_key in estimated_bounds.keys():
+            est = estimated_bounds[object_key]
+            gt = true_bounds[object_key]
+            ious.append( gt.iou(est) )
+        return np.mean(ious)
+
+    @staticmethod
+    def aligned_overlap(estimated_bounds, true_bounds):
+        ious = []
+        for object_key in estimated_bounds.keys():
+            est = estimated_bounds[object_key]
+            est_centered = gtsam_quadrics.AlignedBox3( est.vector()-np.repeat(est.centroid(),2) )
+            gt = true_bounds[object_key]
+            gt_centered = gtsam_quadrics.AlignedBox3( gt.vector()-np.repeat(gt.centroid(),2) )
+            ious.append( gt_centered.iou(est_centered) )
+        return np.mean(ious)
+
+    @staticmethod
+    def shape_error(estimated_bounds, true_bounds):
+        errors = []
+        for object_key in estimated_bounds.keys():
+            est = estimated_bounds[object_key]
+            gt = true_bounds[object_key]
+
+            errors.append( np.linalg.norm(est.dimensions() - gt.dimensions()) )
+        return np.mean(errors)
+
+    @staticmethod
+    def evaluate_trajectory(estimated_trajectory, true_trajectory, type):
         # align trajectories
-        if horn:
-            aligned_trajectory = Evaluation.horn_align(estimated_trajectory, true_trajectory)
-        else:
-            aligned_trajectory = Evaluation.weak_align(estimated_trajectory, true_trajectory)
+        transform = Evaluation.calculate_transform(estimated_trajectory, true_trajectory, type=type)
+        aligned_trajectory = estimated_trajectory.applyTransform(transform)
         
         # evaluate metrics
         rmse_ATE = Evaluation.ATE(aligned_trajectory.values(), true_trajectory.values())
@@ -60,23 +127,17 @@ class Evaluation(object):
         rmse = np.sqrt(np.average(trans_errors**2))
         return rmse            
 
-    @staticmethod
-    def horn_align(trajectory1, trajectory2):
-        """ Aligns trajectory1 with trajectory2 using HORN """
-        xyz1 = np.matrix([p.translation().vector() for p in trajectory1.values()]).transpose()
-        xyz2 = np.matrix([p.translation().vector() for p in trajectory2.values()]).transpose()
-        R,T,trans_error = Evaluation._horn_align(xyz1, xyz2)
-        transform = gtsam.Pose3(gtsam.Rot3(R), gtsam.Point3(np.array(T)[:,0])) # T = [[x],[y],[z]] [:,0] = tranpose()[0]
-        warped_trajectory = trajectory1.applyTransform(transform)
-        # print('trans_error: ', np.sqrt(np.dot(trans_error,trans_error) / len(trans_error)))
-        return warped_trajectory
-        
-    @staticmethod
-    def weak_align(trajectory1, trajectory2):
-        """ Aligns the first pose of trajectory1 with trajectory2 """
-        transform = trajectory1[0].between(trajectory2[0])
-        warped_trajectory = trajectory1.applyTransform(transform)
-        return warped_trajectory
+
+    @staticmethod 
+    def calculate_transform(trajectory1, trajectory2, type):
+        if type == 'horn':
+            xyz1 = np.matrix([p.translation().vector() for p in trajectory1.values()]).transpose()
+            xyz2 = np.matrix([p.translation().vector() for p in trajectory2.values()]).transpose()
+            R,T,trans_error = Evaluation._horn_align(xyz1, xyz2)
+            transform = gtsam.Pose3(gtsam.Rot3(R), gtsam.Point3(np.array(T)[:,0]))
+        elif type == 'weak':
+            transform = trajectory1[0].between(trajectory2[0])
+        return transform
 
     @staticmethod
     def _horn_align(model, data):

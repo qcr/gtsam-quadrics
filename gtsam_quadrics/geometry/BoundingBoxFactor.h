@@ -36,25 +36,54 @@ namespace gtsam {
    * and compares this to the measured bounding box.
    */
   class BoundingBoxFactor : public NoiseModelFactor2<Pose3, ConstrainedDualQuadric> {
-
+    public:
+      enum ErrorType { SIMPLE, COMPLEX }; ///< enum to declare which error function to use 
+      
     protected:
       AlignedBox2 measured_; ///< measured bounding box
       boost::shared_ptr<Cal3_S2> calibration_; ///< camera calibration
       typedef NoiseModelFactor2<Pose3, ConstrainedDualQuadric> Base; ///< base class has keys and noisemodel as private members
+      ErrorType errorType_;
+      mutable Matrix46 cachedH1;
+      mutable Matrix49 cachedH2;
+      mutable Vector4 cachedError;
 
     public:
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
       /// @name Constructors and named constructors
       /// @{
 
       /** Default constructor */
       BoundingBoxFactor() :
-        measured_(0.,0.,0.,0.) {};
+        measured_(0.,0.,0.,0.), errorType_(SIMPLE) {
+          cachedError = Vector4::Zero();
+          cachedH1 = Matrix::Zero(4,6);
+          cachedH2 = Matrix::Zero(4,9);
+        };
 
       /** Constructor from measured box, calbration, dimensions and posekey, quadrickey, noisemodel */
       BoundingBoxFactor(const AlignedBox2& measured, const boost::shared_ptr<Cal3_S2>& calibration, 
-      const Key& poseKey, const Key& quadricKey, const SharedNoiseModel& model) : 
-          Base(model, poseKey, quadricKey), measured_(measured), calibration_(calibration) {};
+        const Key& poseKey, const Key& quadricKey, const SharedNoiseModel& model, const ErrorType& errorType = SIMPLE) : 
+        Base(model, poseKey, quadricKey), measured_(measured), calibration_(calibration), errorType_(errorType) {
+          cachedError = Vector4::Zero();
+          cachedH1 = Matrix::Zero(4,6);
+          cachedH2 = Matrix::Zero(4,9);
+        };
+
+      /** Constructor from measured box, calbration, dimensions and posekey, quadrickey, noisemodel */
+      BoundingBoxFactor(const AlignedBox2& measured, const boost::shared_ptr<Cal3_S2>& calibration, 
+        const Key& poseKey, const Key& quadricKey, const SharedNoiseModel& model, const std::string& errorString) :
+        Base(model, poseKey, quadricKey), measured_(measured), calibration_(calibration) {
+        if (errorString == "SIMPLE") {errorType_ = SIMPLE;}
+        else if (errorString == "COMPLEX") {errorType_ = COMPLEX;}
+        else {
+          throw std::logic_error("The error type \""+errorString+"\" is not a valid option for initializing a BoundingBoxFactor");
+        }
+        this->cachedError = Vector4::Zero();
+        this->cachedH1 = Matrix::Zero(4,6);
+        this->cachedH2 = Matrix::Zero(4,9);
+      }
 
       /// @}
       /// @name Class accessors
@@ -88,6 +117,12 @@ namespace gtsam {
 
       /** Evaluates the derivative of the error wrt quadric */
       Matrix evaluateH2(const Pose3& pose, const ConstrainedDualQuadric& quadric) const;
+
+      /** Evaluates the derivative of the error wrt pose */
+      Matrix evaluateH1(const Values& x) const;
+
+      /** Evaluates the derivative of the error wrt quadric */
+      Matrix evaluateH2(const Values& x) const;
 
       /// @}
       /// @name Testable group traits
