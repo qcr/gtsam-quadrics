@@ -116,7 +116,40 @@ class MPLDrawing(object):
         # show plot
         plt.show()
 
+    def conic(self, dual_conic):
+        conic = np.linalg.inv(dual_conic)
 
+        irange = 1000
+        points = 10000
+        x = np.linspace(-irange, irange, points)
+        y = np.linspace(-irange, irange, points)
+        x, y = np.meshgrid(x, y)
+
+        a = conic[0,0]; 
+        b = conic[1,0]*2.0; 
+        c = conic[1,1]
+        d = conic[2,0]*2.0; 
+        e = conic[2,1]*2.0; 
+        f = conic[2,2]
+
+        # conic_descriminant = b**2 - 4*a*c
+        # print('conic_descriminant: {}'.format(conic_descriminant))
+
+        plt.contour(x, y, (a*x**2 + b*x*y + c*y**2 + d*x + e*y + f), [0], colors='r')
+
+        fig = plt.gcf()
+        ax = fig.gca()
+        ax.invert_yaxis()
+        # rect = patches.Rectangle((0,0),320,240,linewidth=1,edgecolor='r',facecolor='none')
+        # ax.add_patch(rect)
+
+        # dual_conic = dual_conic/dual_conic[-1,-1]
+        # conic_point = [dual_conic[0,2], dual_conic[1,2]]
+
+        # plt.scatter(conic_point[0], conic_point[1], c='r')
+        # plt.xlim((0,320))
+        # plt.ylim((0,240))
+        plt.show()
 
 
 class CV2Drawing(object):
@@ -192,6 +225,19 @@ class CV2Drawing(object):
 
         if alpha!=1:
             cv2.addWeighted(self._image, alpha, full_image, 1-alpha, 0, self._image)
+
+    def points_3D(self, points3D, pose, calibration, color=(255,0,255)):
+        # project 3D points to 2D
+        P = gtsam_quadrics.QuadricCamera.transformToImage(pose, calibration)
+        points_3DTH = np.concatenate((points3D.T, np.ones((1,points3D.shape[0]))))
+        points_2D = P.dot(points_3DTH)
+        points_2D = points_2D[0:2,:] / points_2D[2]
+        points_2D = points_2D.transpose()
+        
+        # draw points
+        for point in points_2D:
+            cv2.circle(self._image, tuple(point.astype('int')), 1, color=(0,0,255), thickness=-1, lineType=cv2.LINE_AA)
+
 
     def bounds_3D(self, box3D, pose, calibration, color=(255,0,255)):
         # convert 3D box to set of 8 points

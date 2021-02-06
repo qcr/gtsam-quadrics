@@ -34,11 +34,11 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
   try {
 
     // check pose-quadric pair
-    if (quadric.isBehind(pose)) {
-      throw QuadricProjectionException("Quadric is behind camera");
-    } if (quadric.contains(pose)) {
-      throw QuadricProjectionException("Camera is inside quadric");
-    }
+    // if (measurementModel_ == TRUNCATED && quadric.isBehind(pose)) {
+    //   throw QuadricProjectionException("Quadric is behind camera");
+    // } if (measurementModel_ == TRUNCATED && quadric.contains(pose)) {
+    //   throw QuadricProjectionException("Camera is inside quadric");
+    // }
 
     // project quadric taking into account partial derivatives 
     Eigen::Matrix<double, 9,6> dC_dx; Eigen::Matrix<double, 9,9> dC_dq;
@@ -50,21 +50,30 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     }
 
     // check dual conic is valid for error function
-    if (!dualConic.isEllipse()) {
-      throw QuadricProjectionException("Projected Conic is non-ellipse");
-    }
+    // if (measurementModel_ == TRUNCATED && !dualConic.isEllipse()) {
+    //   throw QuadricProjectionException("Projected Conic is non-ellipse");
+    // }
 
     // calculate conic bounds with derivatives
+    bool computeJacobians = bool(H1||H2) && !NUMERICAL_DERIVATIVE; 
     Eigen::Matrix<double, 4,9> db_dC;
-    AlignedBox2 predictedBounds; 
-    if (!NUMERICAL_DERIVATIVE) {
-      predictedBounds = dualConic.bounds(H1||H2?&db_dC:0);
-    } else {
-      predictedBounds = dualConic.bounds();
+    AlignedBox2 predictedBounds;
+    if (measurementModel_ == STANDARD) {
+      predictedBounds = dualConic.bounds(computeJacobians?&db_dC:0);     
+    } else if (measurementModel_ == TRUNCATED) {
+
+      try {
+        predictedBounds = dualConic.smartBounds(calibration_, computeJacobians?&db_dC:0); 
+      } catch (std::runtime_error& e) {
+        throw QuadricProjectionException("smartbounds failed");
+      }
+
+      
     }
 
     // evaluate error 
     Vector4 error = predictedBounds.vector() - measured_.vector();
+
 
     if (NUMERICAL_DERIVATIVE) {
       boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
@@ -92,17 +101,20 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
       }
 
     }
+
     return error;
 
 
   // handle projection failures
   } catch(QuadricProjectionException& e) {
+    // std::cout << "  Landmark " << symbolIndex(this->objectKey()) << " received: " << e.what() << std::endl;
     
     // if error cannot be calculated
     // set error vector and jacobians to zero
-    Vector4 error = Vector4::Ones()*1000;
+    Vector4 error = Vector4::Ones()*1000.0;
     if (H1) {*H1 = Matrix::Zero(4,6);}
     if (H2) {*H2 = Matrix::Zero(4,9);}
+
     return error;
 
   }
@@ -120,6 +132,20 @@ Matrix BoundingBoxFactor::evaluateH2(const Pose3& pose, const ConstrainedDualQua
   Matrix H2;
   this->evaluateError(pose, quadric, boost::none, H2);
   return H2;
+}
+
+/* ************************************************************************* */
+Matrix BoundingBoxFactor::evaluateH1(const Values& x) const {
+  const Pose3 pose = x.at<Pose3>(this->poseKey());
+  const ConstrainedDualQuadric quadric = x.at<ConstrainedDualQuadric>(this->objectKey());
+  return this->evaluateH1(pose, quadric);
+}
+
+/* ************************************************************************* */
+Matrix BoundingBoxFactor::evaluateH2(const Values& x) const {
+  const Pose3 pose = x.at<Pose3>(this->poseKey());
+  const ConstrainedDualQuadric quadric = x.at<ConstrainedDualQuadric>(this->objectKey());
+  return this->evaluateH2(pose, quadric);
 }
 
 /* ************************************************************************* */

@@ -49,6 +49,12 @@ class Container1(dict):
     def at_keys(self, keys):
         return [self.at(key) for key in keys]
 
+    def keep_keys(self, keep):
+        other = Container1()
+        for k in keep:
+            if k in self:
+                other.add(self[k], k)
+        return other
 
 class Trajectory(Container1):
     def as_odometry(self):
@@ -93,6 +99,22 @@ class Quadrics(Container1):
                 quadrics.add(quadric, gtsam.symbolIndex(key))
         return quadrics
 
+    def apply_transform(self, reference):
+        transformed_quadrics = Trajectory()
+        for key, quadric in self.items():
+            pose = quadric.pose()
+            radii = quadric.radii()
+            transformed_pose = reference.transformPoseFrom(pose)
+            transformed_quadric = gtsam_quadrics.ConstrainedDualQuadric(transformed_pose, radii)
+            transformed_quadrics.add(transformed_quadric, key)
+        return transformed_quadrics
+
+    def keep_keys(self, keep):
+        other = Quadrics()
+        for k in keep:
+            if k in self:
+                other.add(self[k], k)
+        return other
 
 
 class ObjectDetection(object):
@@ -113,7 +135,7 @@ class Container2_Map(object):
         self.key2_map = defaultdict(dict)
 
     def __len__(self):
-        len(self.key1_map)
+        return sum((len(k2map) for k2map in self.key1_map.values()))
 
     def add(self, value, key1, key2):
         self.key1_map[key1][key2] = value
@@ -205,6 +227,14 @@ class Detections(Container2_Map):
     def set_used(self, value, pose_key, object_key):
         self.used[pose_key, object_key] = value
 
+    def remove_small(self, dim_limit):
+        """ Removes measurements if box dim < dimlimit """
+        d = Detections()
+        for (pose_key, object_key), measurement in self.items():
+            if measurement.box.width() >= dim_limit and measurement.box.height() >= dim_limit:
+                d.add(measurement, pose_key, object_key)
+        return d
+
     def add_noise(self, mu, sd):
         """ 
         compose noisevec onto relative poses 
@@ -261,6 +291,22 @@ class Detections(Container2_Map):
             noisy_detections.add(noisy_detection, pose_key, object_key)
         return noisy_detections
 
+    def minimum_views(self, n):
+        """ Removes measurements if object_key has < n measurements """
+        filtered_detections = Detections()
+        for object_key, object_detections in self.per_object():
+            if len(object_detections) >= n:
+                for pose_key, detection in object_detections.items():
+                    filtered_detections.add(detection, pose_key, object_key)
+        return filtered_detections
+
+    def keep_object_keys(self, keys):
+        """ removes any measurement not from objects in keys """
+        d = Detections()
+        for (pose_key, object_key), measurement in self.items():
+            if object_key in keys:
+                d.add(measurement, pose_key, object_key)
+        return d
 
 class Odometry(Container2_Map):
     def as_trajectory(self, reference=gtsam.Pose3()):

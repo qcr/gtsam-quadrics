@@ -23,6 +23,47 @@ using namespace std;
 
 namespace gtsam {
 namespace utils {
+  
+/* ************************************************************************* */
+Vector2 solvePolynomial(const double& a, const double& b, const double& c) {
+  // calculate polynomial discrimenant 
+  double disc = b*b - 4.0*a*c;
+
+  if (disc < 1e-10) {
+    disc = 0.0;
+  }
+  
+  // throw exception if imaginary results
+  if (disc < 0.0) {
+    stringstream ss; ss << "poly solving failed, disc: " << disc << endl;
+    throw std::runtime_error(ss.str());
+  }
+
+  // calculate and return roots
+  double root1 = (-b + std::sqrt(disc)) / (2.0*a);
+  double root2 = (-b - std::sqrt(disc)) / (2.0*a);
+  return Vector2(root1, root2);
+}
+
+/* ************************************************************************* */
+Vector2 getConicPointsAtX(const Eigen::Matrix<long double, 3,3>& pointConic, const double& x) {
+  const Eigen::Matrix<long double, 3,3>& C = pointConic;
+  return gtsam::utils::solvePolynomial(
+    C(1,1),
+    2*C(0,1)*x + 2*C(1,2),
+    C(0,0)*x*x + 2*C(0,2)*x + C(2,2)
+  );
+}
+
+/* ************************************************************************* */
+Vector2 getConicPointsAtY(const Eigen::Matrix<long double, 3,3>& pointConic, const double& y) {
+  const Eigen::Matrix<long double, 3,3>& C = pointConic;
+  return gtsam::utils::solvePolynomial(
+    C(0,0),
+    2*C(0,1)*y + 2*C(0,2),
+    C(1,1)*y*y + 2*C(1,2)*y + C(2,2)
+  );
+}
 
 /* ************************************************************************* */
 Pose3 interpolate(const Pose3& p1, const Pose3& p2, const double& percent) {
