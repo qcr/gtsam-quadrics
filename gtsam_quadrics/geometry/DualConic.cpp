@@ -60,17 +60,6 @@ AlignedBox2 DualConic::bounds(OptionalJacobian<4,9> H) const {
   double ymin = (dC_(1,2) + sqrt(dC_(1,2)*dC_(1,2)-dC_(2,2)*dC_(1,1))) / dC_(2,2);
   double ymax = (dC_(1,2) - sqrt(dC_(1,2)*dC_(1,2)-dC_(2,2)*dC_(1,1))) / dC_(2,2);
 
-  // if (xmin < 0) {
-  //   xmin = 0;
-  // } if (xmax > 320) {
-  //   xmax = 320;
-  // } if (ymin < 0) {
-  //   ymin = 0;
-  // } if (ymax > 240) {
-  //   ymax = 240;
-  // }
-  
-
   if (H) {
     Eigen::Matrix<double, 4,9> db_dC = Matrix::Zero(4,9);
     double f = sqrt(dC_(0,2)*dC_(0,2)-dC_(0,0)*dC_(2,2));

@@ -65,36 +65,15 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
       try {
         predictedBounds = dualConic.smartBounds(calibration_, computeJacobians?&db_dC:0); 
       } catch (std::runtime_error& e) {
-        // predictedBounds = dualConic.bounds(computeJacobians?&db_dC:0);     
-        // std::cout << "smartBounds failed to extract extrema\n poseKey: " << symbolIndex(this->poseKey());
-        // std::cout << ", objectKey: " << symbolIndex(this->objectKey()) << endl;
-        // std::cout << e.what() << std::endl;
-        // stringstream ss; // ss << symbolIndex(this->poseKey()) << "," << symbolIndex(this->objectKey()) << endl;
-        // Matrix DC = dualConic.matrix();
-        // ss << DC(0,0)<<","<<DC(0,1)<<","<<DC(0,2)<<","<<DC(1,1)<<","<<DC(1,2)<<","<<DC(2,2) << std::endl;
-        // std::cout << "is ellipse: " << dualConic.isEllipse() << " is degenerate: " << dualConic.isDegenerate() << std::endl;
-        // throw std::runtime_error(ss.str());
         throw QuadricProjectionException("smartbounds failed");
       }
 
       
     }
 
-    // truncate predicted bounds
-    // Vector v = predictedBounds.vector();
-    // v(0) = std::min(std::max(v(0),0.),320.);
-    // v(1) = std::min(std::max(v(0),0.),240.);
-    // v(2) = std::min(std::max(v(0),0.),320.);
-    // v(3) = std::min(std::max(v(0),0.),240.);
-    // predictedBounds = AlignedBox2(v);
-
     // evaluate error 
     Vector4 error = predictedBounds.vector() - measured_.vector();
-    // error = error.cwiseMin(1000).cwiseMax(-1000);
-    // error = error.array().abs();
-    // error = error.array().abs().min(1000).matrix();
-    // error = Vector4::Zero();
-    // error = predictedBounds.vector();
+
 
     if (NUMERICAL_DERIVATIVE) {
       boost::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2, boost::none, boost::none));
@@ -123,13 +102,6 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
     }
 
-    // cache last valid error+jacobians
-    // std::cout << "trying to cache" << std::endl;
-    // BoundingBoxFactor* notThis = const_cast<BoundingBoxFactor*> (this);
-    // this->cachedError = error;  
-    // if (H1) {this->cachedH1 = *H1;} 
-    // if (H2) {this->cachedH2 = *H2;}
-    // std::cout << "caching worked" << std::endl;
     return error;
 
 
@@ -142,16 +114,6 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     Vector4 error = Vector4::Ones()*1000.0;
     if (H1) {*H1 = Matrix::Zero(4,6);}
     if (H2) {*H2 = Matrix::Zero(4,9);}
-
-    // use last cached values
-    // std::cout << "trying to load" << std::endl;
-    // BoundingBoxFactor* notThis = const_cast<BoundingBoxFactor*> (this);
-    // Vector4 error = this->cachedError;
-    // if (H1) {*H1 = this->cachedH1;} 
-    // if (H2) {*H2 = this->cachedH2;}
-    // std::cout << "loading worked" << std::endl;
-    // set high sigma
-    // notThis->noiseModel_ = gtsam::noiseModel::Diagonal::Sigmas(Vector4::Ones()*1000000);
 
     return error;
 

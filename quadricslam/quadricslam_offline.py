@@ -344,4 +344,4 @@ if __name__ == '__main__':
 
     # run system on data
     system = QuadricSLAM_Offline(calibration, opt_params, config)
-    system.run(noisy_trajectory, noisy_detections, true_trajectory, True, True)
+    system.run(noisy_trajectory, noisy_detections, true_trajectory=true_trajectory, evaluate=True, visualize=True)
