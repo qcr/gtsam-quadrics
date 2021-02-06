@@ -14,6 +14,7 @@ QuadricSLAM.min_views: 3
 QuadricSLAM.prior_sd: 1.0e-1
 QuadricSLAM.odom_sd: 0.01
 QuadricSLAM.box_sd: 20.0
+QuadricSLAM.error_type: 'TRUNCATED'
 
 #================#
 # Noise Settings #

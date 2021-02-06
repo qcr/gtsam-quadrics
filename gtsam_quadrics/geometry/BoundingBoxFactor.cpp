@@ -34,9 +34,9 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
   try {
 
     // check pose-quadric pair
-    // if (errorType_ == COMPLEX && quadric.isBehind(pose)) {
+    // if (measurementModel_ == TRUNCATED && quadric.isBehind(pose)) {
     //   throw QuadricProjectionException("Quadric is behind camera");
-    // } if (errorType_ == COMPLEX && quadric.contains(pose)) {
+    // } if (measurementModel_ == TRUNCATED && quadric.contains(pose)) {
     //   throw QuadricProjectionException("Camera is inside quadric");
     // }
 
@@ -50,7 +50,7 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     }
 
     // check dual conic is valid for error function
-    // if (errorType_ == COMPLEX && !dualConic.isEllipse()) {
+    // if (measurementModel_ == TRUNCATED && !dualConic.isEllipse()) {
     //   throw QuadricProjectionException("Projected Conic is non-ellipse");
     // }
 
@@ -58,9 +58,9 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     bool computeJacobians = bool(H1||H2) && !NUMERICAL_DERIVATIVE; 
     Eigen::Matrix<double, 4,9> db_dC;
     AlignedBox2 predictedBounds;
-    if (errorType_ == SIMPLE) {
+    if (measurementModel_ == STANDARD) {
       predictedBounds = dualConic.bounds(computeJacobians?&db_dC:0);     
-    } else if (errorType_ == COMPLEX) {
+    } else if (measurementModel_ == TRUNCATED) {
 
       try {
         predictedBounds = dualConic.smartBounds(calibration_, computeJacobians?&db_dC:0); 
