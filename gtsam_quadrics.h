@@ -136,6 +136,7 @@ class AlignedBox2 {
   double xmax() const;
   double ymax() const;
   Vector vector() const;
+  Point2 center() const;
   double width() const;
   double height() const;
   bool contains(const Point2& point) const;
