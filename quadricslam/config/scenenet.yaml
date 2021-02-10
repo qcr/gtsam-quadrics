@@ -39,7 +39,7 @@ Optimizer.absolute_error_tol: 1.0e-5
 # SceneNet Dataset #
 #==================#
 Dataset.name: "SceneNet"
-Dataset.data: "/path/to/SceneNetRGBD/pySceneNetRGBD/data/train"
-Dataset.protobufs: "/path/to/SceneNetRGBD/pySceneNetRGBD/data/train_protobufs"
-Dataset.protobuf_definition: "/path/to/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py"
+Dataset.data: "/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/data/train"
+Dataset.protobufs: "/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/data/train_protobufs"
+Dataset.protobuf_definition: "/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py"
 Dataset.sequence_n: 0

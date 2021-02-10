@@ -19,26 +19,57 @@ import atexit
 import yaml
 import argparse
 
+# modify system path so file will work when run directly or as a module
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 # import custom python modules
 sys.dont_write_bytecode = True
 from base.data_association import DataAssociation
-from dataset_interfaces.scenenet_dataset import SceneNetDataset
+from base.data_association import KeepAssociator
+from base.data_association import MergeAssociator
 from visualization.drawing import CV2Drawing
 from base.containers import Trajectory, Quadrics, Detections, ObjectDetection
 from base.initialisation import Initialize
+
+from dataset_interfaces.scenenet_dataset import SceneNetDataset
+from dataset_interfaces.tumrgbd_dataset import TUMDataset
+from detectors.faster_rcnn import FasterRCNN
 
 # import gtsam and extension
 import gtsam
 import gtsam_quadrics
 
 
-class QuadricSLAM_Online(object):
-    def __init__(self, config):
-        self.config = config
-        
-        # load camera calibration
-        self.calibration = self.load_calibration(config)
 
+
+name_to_estimator = {
+    'Cauchy': gtsam.noiseModel_mEstimator_Cauchy,
+    'DCS': gtsam.noiseModel_mEstimator_DCS,
+    'Fair': gtsam.noiseModel_mEstimator_Fair,
+    'GemanMcClure': gtsam.noiseModel_mEstimator_GemanMcClure,
+    'Huber': gtsam.noiseModel_mEstimator_Huber,
+    'Tukey': gtsam.noiseModel_mEstimator_Tukey,
+    'Welsch': gtsam.noiseModel_mEstimator_Welsch,
+}
+
+name_to_parameter = {
+    'Cauchy': 0.30,
+    'DCS': 3.79,
+    'Fair': 0.1,
+    'GemanMcClure': 2.64,
+    'Huber': 0.1,
+    'Tukey': 16.24,
+    'Welsch': 5.46,
+}
+
+
+
+
+class QuadricSLAM_Online(object):
+    def __init__(self, calibration, config):
+        self.config = config
+        self.calibration = calibration
+        
         # load class names
         self.class_names = self.load_class_names(config['QuadricSLAM.classes_path'])
 
@@ -54,6 +85,11 @@ class QuadricSLAM_Online(object):
         self.bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.box_sd']]*4, dtype=np.float))
         self.quadric_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.quad_sd']]*9, dtype=np.float))
 
+        # robust_estimator = name_to_estimator['Cauchy'](0.3)
+        # self.pose_noise = gtsam.noiseModel_Robust(robust_estimator, self.pose_noise)
+        # self.bbox_noise = gtsam.noiseModel_Robust(robust_estimator, self.bbox_noise)
+        # self.quadric_noise = gtsam.noiseModel_Robust(robust_estimator, self.quadric_noise)
+
         # set measurement storage 
         self.detections = Detections()
 
@@ -62,7 +98,9 @@ class QuadricSLAM_Online(object):
         self.current_quadrics = Quadrics()
 
         # initialize data-association module
-        self.data_association = DataAssociation(self.calibration, config)
+        # self.data_association = DataAssociation(self.calibration, config)
+        self.data_association = KeepAssociator(thresh=0.8, layer='fc2')
+        # self.data_association = MergeAssociator(thresh=0.8, layer='fc2')
 
         # prepare video capture (initialized on first use)
         self.video_writer = None
@@ -143,19 +181,21 @@ class QuadricSLAM_Online(object):
                 atexit.register(self.video_writer.release)
             self.video_writer.write(img)
 
-    def update(self, image, image_detections, camera_pose):
+    def update(self, image, associated_detections, camera_pose):
         pose_key = self.frames
         self.frames += 1
 
-        # filter object detections
-        if self.config['QuadricSLAM.filter_measurements']:
-            image_detections = self.filter_detections(image_detections)
+        # # filter object detections
+        # if self.config['QuadricSLAM.filter_measurements']:
+        #     image_detections = self.filter_detections(image_detections)
 
-        # draw current map and measurements
-        self.visualize(image, image_detections, camera_pose)
+        # # draw current map and measurements
+        # self.visualize(image, image_detections, camera_pose)
+        self.visualize(image, associated_detections.values(), camera_pose)
 
         # associate new measurements with existing keys
-        associated_detections = self.data_association.associate(image, image_detections, camera_pose, pose_key, self.current_quadrics, visualize=True, verbose=True)
+        # associated_detections = self.data_association.associate(image, image_detections, camera_pose, pose_key, self.current_quadrics, visualize=True, verbose=True)
+        # associated_detections = self.data_association.associate(image, image_detections, pose_key)
 
         # store new boxes for later initialization and factor adding
         self.detections.add_detections(associated_detections)
@@ -219,7 +259,7 @@ class QuadricSLAM_Online(object):
 
             # add measurements if initialized 
             if object_key in self.current_quadrics.keys():
-                bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, self.X(pose_key), self.Q(object_key), self.bbox_noise)
+                bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, self.X(pose_key), self.Q(object_key), self.bbox_noise, 'STANDARD')
                 local_graph.add(bbf)
                 self.detections.set_used(True, pose_key, object_key)
 
@@ -232,3 +272,54 @@ class QuadricSLAM_Online(object):
         # update current estimate 
         self.current_trajectory = Trajectory.from_values(current_estimate)
         self.current_quadrics = Quadrics.from_values(current_estimate)
+
+
+# if dataset has no detections, run detector
+# if dataset has no odometry, run odom
+# if dataset has no DA, run DA
+
+# anyone can use this to run on their dataset 
+# they can chose weather to use included odom/detections/da
+
+
+
+
+if __name__ == '__main__':
+    # load config
+    config = yaml.safe_load(open('/home/lachness/git_ws/quadricslam/quadricslam/config/online.yaml', 'r'))
+
+    # load dataset
+    dataset = TUMDataset('/media/lachness/DATA/Datasets/TUM/')
+
+    predictor = FasterRCNN('COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml', batch_size=5)
+    # load detector
+
+    print('starting')
+
+    for scene in dataset:
+        # iterate through timesteps and send to SLAM
+            # load odometry
+
+        for time, rgb_path in scene.aligned_rgb.items():
+            # load image
+            rgb_image = cv2.imread(rgb_path)
+
+        frames = 0
+        print('testing scene')
+
+        # start SLAM
+        SLAM = QuadricSLAM_Online(scene.calibration, config)
+
+
+            camera_pose = scene.aligned_trajectory[time]
+
+            # calculate detections
+            
+            SLAM.update(rgb_image, detections, camera_pose)
+            frames += 1
+
+            for object_key, d in scene.associated_detections.at_pose(time).items():
+                detections.add(d, frames, object_key)
+            # detections = predictor([rgb_image])[0]
+            detections = Detections()
+

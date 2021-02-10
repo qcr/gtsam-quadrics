@@ -34,11 +34,11 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
   try {
 
     // check pose-quadric pair
-    // if (measurementModel_ == TRUNCATED && quadric.isBehind(pose)) {
-    //   throw QuadricProjectionException("Quadric is behind camera");
-    // } if (measurementModel_ == TRUNCATED && quadric.contains(pose)) {
-    //   throw QuadricProjectionException("Camera is inside quadric");
-    // }
+    if (measurementModel_ == TRUNCATED && quadric.isBehind(pose)) {
+      throw QuadricProjectionException("Quadric is behind camera");
+    } if (measurementModel_ == TRUNCATED && quadric.contains(pose)) {
+      throw QuadricProjectionException("Camera is inside quadric");
+    }
 
     // project quadric taking into account partial derivatives 
     Eigen::Matrix<double, 9,6> dC_dx; Eigen::Matrix<double, 9,9> dC_dq;
@@ -50,9 +50,9 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     }
 
     // check dual conic is valid for error function
-    // if (measurementModel_ == TRUNCATED && !dualConic.isEllipse()) {
-    //   throw QuadricProjectionException("Projected Conic is non-ellipse");
-    // }
+    if (measurementModel_ == TRUNCATED && !dualConic.isEllipse()) {
+      throw QuadricProjectionException("Projected Conic is non-ellipse");
+    }
 
     // calculate conic bounds with derivatives
     bool computeJacobians = bool(H1||H2) && !NUMERICAL_DERIVATIVE; 

@@ -1,0 +1,33 @@
+# online configuration settings
+#==============#
+# QuadricSLAM  #
+#==============#
+QuadricSLAM.pose_sd: 0.001
+QuadricSLAM.box_sd: 3.0
+QuadricSLAM.quad_sd: 1000
+QuadricSLAM.filter_measurements: False
+QuadricSLAM.viable_classes: ['cup', 'bowl']
+QuadricSLAM.classes_path: "/home/lachness/git_ws/PyTorch-YOLOv3/data/coco.names"
+QuadricSLAM.init_method: "SVD"
+QuadricSLAM.min_views: 5
+
+#===========#
+# Recording #
+#===========#
+Recording.record: False
+
+#====================#
+# Optimizer Settings #
+#====================#
+Optimizer.dogleg: True
+Optimizer.relinearization: True
+Optimizer.relinearize_skip: 1
+Optimizer.relinearize_thresh: 0.01
+
+#==================#
+# Data-association #
+#==================#
+DataAssociation.iou_thresh: 0.4
+DataAssociation.object_limit: 100
+# BOOSTING, MIL, KCF, TLD, MEDIANFLOW, GOTURN, MOSSE, CSRT
+DataAssociation.tracker_type: "MEDIANFLOW"

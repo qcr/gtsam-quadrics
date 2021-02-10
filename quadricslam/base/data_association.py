@@ -251,3 +251,122 @@ class DataAssociation(object):
         self.object_trackers[object_key] = new_tracker
 
         return object_key
+
+
+
+import torch
+
+
+class KeepAssociator(object):
+    def __init__(self, thresh=0.8, layer='fc2'):
+        self.landmarks = {} # stores a list of [activations] for each key
+        self.cosine_threshold = thresh
+        self.activation_layer = layer
+        self.operation = 'online'
+        self.combine = 'keepall'
+        self.name = 'Keeper({:.1f},{})'.format(self.cosine_threshold, self.activation_layer)
+
+    def associate(self, image, detections, pose_key):
+        associated = Detections()
+        for detection in detections:
+            object_key = self.associate_single(image, detection)
+            associated.add(detection, pose_key, object_key)
+        print('-- DataAssociation --')
+        print('n-landmarks: {}'.format(len(self.landmarks)))
+        print('total codes: {}'.format(np.sum([len(activations) for activations in self.landmarks.values()])))
+        return associated
+
+    def associate_single(self, image, detection):
+        if self.activation_layer == 'fc1':
+            activation = detection.fc1
+        elif self.activation_layer == 'fc2':
+            activation = detection.fc2
+        
+        # calculate measurements compatability against existing landmarks
+        compatability = []
+        for key in self.landmarks.keys():
+            landmark = self.landmarks[key]
+
+            # calculate compatability against previous measurements
+            landmark_similarities = [torch.cosine_similarity(activation, past_activation).cpu().numpy() for past_activation in landmark]
+            compatability.append(np.max(landmark_similarities))
+
+        # associate with existing landmark
+        if len(compatability) and np.max(compatability) > self.cosine_threshold:
+            key = list(self.landmarks.keys())[np.argmax(compatability)]
+            self.landmarks[key].append(activation)
+
+        else: # create new landmark
+            key = len(self.landmarks)
+            self.landmarks[key] = [activation]
+        return key
+
+    def clear(self):
+        self.landmarks = {}
+
+
+
+
+
+class MergeAssociator(object):
+    def __init__(self, thresh=0.8, layer='fc2'):
+        self.landmarks = {} # stores a list of [activations] for each key
+        self.cosine_threshold = thresh
+        self.activation_layer = layer
+        self.operation = 'online'
+        self.combine = 'average'
+        self.name = 'Merger({:.1f},{})'.format(self.cosine_threshold, self.activation_layer)
+
+    def associate(self, image, detections, pose_key):
+        img = image.copy()
+        drawing = CV2Drawing(img)
+        
+        associated = Detections()
+        for detection in detections:
+            object_key = self.associate_single(image, detection)
+            associated.add(detection, pose_key, object_key)
+
+            # draw associated detection
+            drawing.box_and_text(detection.box, (255,255,0), '{}'.format(object_key), (255,255,255))
+
+        cv2.imshow('data-association', img)
+        cv2.waitKey(1)
+            
+        print('-- DataAssociation --')
+        print('n-landmarks: {}'.format(len(self.landmarks)))
+        return associated
+
+    def associate_single(self, image, detection):
+        if self.activation_layer == 'fc1':
+            activation = detection.fc1
+        elif self.activation_layer == 'fc2':
+            activation = detection.fc2
+        
+        # calculate measurements compatability against existing landmarks
+        compatability = []
+        for key in self.landmarks.keys():
+            combined_activation = self.landmarks[key]['activation']
+
+            # calculate compatability against previous measurements
+            landmark_similarities = torch.cosine_similarity(activation, combined_activation).cpu().numpy() 
+            compatability.append(np.max(landmark_similarities))
+
+        # associate with existing landmark
+        if len(compatability) and np.max(compatability) > self.cosine_threshold:
+            key = list(self.landmarks.keys())[np.argmax(compatability)]
+            self.update_landmark(key, activation)
+        else: # create new landmark
+            key = len(self.landmarks)
+            self.new_landmark(key, activation)
+        return key
+
+    def update_landmark(self, key, activation):
+        self.landmarks[key]['activation'] = ((self.landmarks[key]['activation'] * self.landmarks[key]['n']) + activation) / (self.landmarks[key]['n']+1)
+        self.landmarks[key]['n'] += 1
+
+    def new_landmark(self, key, activation): 
+        self.landmarks[key] = {'activation': activation, 'n':1}
+
+    def clear(self):
+        self.landmarks = {}
+
