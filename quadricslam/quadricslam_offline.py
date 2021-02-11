@@ -30,6 +30,7 @@ from dataset_interfaces.scenenet_dataset import SceneNetDataset
 from visualization.drawing import MPLDrawing
 from base.evaluation import Evaluation
 from base.containers import *
+from base.initialisation import Initialize
 
 
 class QuadricSLAM_Offline(object):
@@ -189,83 +190,14 @@ class QuadricSLAM_Offline(object):
                 continue
 
             # initialize quadric fomr views using svd
-            quadric_matrix = self.quadric_SVD(poses, object_boxes, calibration)
-
-            # constrain generic dual quadric to be ellipsoidal 
-            quadric = gtsam_quadrics.ConstrainedDualQuadric.constrain(quadric_matrix)
+            quadric = Initialize.SVD(poses, object_boxes, calibration)
+            # quadric = Initialize.simple(poses[0], object_boxes[0], calibration, depth=1.0, size=0.01)
 
             # check quadric is okay
-            if (self.is_okay(quadric, poses, calibration)):
+            if quadric is not None:
                 quadrics.add(quadric, object_key)
 
         return quadrics
-
-    def quadric_SVD(self, poses, object_boxes, calibration):
-        """ calculates quadric_matrix using SVD """
-
-        # iterate through box/pose data
-        planes = []
-        for box, pose in zip(object_boxes, poses):
-
-            # calculate boxes lines
-            lines = box.lines()
-
-            # convert Vector3Vector to list
-            lines = [lines.at(i) for i in range(lines.size())]
-
-            # calculate projection matrix
-            P = gtsam_quadrics.QuadricCamera.transformToImage(pose, calibration).transpose()
-
-            # project lines to planes
-            planes += [P @ line for line in lines]
-
-        # create A matrix
-        A = np.asarray([np.array([p[0]**2,  2*(p[0]*p[1]),  2*(p[0]*p[2]),  2*(p[0]*p[3]),
-                                                p[1]**2,  	2*(p[1]*p[2]),  2*(p[1]*p[3]),
-                                                                p[2]**2,  	2*(p[2]*p[3]),
-                                                                               p[3]**2]) for p in planes])
-
-        # solve SVD for Aq = 0, which should be equal to p'Qp = 0
-        _,_,V = np.linalg.svd(A, full_matrices=True)
-        q = V.T[:, -1]
-
-        # construct quadric
-        dual_quadric = np.array([[q[0], q[1], q[2], q[3]],
-                                [q[1], q[4], q[5], q[6]],
-                                [q[2], q[5], q[7], q[8]],
-                                [q[3], q[6], q[8], q[9]]])
-
-        return dual_quadric
-
-    def is_okay(self, quadric, poses, calibration):
-        """
-        Checks quadric is valid:
-            quadric constrained correctly
-            paralax > threshold
-            reprojections valid in each frame 
-                quadric infront of camera : positive depth 
-                camera outside quadric
-                conic is an ellipse 
-            ensure views provide enough DOF (due to edges / out of frame)
-        """
-        for pose in poses:
-
-            # quadric must have positive depth
-            if quadric.isBehind(pose):
-                return False
-
-            # camera pose must be outside quadric 
-            if quadric.contains(pose):
-                return False
-
-            # conic must be valid and elliptical 
-            conic = gtsam_quadrics.QuadricCamera.project(quadric, pose, calibration)
-            if conic.isDegenerate():
-                return False
-            if not conic.isEllipse():
-                return False
-                
-        return True
 
 
 
