@@ -291,35 +291,35 @@ if __name__ == '__main__':
     # load dataset
     dataset = TUMDataset('/media/lachness/DATA/Datasets/TUM/')
 
-    predictor = FasterRCNN('COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml', batch_size=5)
     # load detector
+    predictor = FasterRCNN('COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml', batch_size=5)
 
     print('starting')
 
     for scene in dataset:
-        # iterate through timesteps and send to SLAM
-            # load odometry
-
-        for time, rgb_path in scene.aligned_rgb.items():
-            # load image
-            rgb_image = cv2.imread(rgb_path)
-
-        frames = 0
-        print('testing scene')
 
         # start SLAM
         SLAM = QuadricSLAM_Online(scene.calibration, config)
+        print('testing scene')
+
+        # iterate through timesteps and send to SLAM
+        frames = 0
+        for time, rgb_path in scene.aligned_rgb.items():
 
 
+            # load image
+            rgb_image = cv2.imread(rgb_path)
+
+            # load odometry
             camera_pose = scene.aligned_trajectory[time]
 
             # calculate detections
-            
-            SLAM.update(rgb_image, detections, camera_pose)
-            frames += 1
-
-            for object_key, d in scene.associated_detections.at_pose(time).items():
-                detections.add(d, frames, object_key)
             # detections = predictor([rgb_image])[0]
             detections = Detections()
+            for object_key, d in scene.associated_detections.at_pose(time).items():
+                detections.add(d, frames, object_key)
+            
+
+            SLAM.update(rgb_image, detections, camera_pose)
+            frames += 1
 
