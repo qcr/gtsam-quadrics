@@ -81,9 +81,11 @@ class QuadricSLAM_Online(object):
         self.Q = lambda i: int(gtsam.symbol(ord('q'), i))
 
         # declare noise models
-        self.pose_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.pose_sd']]*6, dtype=np.float))
-        self.bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.box_sd']]*4, dtype=np.float))
-        self.quadric_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.quad_sd']]*9, dtype=np.float))
+        self.gps_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.gps_sd']]*6, dtype=np.float))
+        self.odom_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.odom_sd']]*6, dtype=np.float))
+        self.box_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.box_sd']]*6, dtype=np.float))
+        self.pose_prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.pose_prior_sd']]*6, dtype=np.float))
+        self.quad_prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.quad_prior_sd']]*6, dtype=np.float))
 
         # robust_estimator = name_to_estimator['Tukey'](10.0)
         # self.pose_noise = gtsam.noiseModel_Robust(robust_estimator, self.pose_noise)
@@ -107,6 +109,9 @@ class QuadricSLAM_Online(object):
 
         # store processed frames to number pose_keys
         self.frames = 0
+
+        # store previous pose for odom
+        self.prev_pose = gtsam.Pose3()
 
     def create_optimizer(self, config):
         if config['Optimizer.dogleg']:
@@ -183,7 +188,7 @@ class QuadricSLAM_Online(object):
 
     def update(self, image, associated_detections, camera_pose):
         pose_key = self.frames
-        self.frames += 1
+
 
         # # filter object detections
         # if self.config['QuadricSLAM.filter_measurements']:
@@ -217,10 +222,27 @@ class QuadricSLAM_Online(object):
         local_graph = gtsam.NonlinearFactorGraph()
         local_estimate = gtsam.Values()
         
-        # add new pose measurements to graph / estimate
+        # add new pose measurements to values
         local_estimate.insert(self.X(pose_key), camera_pose)
-        prior_factor = gtsam.PriorFactorPose3(self.X(pose_key), camera_pose, self.pose_noise)
-        local_graph.add(prior_factor)
+
+        # add gps measurement or odometry
+        if self.config['QuadricSLAM.gps']:
+            gps_factor = gtsam.PriorFactorPose3(self.X(pose_key), camera_pose, self.gps_noise)
+            local_graph.add(gps_factor)
+        else:
+
+            # add prior for first few poses
+            if self.frames < self.config['QuadricSLAM.n_priors']:
+                prior_factor = gtsam.PriorFactorPose3(self.X(pose_key), camera_pose, self.pose_prior_noise)
+                local_graph.add(prior_factor)
+
+            # add odom factor 
+            if self.frames > 0:
+                odom = self.prev_pose.between(camera_pose)
+                odom_factor = gtsam.BetweenFactorPose3(self.X(pose_key), self.X(pose_key-1), odom, self.odom_noise)
+                local_graph.add(odom_factor)
+                self.prev_pose = camera_pose
+
 
         # check if we can initialize any new objects
         for object_key, object_detections in self.detections.per_object():
@@ -253,9 +275,12 @@ class QuadricSLAM_Online(object):
             # add quadric to values 
             quadric.addToValues(local_estimate, self.Q(object_key))
 
+            # TODO: HOW TO CHECK IF CONSTRAINED BEFORE ADDING QUADS
+
             # add weak quadric prior 
-            prior_factor = gtsam_quadrics.PriorFactorConstrainedDualQuadric(self.Q(object_key), quadric, self.quadric_noise)
-            local_graph.add(prior_factor)
+            if self.config['QuadricSLAM.quad_priors']:
+                prior_factor = gtsam_quadrics.PriorFactorConstrainedDualQuadric(self.Q(object_key), quadric, self.quad_prior_noise)
+                local_graph.add(prior_factor)
 
             # add quadric to current quadrics
             # we do this to avoid reinitialization and as a flag to add new measurements
@@ -271,19 +296,29 @@ class QuadricSLAM_Online(object):
 
             # add measurements if initialized 
             if object_key in self.current_quadrics.keys():
-                bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, self.X(pose_key), self.Q(object_key), self.bbox_noise, self.config['QuadricSLAM.measurement_model'])
+                bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, self.X(pose_key), self.Q(object_key), self.box_noise, self.config['QuadricSLAM.measurement_model'])
                 local_graph.add(bbf)
                 self.detections.set_used(True, pose_key, object_key)
 
         # use local graph / estimate to update isam2
+        print(self.frames, type(local_graph), type(local_estimate))
         self.isam.update(local_graph, local_estimate)
 
         # calculate current estimate
         current_estimate = self.isam.calculateEstimate()
-        
+
+        # # check overall conditioning
+        # nlfg = self.isam.
+
+        # if len(self.current_quadrics) > 0:
+        #     import code
+        #     code.interact(local=dict(globals(),**locals()))
+
         # update current estimate 
         self.current_trajectory = Trajectory.from_values(current_estimate)
         self.current_quadrics = Quadrics.from_values(current_estimate)
+        self.frames += 1
+
 
 
 # if dataset has no detections, run detector
@@ -349,7 +384,7 @@ def run_scenenet():
 
     # dataset pose keys need to match frame_n
     for i, scene in enumerate(dataset):
-        if i < 1:
+        if i < 0:
             continue
 
 

@@ -2,14 +2,29 @@
 #==============#
 # QuadricSLAM  #
 #==============#
-QuadricSLAM.pose_sd: 0.001
-QuadricSLAM.box_sd: 3.0
-QuadricSLAM.quad_sd: 1000
+
+
+QuadricSLAM.quad_priors: True
+QuadricSLAM.quad_prior_sd: 100
+
+QuadricSLAM.gps: True
+QuadricSLAM.gps_sd: 0.001
+QuadricSLAM.odom_sd: 0.01
+
+QuadricSLAM.n_priors: 2
+QuadricSLAM.pose_prior_sd: 0.01
+
+QuadricSLAM.box_sd: 5.0
+
+QuadricSLAM.init_method: "SVD"
+QuadricSLAM.min_views: 5
+
+QuadricSLAM.measurement_model: "STANDARD" # STANDARD, TRUNCATED
+
 QuadricSLAM.filter_measurements: False
 QuadricSLAM.viable_classes: ['cup', 'bowl']
 QuadricSLAM.classes_path: "/home/lachness/git_ws/PyTorch-YOLOv3/data/coco.names"
-QuadricSLAM.init_method: "SVD"
-QuadricSLAM.min_views: 5
+
 
 #===========#
 # Recording #
