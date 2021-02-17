@@ -85,7 +85,7 @@ class QuadricSLAM_Online(object):
         self.bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.box_sd']]*4, dtype=np.float))
         self.quadric_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.quad_sd']]*9, dtype=np.float))
 
-        # robust_estimator = name_to_estimator['Cauchy'](0.3)
+        # robust_estimator = name_to_estimator['Tukey'](10.0)
         # self.pose_noise = gtsam.noiseModel_Robust(robust_estimator, self.pose_noise)
         # self.bbox_noise = gtsam.noiseModel_Robust(robust_estimator, self.bbox_noise)
         # self.quadric_noise = gtsam.noiseModel_Robust(robust_estimator, self.quadric_noise)
@@ -193,6 +193,15 @@ class QuadricSLAM_Online(object):
         # self.visualize(image, image_detections, camera_pose)
         self.visualize(image, associated_detections.values(), camera_pose)
 
+        # visualize associated detections
+        img = image.copy()
+        drawing = CV2Drawing(img)
+        for (pkey, object_key), detection in associated_detections.items():
+            assert pkey == pose_key
+            drawing.box_and_text(detection.box, (255,255,0), '{}'.format(object_key), (255,255,255))
+        cv2.imshow('data-association', img)
+        cv2.waitKey(1)
+
         # associate new measurements with existing keys
         # associated_detections = self.data_association.associate(image, image_detections, camera_pose, pose_key, self.current_quadrics, visualize=True, verbose=True)
         # associated_detections = self.data_association.associate(image, image_detections, pose_key)
@@ -224,6 +233,9 @@ class QuadricSLAM_Online(object):
             object_boxes = [d.box for d in object_detections.values()]
             pose_keys = object_detections.keys()
             object_poses = self.current_trajectory.at_keys(pose_keys)
+            
+            if not len(object_detections) >= self.config['QuadricSLAM.min_views']:
+                continue
 
             # initialize object if seen enough
             if self.config['QuadricSLAM.init_method'] == 'SVD':
@@ -259,7 +271,7 @@ class QuadricSLAM_Online(object):
 
             # add measurements if initialized 
             if object_key in self.current_quadrics.keys():
-                bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, self.X(pose_key), self.Q(object_key), self.bbox_noise, 'STANDARD')
+                bbf = gtsam_quadrics.BoundingBoxFactor(detection.box, self.calibration, self.X(pose_key), self.Q(object_key), self.bbox_noise, self.config['QuadricSLAM.measurement_model'])
                 local_graph.add(bbf)
                 self.detections.set_used(True, pose_key, object_key)
 
@@ -282,9 +294,7 @@ class QuadricSLAM_Online(object):
 # they can chose weather to use included odom/detections/da
 
 
-
-
-if __name__ == '__main__':
+def run_tum():
     # load config
     config = yaml.safe_load(open('/home/lachness/git_ws/quadricslam/quadricslam/config/online.yaml', 'r'))
 
@@ -323,3 +333,56 @@ if __name__ == '__main__':
             SLAM.update(rgb_image, detections, camera_pose)
             frames += 1
 
+
+
+
+
+
+def run_scenenet():
+    config = yaml.safe_load(open('/home/lachness/git_ws/quadricslam/quadricslam/config/online.yaml', 'r'))
+    dataset = SceneNetDataset(
+        dataset_path = "/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/data/train",
+        protobuf_folder = "/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/data/train_protobufs",
+        reader_path = "/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py",
+    )
+
+
+    # dataset pose keys need to match frame_n
+    for i, scene in enumerate(dataset):
+        if i < 1:
+            continue
+
+
+        SLAM = QuadricSLAM_Online(scene.calibration, config)
+        
+        images = scene.images
+        detections = scene.true_detections
+        trajectory = scene.true_trajectory
+
+        # filter partials
+        image_bounds = gtsam_quadrics.AlignedBox2(0,0,320.,240.)
+        filter_pixels = 10
+        filter_bounds = image_bounds.vector() + np.array([1,1,-1,-1])*filter_pixels
+        filter_bounds = gtsam_quadrics.AlignedBox2(filter_bounds)
+        filtered_detections = Detections()
+        for (pose_key, object_key), detection in detections.items():
+            if filter_bounds.contains(detection.box):
+                filtered_detections.add(detection, pose_key, object_key)
+
+        detections = filtered_detections
+        
+
+        for pose_key, pose in trajectory.items():
+            image = images[pose_key]
+
+            # wrap back in Detections object
+            image_detections = Detections()
+            for object_key, detection in detections.at_pose(pose_key).items():
+                image_detections.add(detection, pose_key, object_key)
+
+            SLAM.update(image, image_detections, pose)
+
+
+
+if __name__ == '__main__':
+    run_scenenet()
