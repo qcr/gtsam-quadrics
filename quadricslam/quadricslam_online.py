@@ -83,9 +83,9 @@ class QuadricSLAM_Online(object):
         # declare noise models
         self.gps_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.gps_sd']]*6, dtype=np.float))
         self.odom_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.odom_sd']]*6, dtype=np.float))
-        self.box_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.box_sd']]*6, dtype=np.float))
+        self.box_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.box_sd']]*4, dtype=np.float))
         self.pose_prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.pose_prior_sd']]*6, dtype=np.float))
-        self.quad_prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.quad_prior_sd']]*6, dtype=np.float))
+        self.quad_prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.quad_prior_sd']]*9, dtype=np.float))
 
         # robust_estimator = name_to_estimator['Tukey'](10.0)
         # self.pose_noise = gtsam.noiseModel_Robust(robust_estimator, self.pose_noise)
@@ -96,6 +96,7 @@ class QuadricSLAM_Online(object):
         self.detections = Detections()
 
         # store current estimates
+        self.current_estimate = None
         self.current_trajectory = Trajectory()
         self.current_quadrics = Quadrics()
 
@@ -112,6 +113,8 @@ class QuadricSLAM_Online(object):
 
         # store previous pose for odom
         self.prev_pose = gtsam.Pose3()
+        self.global_graph = gtsam.NonlinearFactorGraph()
+        self.global_values = gtsam.Values()
 
     def create_optimizer(self, config):
         if config['Optimizer.dogleg']:
@@ -123,6 +126,7 @@ class QuadricSLAM_Online(object):
         parameters.setEnableRelinearization(config['Optimizer.relinearization'])
         parameters.setRelinearizeThreshold(config['Optimizer.relinearize_thresh'])
         parameters.setRelinearizeSkip(config['Optimizer.relinearize_skip'])
+        parameters.setFactorization(config['Optimizer.factorization'])
         parameters.print_("ISAM2 Parameters")
         isam = gtsam.ISAM2(parameters)
         return isam
@@ -239,7 +243,7 @@ class QuadricSLAM_Online(object):
             # add odom factor 
             if self.frames > 0:
                 odom = self.prev_pose.between(camera_pose)
-                odom_factor = gtsam.BetweenFactorPose3(self.X(pose_key), self.X(pose_key-1), odom, self.odom_noise)
+                odom_factor = gtsam.BetweenFactorPose3(self.X(pose_key-1), self.X(pose_key), odom, self.odom_noise)
                 local_graph.add(odom_factor)
                 self.prev_pose = camera_pose
 
@@ -300,24 +304,135 @@ class QuadricSLAM_Online(object):
                 local_graph.add(bbf)
                 self.detections.set_used(True, pose_key, object_key)
 
-        # use local graph / estimate to update isam2
-        print(self.frames, type(local_graph), type(local_estimate))
-        self.isam.update(local_graph, local_estimate)
 
-        # calculate current estimate
-        current_estimate = self.isam.calculateEstimate()
+        # add to global graph/values
+        self.global_graph.push_back(local_graph)
+        self.global_values.insert(local_estimate)
 
-        # # check overall conditioning
-        # nlfg = self.isam.
+        # check global graph/values
+        global_factors = [self.global_graph.at(idx) for idx in range(self.global_graph.size())]
+        startkeys = [f.keys().at(0) for f in global_factors]
+
+        bbfs = [f for f in global_factors if f.keys().size() == 2 and gtsam.symbolChr(f.keys().at(1)) == 'q']
+        
+        print('-----------------------------------------------')
+        # TODO: check using only global graph/values. How to know which factor is bbf?
+        if len(self.current_quadrics) > 0 and False:
+            print('Checking validy of global graph/values manually')
+            for key in self.current_quadrics.keys():
+                bbfs = [f for f in global_factors if f.keys().size() == 2 and f.keys().at(1) == self.Q(key)]
+
+                poses_exist = all([self.global_values.exists(bbf.keys().at(0)) for bbf in bbfs]) # each pose must have value
+                poses_constrained = all([bbf.keys().at(0) in startkeys for bbf in bbfs]) # each pose must have prior/between
+                quad_exists = self.global_values.exists(self.Q(key))
+                quad_constrained = len(bbfs) > 3
+                valid = all([poses_exist, poses_constrained, quad_exists, quad_constrained])
+
+                # check DOF per factor
+                # calculate H2 (4x9) and count nonzero rows
+                bbfs = [gtsam_quadrics.dynamic_cast_BoundingBoxFactor_NonlinearFactor(f) for f in bbfs]
+                dquads = [f.evaluateH2(self.global_values) for f in bbfs]
+                DOFs = np.sum([np.count_nonzero((dquad != 0).sum(1)) for dquad in dquads])
+
+                # check conditioning per quad
+                conds = [np.linalg.cond(dquad) for dquad in dquads]
+
+                frame = {
+                    'object': key,
+                    'valid': valid,
+                    'DOFs': DOFs,
+                    'avg cond': np.mean(conds),
+                    'max cond': np.max(conds),
+                }
+                print('-----------------')
+                for key, value in frame.items():
+                    print(key, value)
+                
+
+
+        # check isam graph/values
+        if self.current_estimate is not None and len(self.current_quadrics) > 0:
+
+            print('\nchecking global graph/values')
+            v1 = self.valid_system(self.global_graph, self.global_values)
+            
+            print('\nchecking isam graph/est')
+            v2 = self.valid_system(self.isam.getFactorsUnsafe(), self.current_estimate)
+
+            print('\nchecking isam graph/initial values')
+            v3 = self.valid_system(self.isam.getFactorsUnsafe(), self.global_values)
+
+            # if not all([v1,v2,v3]):
+            #     import code
+            #     code.interact(local=dict(globals(),**locals()))
+
+
+        try:
+            # use local graph / estimate to update isam2
+            self.isam.update(local_graph, local_estimate)
+            # calculate current estimate
+            self.current_estimate = self.isam.calculateEstimate()
+        except Exception as e:
+            print(e)
+            import code
+            code.interact(local=dict(globals(),**locals()))
+
 
         # if len(self.current_quadrics) > 0:
+        # if self.frames > 90:
         #     import code
         #     code.interact(local=dict(globals(),**locals()))
 
         # update current estimate 
-        self.current_trajectory = Trajectory.from_values(current_estimate)
-        self.current_quadrics = Quadrics.from_values(current_estimate)
+        self.current_trajectory = Trajectory.from_values(self.current_estimate)
+        self.current_quadrics = Quadrics.from_values(self.current_estimate)
         self.frames += 1
+
+
+
+    def valid_system(self, nlfg, values):
+        gfg = nlfg.linearize(values) 
+        jacobian = gfg.jacobian()[0]
+        hessian = gfg.hessian()[0]
+        valid = True
+
+        # check if underdetermined
+        if np.linalg.matrix_rank(jacobian) < values.dim() \
+            or np.linalg.matrix_rank(hessian) < values.dim():
+            print('  NOT VALID: underdetermined')
+            valid = False
+
+        # check if indefinite, i.e not positive semidefinite or negative semidefinite
+        eigv = np.linalg.eigh(hessian)[0]
+        if np.any(eigv<0) and np.any(eigv>0):
+            print('  NOT VALID: indefinite hessian')
+            valid = False
+
+        if not np.all(eigv>0):
+            print('  NOT VALID: not postive definite')
+            valid = False
+
+        # check conditioning 
+        cond = np.linalg.cond(jacobian)
+        print('  Conditioning: ', cond)
+
+        # COND CHECKING:
+        # check almost underconstrained variable
+        # vastly different uncertainties
+        return valid
+
+
+    def classify_eigv(self, eigv):
+        if np.all(eigv>0):
+            return 'positive definite'
+        if np.all(eigv>=0):
+            return 'positive semidefinite'
+        if np.all(eigv<0):
+            return 'negative definite'
+        if np.all(eigv<=0):
+            return 'negative semidefinite'
+        if np.any(eigv<0) and np.any(eigv>0):
+            return 'indefinite'
 
 
 

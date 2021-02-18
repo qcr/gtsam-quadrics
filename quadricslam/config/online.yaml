@@ -4,20 +4,20 @@
 #==============#
 
 
-QuadricSLAM.quad_priors: True
+QuadricSLAM.quad_priors: False
 QuadricSLAM.quad_prior_sd: 100
 
-QuadricSLAM.gps: True
+QuadricSLAM.gps: False
 QuadricSLAM.gps_sd: 0.001
-QuadricSLAM.odom_sd: 0.01
+QuadricSLAM.odom_sd: 0.001
 
 QuadricSLAM.n_priors: 2
-QuadricSLAM.pose_prior_sd: 0.01
+QuadricSLAM.pose_prior_sd: 1.0
 
-QuadricSLAM.box_sd: 5.0
+QuadricSLAM.box_sd: 1.0
 
 QuadricSLAM.init_method: "SVD"
-QuadricSLAM.min_views: 5
+QuadricSLAM.min_views: 20
 
 QuadricSLAM.measurement_model: "STANDARD" # STANDARD, TRUNCATED
 
@@ -34,7 +34,8 @@ Recording.record: False
 #====================#
 # Optimizer Settings #
 #====================#
-Optimizer.dogleg: True
+Optimizer.factorization: "CHOLESKY" # CHOLESKY, QR
+Optimizer.dogleg: False
 Optimizer.relinearization: True
 Optimizer.relinearize_skip: 1
 Optimizer.relinearize_thresh: 0.01
