@@ -106,6 +106,12 @@ virtual class BoundingBoxFactor : NoiseModelFactor {
   Matrix evaluateH2(const Values& x) const;
 };
 
+#include <gtsam_quadrics/geometry/QuadricAngleFactor.h>
+virtual class QuadricAngleFactor : NoiseModelFactor {
+  QuadricAngleFactor(const size_t& quadricKey, const gtsam::noiseModel::Base* model);
+  Vector evaluateError(const ConstrainedDualQuadric& quadric) const;
+};
+
 #include <gtsam/nonlinear/PriorFactor.h>
 template<T = {gtsam::ConstrainedDualQuadric}>
 virtual class PriorFactor : NoiseModelFactor {

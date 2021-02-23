@@ -46,6 +46,7 @@ set(SOURCE_FILES
 	./gtsam_quadrics/geometry/AlignedBox2.cpp
 	./gtsam_quadrics/geometry/AlignedBox3.cpp
 	./gtsam_quadrics/geometry/BoundingBoxFactor.cpp
+	./gtsam_quadrics/geometry/QuadricAngleFactor.cpp
 	./gtsam_quadrics/geometry/QuadricCamera.cpp
 	./gtsam_quadrics/geometry/DualConic.cpp
 )
