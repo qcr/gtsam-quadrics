@@ -104,6 +104,15 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
 
     return error;
 
+    // check for nans
+    if (error.array().isInf().any() || error.array().isNaN().any()
+      || (H1 && (H1->array().isInf().any() || H1->array().isNaN().any()))
+      || (H2 && (H2->array().isInf().any() || H2->array().isNaN().any()))) {
+      throw std::runtime_error("nan/inf error in bbf");
+    }
+
+
+
 
   // handle projection failures
   } catch(QuadricProjectionException& e) {

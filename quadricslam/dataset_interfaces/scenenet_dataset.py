@@ -624,8 +624,8 @@ if __name__ == '__main__':
     shapenet_path = '/path/to/ShapeNet/ShapeNetCore.v2'
     dataset = SceneNetDataset(dataset_path, protobuf_folder, reader_path, shapenet_path)
 
-    player = SceneNetPlayer(dataset)
-    player.start()
+    # player = SceneNetPlayer(dataset)
+    # player.start()
 
 
 

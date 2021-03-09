@@ -86,11 +86,16 @@ class QuadricSLAM_Online(object):
         self.box_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.box_sd']]*4, dtype=np.float))
         self.pose_prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.pose_prior_sd']]*6, dtype=np.float))
         self.quad_prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.quad_prior_sd']]*9, dtype=np.float))
+        self.angle_factor_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.angle_factor_sd']]*3, dtype=np.float))
+        self.rot_prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([config['QuadricSLAM.prior_rots_sd']]*3 + [config['QuadricSLAM.inf_sd']]*6, dtype=np.float))
 
-        # robust_estimator = name_to_estimator['Tukey'](10.0)
-        # self.pose_noise = gtsam.noiseModel_Robust(robust_estimator, self.pose_noise)
-        # self.bbox_noise = gtsam.noiseModel_Robust(robust_estimator, self.bbox_noise)
-        # self.quadric_noise = gtsam.noiseModel_Robust(robust_estimator, self.quadric_noise)
+        # robust_estimator = name_to_estimator['Tukey'](1.0)
+        # self.gps_noise = gtsam.noiseModel_Robust(robust_estimator, self.gps_noise)
+        # self.odom_noise = gtsam.noiseModel_Robust(robust_estimator, self.odom_noise)
+        # self.box_noise = gtsam.noiseModel_Robust(robust_estimator, self.box_noise)
+        # self.pose_prior_noise = gtsam.noiseModel_Robust(robust_estimator, self.pose_prior_noise)
+        # self.quad_prior_noise = gtsam.noiseModel_Robust(robust_estimator, self.quad_prior_noise)
+        # self.angle_factor_noise = gtsam.noiseModel_Robust(robust_estimator, self.angle_factor_noise)
 
         # set measurement storage 
         self.detections = Detections()
@@ -117,17 +122,18 @@ class QuadricSLAM_Online(object):
         self.global_values = gtsam.Values()
 
     def create_optimizer(self, config):
-        if config['Optimizer.dogleg']:
+        if config['Optimizer'] == "ISAM-D":
             opt_params = gtsam.ISAM2DoglegParams()
         else:
             opt_params = gtsam.ISAM2GaussNewtonParams()
         parameters = gtsam.ISAM2Params()
         parameters.setOptimizationParams(opt_params)
-        parameters.setEnableRelinearization(config['Optimizer.relinearization'])
-        parameters.setRelinearizeThreshold(config['Optimizer.relinearize_thresh'])
-        parameters.setRelinearizeSkip(config['Optimizer.relinearize_skip'])
-        parameters.setFactorization(config['Optimizer.factorization'])
-        parameters.print_("ISAM2 Parameters")
+        parameters.setEnableRelinearization(config['ISAM.relinearization'])
+        parameters.setRelinearizeThreshold(config['ISAM.relinearize_thresh'])
+        parameters.setRelinearizeSkip(config['ISAM.relinearize_skip'])
+        parameters.setFactorization(config['ISAM.factorization'])
+        parameters.setEnableDetailedResults(True)
+        # parameters.print_("ISAM2 Parameters")
         isam = gtsam.ISAM2(parameters)
         return isam
 
@@ -190,7 +196,7 @@ class QuadricSLAM_Online(object):
                 atexit.register(self.video_writer.release)
             self.video_writer.write(img)
 
-    def update(self, image, associated_detections, camera_pose):
+    def update(self, image, associated_detections, camera_pose, initial_quadrics=None):
         pose_key = self.frames
 
 
@@ -203,13 +209,13 @@ class QuadricSLAM_Online(object):
         self.visualize(image, associated_detections.values(), camera_pose)
 
         # visualize associated detections
-        img = image.copy()
-        drawing = CV2Drawing(img)
-        for (pkey, object_key), detection in associated_detections.items():
-            assert pkey == pose_key
-            drawing.box_and_text(detection.box, (255,255,0), '{}'.format(object_key), (255,255,255))
-        cv2.imshow('data-association', img)
-        cv2.waitKey(1)
+        # img = image.copy()
+        # drawing = CV2Drawing(img)
+        # for (pkey, object_key), detection in associated_detections.items():
+        #     assert pkey == pose_key
+        #     drawing.box_and_text(detection.box, (255,255,0), '{}'.format(object_key), (255,255,255))
+        # cv2.imshow('data-association', img)
+        # cv2.waitKey(1)
 
         # associate new measurements with existing keys
         # associated_detections = self.data_association.associate(image, image_detections, camera_pose, pose_key, self.current_quadrics, visualize=True, verbose=True)
@@ -245,7 +251,7 @@ class QuadricSLAM_Online(object):
                 odom = self.prev_pose.between(camera_pose)
                 odom_factor = gtsam.BetweenFactorPose3(self.X(pose_key-1), self.X(pose_key), odom, self.odom_noise)
                 local_graph.add(odom_factor)
-                self.prev_pose = camera_pose
+            self.prev_pose = camera_pose
 
 
         # check if we can initialize any new objects
@@ -263,14 +269,20 @@ class QuadricSLAM_Online(object):
             if not len(object_detections) >= self.config['QuadricSLAM.min_views']:
                 continue
 
+
+
             # initialize object if seen enough
             if self.config['QuadricSLAM.init_method'] == 'SVD':
                 if not len(object_detections) >= self.config['QuadricSLAM.min_views']:
                     continue
                 quadric = Initialize.SVD(object_poses, object_boxes, self.calibration)
                 
-            elif self.config['QuadricSLAM.init_method'] == 'simple': 
+            elif self.config['QuadricSLAM.init_method'] == 'SIMPLE': 
                 quadric = Initialize.simple(object_poses[-1], object_boxes[-1], self.calibration, depth=1.0, size=0.01) 
+
+            elif self.config['QuadricSLAM.init_method'] == 'TRUE':
+                quadric = initial_quadrics.at(object_key)
+
 
             # continue if not correctly initialized 
             if quadric is None: 
@@ -282,9 +294,23 @@ class QuadricSLAM_Online(object):
             # TODO: HOW TO CHECK IF CONSTRAINED BEFORE ADDING QUADS
 
             # add weak quadric prior 
+            if self.config['QuadricSLAM.zero_prior']:
+                prior_quad = gtsam_quadrics.ConstrainedDualQuadric()
+            else:
+                prior_quad = quadric
+
             if self.config['QuadricSLAM.quad_priors']:
-                prior_factor = gtsam_quadrics.PriorFactorConstrainedDualQuadric(self.Q(object_key), quadric, self.quad_prior_noise)
+                prior_factor = gtsam_quadrics.PriorFactorConstrainedDualQuadric(self.Q(object_key), prior_quad, self.quad_prior_noise)
                 local_graph.add(prior_factor)
+
+            if self.config['QuadricSLAM.prior_rots']:
+                prior_factor = gtsam_quadrics.PriorFactorConstrainedDualQuadric(self.Q(object_key), prior_quad, self.rot_prior_noise)
+                local_graph.add(prior_factor)
+                
+
+            if self.config['QuadricSLAM.angle_factors']:
+                angle_factor = gtsam_quadrics.QuadricAngleFactor(self.Q(object_key), prior_quad.pose().rotation(), self.angle_factor_noise)
+                local_graph.add(angle_factor)
 
             # add quadric to current quadrics
             # we do this to avoid reinitialization and as a flag to add new measurements
@@ -315,7 +341,6 @@ class QuadricSLAM_Online(object):
 
         bbfs = [f for f in global_factors if f.keys().size() == 2 and gtsam.symbolChr(f.keys().at(1)) == 'q']
         
-        print('-----------------------------------------------')
         # TODO: check using only global graph/values. How to know which factor is bbf?
         if len(self.current_quadrics) > 0 and False:
             print('Checking validy of global graph/values manually')
@@ -334,6 +359,8 @@ class QuadricSLAM_Online(object):
                 dquads = [f.evaluateH2(self.global_values) for f in bbfs]
                 DOFs = np.sum([np.count_nonzero((dquad != 0).sum(1)) for dquad in dquads])
 
+                errors = [np.square(bbf.unwhitenedError(self.global_values)).sum() for bbf in bbfs]
+
                 # check conditioning per quad
                 conds = [np.linalg.cond(dquad) for dquad in dquads]
 
@@ -343,6 +370,8 @@ class QuadricSLAM_Online(object):
                     'DOFs': DOFs,
                     'avg cond': np.mean(conds),
                     'max cond': np.max(conds),
+                    'avg error': np.mean(errors),
+                    'max error': np.max(errors),
                 }
                 print('-----------------')
                 for key, value in frame.items():
@@ -351,42 +380,56 @@ class QuadricSLAM_Online(object):
 
 
         # check isam graph/values
-        if self.current_estimate is not None and len(self.current_quadrics) > 0:
+        if self.current_estimate is not None and len(self.current_quadrics) > 0 and False:
 
             print('\nchecking global graph/values')
             v1 = self.valid_system(self.global_graph, self.global_values)
             
-            print('\nchecking isam graph/est')
-            v2 = self.valid_system(self.isam.getFactorsUnsafe(), self.current_estimate)
+            # print('\nchecking isam graph/est')
+            # v2 = self.valid_system(self.isam.getFactorsUnsafe(), self.current_estimate)
 
-            print('\nchecking isam graph/initial values')
-            v3 = self.valid_system(self.isam.getFactorsUnsafe(), self.global_values)
+            # print('\nchecking isam graph/initial values')
+            # v3 = self.valid_system(self.isam.getFactorsUnsafe(), self.global_values)
 
             # if not all([v1,v2,v3]):
+            # if not v1:
             #     import code
             #     code.interact(local=dict(globals(),**locals()))
 
 
-        try:
-            # use local graph / estimate to update isam2
-            self.isam.update(local_graph, local_estimate)
-            # calculate current estimate
-            self.current_estimate = self.isam.calculateEstimate()
+        try: 
+            if self.config['Optimizer'] in ["ISAM", "ISAM-D"]:
+                self.isam.update(local_graph, local_estimate)
+                self.current_estimate = self.isam.calculateEstimate()
+            elif self.config['Optimizer'] == "LVM":
+                params = gtsam.LevenbergMarquardtParams()
+                params.setVerbosityLM("SUMMARY")    
+                params.setMaxIterations(20)
+                params.setlambdaInitial(1.0e-5)
+                params.setlambdaUpperBound(1.0e+10)
+                params.setlambdaLowerBound(1.0e-8)
+                params.setRelativeErrorTol(1.0e-5)
+                params.setAbsoluteErrorTol(1.0e-5)
+                optimizer = gtsam.LevenbergMarquardtOptimizer(self.global_graph, self.global_values, params)
+                self.current_estimate = optimizer.optimize()
+            elif self.config['Optimizer'] == "GN":
+                params = gtsam.GaussNewtonParams()
+                params.setVerbosity("ERROR")   
+                params.setMaxIterations(20)
+                params.setRelativeErrorTol(1.0e-5)
+                params.setAbsoluteErrorTol(1.0e-5)
+                optimizer = gtsam.GaussNewtonOptimizer(self.global_graph, self.global_values, params)
+                self.current_estimate = optimizer.optimize()
         except Exception as e:
-            print(e)
-            import code
-            code.interact(local=dict(globals(),**locals()))
+            self.frames += 1
+            return False
 
-
-        # if len(self.current_quadrics) > 0:
-        # if self.frames > 90:
-        #     import code
-        #     code.interact(local=dict(globals(),**locals()))
 
         # update current estimate 
         self.current_trajectory = Trajectory.from_values(self.current_estimate)
         self.current_quadrics = Quadrics.from_values(self.current_estimate)
         self.frames += 1
+        return True
 
 
 
@@ -444,95 +487,3 @@ class QuadricSLAM_Online(object):
 # they can chose weather to use included odom/detections/da
 
 
-def run_tum():
-    # load config
-    config = yaml.safe_load(open('/home/lachness/git_ws/quadricslam/quadricslam/config/online.yaml', 'r'))
-
-    # load dataset
-    dataset = TUMDataset('/media/lachness/DATA/Datasets/TUM/')
-
-    # load detector
-    predictor = FasterRCNN('COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml', batch_size=5)
-
-    print('starting')
-
-    for scene in dataset:
-
-        # start SLAM
-        SLAM = QuadricSLAM_Online(scene.calibration, config)
-        print('testing scene')
-
-        # iterate through timesteps and send to SLAM
-        frames = 0
-        for time, rgb_path in scene.aligned_rgb.items():
-
-
-            # load image
-            rgb_image = cv2.imread(rgb_path)
-
-            # load odometry
-            camera_pose = scene.aligned_trajectory[time]
-
-            # calculate detections
-            # detections = predictor([rgb_image])[0]
-            detections = Detections()
-            for object_key, d in scene.associated_detections.at_pose(time).items():
-                detections.add(d, frames, object_key)
-            
-
-            SLAM.update(rgb_image, detections, camera_pose)
-            frames += 1
-
-
-
-
-
-
-def run_scenenet():
-    config = yaml.safe_load(open('/home/lachness/git_ws/quadricslam/quadricslam/config/online.yaml', 'r'))
-    dataset = SceneNetDataset(
-        dataset_path = "/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/data/train",
-        protobuf_folder = "/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/data/train_protobufs",
-        reader_path = "/media/lachness/DATA/Datasets/SceneNetRGBD/pySceneNetRGBD/scenenet_pb2.py",
-    )
-
-
-    # dataset pose keys need to match frame_n
-    for i, scene in enumerate(dataset):
-        if i < 0:
-            continue
-
-
-        SLAM = QuadricSLAM_Online(scene.calibration, config)
-        
-        images = scene.images
-        detections = scene.true_detections
-        trajectory = scene.true_trajectory
-
-        # filter partials
-        image_bounds = gtsam_quadrics.AlignedBox2(0,0,320.,240.)
-        filter_pixels = 10
-        filter_bounds = image_bounds.vector() + np.array([1,1,-1,-1])*filter_pixels
-        filter_bounds = gtsam_quadrics.AlignedBox2(filter_bounds)
-        filtered_detections = Detections()
-        for (pose_key, object_key), detection in detections.items():
-            if filter_bounds.contains(detection.box):
-                filtered_detections.add(detection, pose_key, object_key)
-
-        detections = filtered_detections
-        
-
-        for pose_key, pose in trajectory.items():
-            image = images[pose_key]
-
-            # wrap back in Detections object
-            image_detections = Detections()
-            for object_key, detection in detections.at_pose(pose_key).items():
-                image_detections.add(detection, pose_key, object_key)
-
-            SLAM.update(image, image_detections, pose)
-
-
-
-if __name__ == '__main__':
-    run_scenenet()

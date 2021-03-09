@@ -31,7 +31,9 @@ Vector QuadricAngleFactor::evaluateError(const ConstrainedDualQuadric& quadric,
 
 
   // evaluate error 
-  Vector3 error = Rot3::LocalCoordinates(quadric.pose().rotation());
+  Rot3 QRot = quadric.pose().rotation();
+  Vector3 error = measured_.localCoordinates(QRot);
+  // Rot3::LocalCoordinates(quadric.pose().rotation());
 
   boost::function<Vector(const ConstrainedDualQuadric&)> funPtr(boost::bind(&QuadricAngleFactor::evaluateError, this, _1, boost::none));
   if (H) {

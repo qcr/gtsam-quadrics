@@ -3,9 +3,18 @@
 # QuadricSLAM  #
 #==============#
 
-
+QuadricSLAM.zero_prior: False
+# prior set to SVD quadric
+# NOTE: what if set to unit sphere?
 QuadricSLAM.quad_priors: False
-QuadricSLAM.quad_prior_sd: 100
+QuadricSLAM.quad_prior_sd: 1e2
+# prior Q with inf sigma for all but rotation, which has prior 0
+QuadricSLAM.prior_rots: True
+QuadricSLAM.prior_rots_sd: 1e2
+QuadricSLAM.inf_sd: 1e18
+#
+QuadricSLAM.angle_factors: False
+QuadricSLAM.angle_factor_sd: 1e2
 
 QuadricSLAM.gps: False
 QuadricSLAM.gps_sd: 0.001
@@ -16,8 +25,8 @@ QuadricSLAM.pose_prior_sd: 1.0
 
 QuadricSLAM.box_sd: 1.0
 
-QuadricSLAM.init_method: "SVD"
-QuadricSLAM.min_views: 20
+QuadricSLAM.init_method: "SVD" # SVD, SIMPLE, TRUE
+QuadricSLAM.min_views: 5
 
 QuadricSLAM.measurement_model: "STANDARD" # STANDARD, TRUNCATED
 
@@ -34,11 +43,11 @@ Recording.record: False
 #====================#
 # Optimizer Settings #
 #====================#
-Optimizer.factorization: "CHOLESKY" # CHOLESKY, QR
-Optimizer.dogleg: False
-Optimizer.relinearization: True
-Optimizer.relinearize_skip: 1
-Optimizer.relinearize_thresh: 0.01
+Optimizer: "ISAM" # ISAM, ISAM-D, LVM, GN
+ISAM.factorization: "QR" # CHOLESKY, QR
+ISAM.relinearization: True
+ISAM.relinearize_skip: 1
+ISAM.relinearize_thresh: 0.01
 
 #==================#
 # Data-association #

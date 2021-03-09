@@ -108,7 +108,7 @@ virtual class BoundingBoxFactor : NoiseModelFactor {
 
 #include <gtsam_quadrics/geometry/QuadricAngleFactor.h>
 virtual class QuadricAngleFactor : NoiseModelFactor {
-  QuadricAngleFactor(const size_t& quadricKey, const gtsam::noiseModel::Base* model);
+  QuadricAngleFactor(const size_t& quadricKey, const Rot3& measured, const gtsam::noiseModel::Base* model);
   Vector evaluateError(const ConstrainedDualQuadric& quadric) const;
 };
 

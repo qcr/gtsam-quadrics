@@ -39,6 +39,7 @@ namespace gtsam {
       
     protected:
       typedef NoiseModelFactor1<ConstrainedDualQuadric> Base; ///< base class has keys and noisemodel as private members
+      Rot3 measured_;
 
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -47,8 +48,8 @@ namespace gtsam {
       /// @{
 
       /** Constructor from measured box, calbration, dimensions and posekey, quadrickey, noisemodel */
-      QuadricAngleFactor(const Key& quadricKey, const SharedNoiseModel& model): 
-        Base(model, quadricKey) { };
+      QuadricAngleFactor(const Key& quadricKey, const Rot3 measured, const SharedNoiseModel& model): 
+        Base(model, quadricKey), measured_(measured) { };
 
       /// @}
       /// @name Class methods
