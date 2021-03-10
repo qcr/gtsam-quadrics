@@ -381,6 +381,8 @@ def run_scenenet():
 
                         success = SLAM.update(image, image_detections, pose, scene.true_quadrics)
 
+                        if pose_key%50:
+                            continue
 
                         # get current graph / values
                         graph = SLAM.global_graph
