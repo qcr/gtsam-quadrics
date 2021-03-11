@@ -340,7 +340,7 @@ def run_scenenet():
 
         optimizers = ['ISAM', 'ISAM-D', 'LVM', 'GN']
         fixes = ['none', 'prior']
-        sigmas = [10, 100, 1000, 10000]
+        sigmas = [100, 1000]
 
         for opt in optimizers:
             for fix in fixes:
@@ -366,12 +366,15 @@ def run_scenenet():
                     
         
 
-                    # record GT partial trajectory
-                    partial_true = Trajectory()
+
 
                     # loop over image,pose,detections
+                    success = True
                     for pose_key, pose in trajectory.items():
-                        partial_true.add(pose, pose_key)
+
+
+                        
+                        
                         image = images[pose_key]
 
                         # set detections to have the same posekeys
@@ -379,71 +382,91 @@ def run_scenenet():
                         for object_key, detection in detections.at_pose(pose_key).items():
                             image_detections.add(detection, pose_key, object_key)
 
-                        success = SLAM.update(image, image_detections, pose, scene.true_quadrics)
+                        # only optimize full-batch if GN/LVM 
+                        dont_optimize = False
+                        if opt in ['GN', 'LVM'] and pose_key != trajectory.keys()[-1]:
+                            dont_optimize = True
 
-                        if pose_key%50:
-                            continue
+                        success = success and SLAM.update(image, image_detections, pose, scene.true_quadrics, dont_optimize=dont_optimize)
 
-                        # get current graph / values
-                        graph = SLAM.global_graph
-                        initial_values = SLAM.global_values
-                        current_values = SLAM.current_estimate
 
-                        # check validity
-                        is_valid, cond = check_quadric_constrained(graph, initial_values)
+                        # giveup once we receive ILS
+                        if not success:
+                            break
 
-                        # get estimates
-                        estimated_quadrics = SLAM.current_quadrics
-                        estimated_trajectory = SLAM.current_trajectory
+                    # ensure quadrics improved from SVD | only makes sense if not ILS
+                    if success:
+                        init_aiou = Evaluation.evaluate_map(Quadrics.from_values(SLAM.global_values), true_bounds, SLAM.current_trajectory, scene.true_trajectory, type='weak')[1]
+                        aiou = Evaluation.evaluate_map(SLAM.current_quadrics, true_bounds, SLAM.current_trajectory, scene.true_trajectory, type='weak')[1]
+                        improve = aiou > init_aiou
+                    else:
+                        improve = False
 
-                        init_aiou = Evaluation.evaluate_map(scene.true_quadrics, true_bounds, scene.true_trajectory, scene.true_trajectory, type='weak')[1]
-                        aiou = Evaluation.evaluate_map(estimated_quadrics, true_bounds, estimated_trajectory, scene.true_trajectory, type='weak')[1]
-                        ate = Evaluation.evaluate_trajectory(estimated_trajectory, partial_true, 'weak')[0]
-                        # init_ate = Evaluation.evaluate_trajectory(partial_true, partial_true, 'weak')[0]
+                    # record final data 
+                    data.append({
+                        'scene_n': scene_n,
+                        'success': int(success),
+                        'name': name,
+                        'improve': int(improve)
+                    })
 
-                        if is_valid and success:
-                            valid = 'V'
-                        if is_valid and not success:
-                            valid = 'V-ILS'
-                        if not is_valid and success:
-                            valid = 'NV'
-                        if not is_valid and not success:
-                            valid = 'NV-ILS'
-
-                        data.append({
-                            'scene_n': scene_n,
-                            'step': pose_key,
-                            'valid': valid,
-                            'cond': cond,
-                            'name': name,
-                            'ate': ate,
-                            'aiou': aiou,
-                            'opt': opt,
-                        })
-
+                    # only run normal for one sigma
                     if fix == 'none':
                         break
 
 
+
+                    # magically check errors
+                    # errors = [self.global_graph.at(i).error(self.global_values) for i in range(self.global_graph.size())]
+                    # indices = np.where(np.isnan(errors))[0]
+                    # bbfs = [gtsam_quadrics.dynamic_cast_BoundingBoxFactor_NonlinearFactor(self.global_graph.at(i)) for i in indices]
+                    # object_keys = [bbf.objectKey() for bbf in bbfs]
+                    # pose_keys = [bbf.poseKey() for bbf in bbfs]
+                    # poses = [self.global_values.atPose3(key) for key in pose_keys]
+                    # quadrics = [gtsam_quadrics.ConstrainedDualQuadric.getFromValues(self.global_values, key) for key in object_keys]
+
+
+
+                    # # manually check errors
+                    # manual_errors = []
+                    # for i in range(self.global_graph.size()):
+                    #     factor = self.global_graph.at(i)
+                    #     if factor.keys().size() == 2 and chr(gtsam.symbolChr(factor.keys().at(1))) == 'q':
+                    #         bbf = gtsam_quadrics.dynamic_cast_BoundingBoxFactor_NonlinearFactor(factor)
+                    #         quadric = gtsam_quadrics.ConstrainedDualQuadric.getFromValues(self.global_values, bbf.objectKey())
+                    #         pose = self.global_values.atPose3(bbf.poseKey())
+                    #         error = bbf.evaluateError(pose, quadric)
+                    #         for e in error:
+                    #             manual_errors.append(e)
+
+
         df = pd.DataFrame(data)
+
+        # make table methods vs ILS count 
+        print('Tested {} Scenes'.format(scene_n+1))
+        table = df.pivot_table(index='name', values=['success','improve'], aggfunc=np.sum)
+        print(table)
+        # import code
+        # code.interact(local=dict(globals(),**locals()))
+
     
-        # plot lineplots
-        # figure for each optimizer
-        # subplot for each metric
-        # plot lines for opt-fix-sigma
-        for opt in optimizers:
-            fig, axs = plt.subplots(2,2)
-            plt.title('Optimizer {}'.format(opt))
-            for i, metric in enumerate(['ate','aiou','cond']):
-                ax = axs[np.unravel_index(i, (2,2))]
+        # # plot lineplots
+        # # figure for each optimizer
+        # # subplot for each metric
+        # # plot lines for opt-fix-sigma
+        # for opt in optimizers:
+        #     fig, axs = plt.subplots(2,2)
+        #     plt.title('Optimizer {}'.format(opt))
+        #     for i, metric in enumerate(['ate','aiou','cond']):
+        #         ax = axs[np.unravel_index(i, (2,2))]
 
-                subdata = df[df.opt==opt]
-                sns.lineplot(ax=ax, data=subdata, x='step', y=metric, hue='name')
-                sns.scatterplot(ax=ax, data=subdata, x='step', y=metric, hue='name', style='valid')
+        #         subdata = df[df.opt==opt]
+        #         sns.lineplot(ax=ax, data=subdata, x='step', y=metric, hue='name')
+        #         sns.scatterplot(ax=ax, data=subdata, x='step', y=metric, hue='name', style='valid')
 
-                if metric == 'cond':
-                    ax.set_yscale('log')
-        plt.show()
+        #         if metric == 'cond':
+        #             ax.set_yscale('log')
+        # plt.show()
 
 
 

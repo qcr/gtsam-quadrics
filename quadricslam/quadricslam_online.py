@@ -196,8 +196,12 @@ class QuadricSLAM_Online(object):
                 atexit.register(self.video_writer.release)
             self.video_writer.write(img)
 
-    def update(self, image, associated_detections, camera_pose, initial_quadrics=None):
-        pose_key = self.frames
+    def update(self, image, associated_detections, camera_pose, initial_quadrics=None, dont_optimize=False):
+        """
+        Initialize new objects using the current estimate of trajectory
+        """
+        pose_key = self.frames # current frame number (0-x)
+        self.frames += 1 # internal only
 
 
         # # filter object detections
@@ -206,7 +210,7 @@ class QuadricSLAM_Online(object):
 
         # # draw current map and measurements
         # self.visualize(image, image_detections, camera_pose)
-        self.visualize(image, associated_detections.values(), camera_pose)
+        # self.visualize(image, associated_detections.values(), camera_pose)
 
         # visualize associated detections
         # img = image.copy()
@@ -242,12 +246,12 @@ class QuadricSLAM_Online(object):
         else:
 
             # add prior for first few poses
-            if self.frames < self.config['QuadricSLAM.n_priors']:
+            if pose_key < self.config['QuadricSLAM.n_priors']:
                 prior_factor = gtsam.PriorFactorPose3(self.X(pose_key), camera_pose, self.pose_prior_noise)
                 local_graph.add(prior_factor)
 
             # add odom factor 
-            if self.frames > 0:
+            if pose_key > 0:
                 odom = self.prev_pose.between(camera_pose)
                 odom_factor = gtsam.BetweenFactorPose3(self.X(pose_key-1), self.X(pose_key), odom, self.odom_noise)
                 local_graph.add(odom_factor)
@@ -397,6 +401,23 @@ class QuadricSLAM_Online(object):
             #     code.interact(local=dict(globals(),**locals()))
 
 
+
+
+
+
+
+        # check if optimisation was successful
+        # ISAM/ISAM-D: ILS? 
+        # LVM: ILS? max lambda?
+        # GN: ILS?
+
+
+
+        # return not if skipping opt
+        if dont_optimize:
+            return True
+
+
         try: 
             if self.config['Optimizer'] in ["ISAM", "ISAM-D"]:
                 self.isam.update(local_graph, local_estimate)
@@ -412,6 +433,8 @@ class QuadricSLAM_Online(object):
                 params.setAbsoluteErrorTol(1.0e-5)
                 optimizer = gtsam.LevenbergMarquardtOptimizer(self.global_graph, self.global_values, params)
                 self.current_estimate = optimizer.optimize()
+                if int(optimizer.lambda_()) >= int(params.getlambdaUpperBound()):
+                    raise RuntimeError('lambda reached')
             elif self.config['Optimizer'] == "GN":
                 params = gtsam.GaussNewtonParams()
                 params.setVerbosity("ERROR")   
@@ -421,14 +444,14 @@ class QuadricSLAM_Online(object):
                 optimizer = gtsam.GaussNewtonOptimizer(self.global_graph, self.global_values, params)
                 self.current_estimate = optimizer.optimize()
         except Exception as e:
-            self.frames += 1
             return False
+
 
 
         # update current estimate 
         self.current_trajectory = Trajectory.from_values(self.current_estimate)
         self.current_quadrics = Quadrics.from_values(self.current_estimate)
-        self.frames += 1
+
         return True
 
 
