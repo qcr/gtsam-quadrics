@@ -34,9 +34,9 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
   try {
 
     // check pose-quadric pair
-    if (measurementModel_ == TRUNCATED && quadric.isBehind(pose)) {
+    if (quadric.isBehind(pose)) {
       throw QuadricProjectionException("Quadric is behind camera");
-    } if (measurementModel_ == TRUNCATED && quadric.contains(pose)) {
+    } if (quadric.contains(pose)) {
       throw QuadricProjectionException("Camera is inside quadric");
     }
 
@@ -50,7 +50,7 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose, const ConstrainedDual
     }
 
     // check dual conic is valid for error function
-    if (measurementModel_ == TRUNCATED && !dualConic.isEllipse()) {
+    if (!dualConic.isEllipse()) {
       throw QuadricProjectionException("Projected Conic is non-ellipse");
     }
 
