@@ -89,7 +89,9 @@ class QuadricSLAM_Offline(object):
 
         # plot results
         if visualize:
-            trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory, true_trajectory]
+            trajectories = [Trajectory.from_values(initial_estimate), estimated_trajectory]#, true_trajectory]
+            if true_trajectory is not None:
+                trajectories.append(true_trajectory)
             maps = [Quadrics.from_values(initial_estimate), estimated_quadrics]
             colors = ['r', 'm', 'g']; names = ['initial_estimate', 'final_estimate', 'ground_truth']
             plotting.plot_result(trajectories, maps, colors, names)
@@ -120,7 +122,9 @@ class QuadricSLAM_Offline(object):
         noisy_odometry = initial_trajectory.as_odometry()
 
         # add prior pose
-        prior_factor = gtsam.PriorFactorPose3(QuadricSLAM_Offline.X(0), initial_trajectory.at(0), prior_noise)
+        first_key = sorted(initial_trajectory.keys(), key=lambda x: float(x))[0]
+        first_pose = initial_trajectory[first_key]
+        prior_factor = gtsam.PriorFactorPose3(QuadricSLAM_Offline.X(first_key), first_pose, prior_noise)
         graph.add(prior_factor)
 
         # add odometry measurements

@@ -249,6 +249,43 @@ def check_quadric_constrained(graph, values):
 
 
 
+def run_tum_offline():
+    # load config
+    config = yaml.safe_load(open('/home/lachness/git_ws/quadricslam/quadricslam/config/scenenet.yaml', 'r'))
+
+    params = gtsam.LevenbergMarquardtParams()
+    params.setVerbosityLM(config['Optimizer.verbosity'])    
+    params.setMaxIterations(config['Optimizer.max_iterations'])
+    params.setlambdaInitial(config['Optimizer.lambda_initial'])
+    params.setlambdaUpperBound(config['Optimizer.lambda_upper_bound'])
+    params.setlambdaLowerBound(config['Optimizer.lambda_lower_bound'])
+    params.setRelativeErrorTol(config['Optimizer.relative_error_tol'])
+    params.setAbsoluteErrorTol(config['Optimizer.absolute_error_tol'])
+    
+
+    # load dataset
+    dataset = TUMDataset('/media/lachness/DATA/Datasets/TUM/') 
+
+    for scene in dataset:
+
+        SLAM = QuadricSLAM_Offline(scene.calibration, params, config)
+
+
+        # inject noise into trajectory
+        true_trajectory = scene.aligned_trajectory
+        true_odometry = true_trajectory.as_odometry()
+        noisy_odometry = true_odometry.add_noise(mu=0.0, sd=config['Noise.odom_sd'])
+        noisy_trajectory = noisy_odometry.as_trajectory(true_trajectory.values()[0])
+        
+
+        SLAM.run(noisy_trajectory, scene.associated_detections, true_trajectory=true_trajectory, visualize=True)
+
+
+
+
+
+
+
 def run_tum():
     # load config
     config = yaml.safe_load(open('/home/lachness/git_ws/quadricslam/quadricslam/config/online.yaml', 'r'))
@@ -257,38 +294,65 @@ def run_tum():
     dataset = TUMDataset('/media/lachness/DATA/Datasets/TUM/')
 
     # load detector
-    predictor = FasterRCNN('COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml', batch_size=5)
+    # predictor = FasterRCNN('COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml', batch_size=5)
 
     print('starting')
 
-    for scene in dataset:
+    for scene_n, scene in enumerate(dataset):
+        if scene_n < 2:
+            continue
 
         # start SLAM
         SLAM = QuadricSLAM_Online(scene.calibration, config)
-        print('testing scene')
 
+
+        print('testing scene {}'.format(scene.name))
+        # print('calibration:')
+        # print(scene.calibration)
+        
         # iterate through timesteps and send to SLAM
-        frames = 0
-        for time, rgb_path in scene.aligned_rgb.items():
-
+        for pose_key, rgb_path in scene.rgb_images.items():
 
             # load image
             rgb_image = cv2.imread(rgb_path)
 
             # load odometry
-            camera_pose = scene.aligned_trajectory[time]
+            camera_pose = scene.trajectory[pose_key]
 
             # calculate detections
             # detections = predictor([rgb_image])[0]
+
+            # convert image_detections to Detections
             detections = Detections()
-            for object_key, d in scene.associated_detections.at_pose(time).items():
-                detections.add(d, frames, object_key)
+            for object_key, d in scene.detections.at_pose(pose_key).items():
+                detections.add(d, pose_key, object_key)
+            
+            # filter partials
+            detections = filter_partials(detections, 640., 480., 10)
             
 
-            SLAM.update(rgb_image, detections, camera_pose)
-            frames += 1
+            success = SLAM.update(rgb_image, detections, camera_pose, visualize=True, pose_key=pose_key)
+
+            # print('')
+            # cv2.waitKey(0)
+
+            
+            if not success:
+                print('UPDATE FAILED!')
+                break
 
 
+def filter_partials(detections, width, height, pixels):
+    # filter partials
+    image_bounds = gtsam_quadrics.AlignedBox2(0,0,width,height)
+    filter_pixels = pixels
+    filter_bounds = image_bounds.vector() + np.array([1,1,-1,-1])*filter_pixels
+    filter_bounds = gtsam_quadrics.AlignedBox2(filter_bounds)
+    filtered_detections = Detections()
+    for (pose_key, object_key), detection in detections.items():
+        if filter_bounds.contains(detection.box):
+            filtered_detections.add(detection, pose_key, object_key)
+    return filtered_detections
 
 
 
@@ -338,7 +402,7 @@ def run_scenenet():
         # remove small measurements
         detections = remove_small(detections, dim_limit=10)
 
-        optimizers = ['ISAM', 'ISAM-D', 'LVM', 'GN']
+        optimizers = ['ISAM-D']#, 'LVM', 'GN']
         fixes = ['none', 'prior']
         sigmas = [100, 1000]
 
@@ -387,28 +451,29 @@ def run_scenenet():
                         if opt in ['GN', 'LVM'] and pose_key != trajectory.keys()[-1]:
                             dont_optimize = True
 
-                        success = success and SLAM.update(image, image_detections, pose, scene.true_quadrics, dont_optimize=dont_optimize)
+                        success = success and SLAM.update(image, image_detections, pose, scene.true_quadrics, dont_optimize=dont_optimize, visualize=True)
 
 
                         # giveup once we receive ILS
                         if not success:
                             break
 
-                    # ensure quadrics improved from SVD | only makes sense if not ILS
-                    if success:
-                        init_aiou = Evaluation.evaluate_map(Quadrics.from_values(SLAM.global_values), true_bounds, SLAM.current_trajectory, scene.true_trajectory, type='weak')[1]
+                        # ensure quadrics improved from SVD | only makes sense if not ILS
+                        # init_aiou = Evaluation.evaluate_map(Quadrics.from_values(SLAM.global_values), true_bounds, SLAM.current_trajectory, scene.true_trajectory, type='weak')[1]
                         aiou = Evaluation.evaluate_map(SLAM.current_quadrics, true_bounds, SLAM.current_trajectory, scene.true_trajectory, type='weak')[1]
-                        improve = aiou > init_aiou
-                    else:
-                        improve = False
 
-                    # record final data 
-                    data.append({
-                        'scene_n': scene_n,
-                        'success': int(success),
-                        'name': name,
-                        'improve': int(improve)
-                    })
+                        # init_error = SLAM.global_graph.error(SLAM.global_values)
+                        error = SLAM.global_graph.error(SLAM.current_estimate)
+
+                        # record final data 
+                        data.append({
+                            'step': pose_key,
+                            'scene_n': scene_n,
+                            'success': int(success),
+                            'name': name,
+                            'aiou': aiou,
+                            'error': error,
+                        })
 
                     # only run normal for one sigma
                     if fix == 'none':
@@ -442,12 +507,21 @@ def run_scenenet():
 
         df = pd.DataFrame(data)
 
-        # make table methods vs ILS count 
-        print('Tested {} Scenes'.format(scene_n+1))
-        table = df.pivot_table(index='name', values=['success','improve'], aggfunc=np.sum)
-        print(table)
-        # import code
-        # code.interact(local=dict(globals(),**locals()))
+        # # make table methods vs ILS count 
+        # print('Tested {} Scenes'.format(scene_n+1))
+        # table = df.pivot_table(index='name', values=['success','improve'], aggfunc=np.sum)
+        # print(table)
+        # # import code
+        # # code.interact(local=dict(globals(),**locals()))
+
+
+        fig, axs = plt.subplots(2,1)
+        sns.lineplot(ax=axs[0], data=df[df.scene_n==scene_n], x='step', y='aiou', hue='name')
+        plt.grid(True)
+        sns.lineplot(ax=axs[1], data=df[df.scene_n==scene_n], x='step', y='error', hue='name')
+        plt.grid(True)
+        axs[1].set_yscale('log')
+        plt.show()
 
     
         # # plot lineplots
@@ -527,4 +601,4 @@ def remove_small(detections, dim_limit=5.0):
 
 
 if __name__ == '__main__':
-    run_scenenet()
+    run_tum()

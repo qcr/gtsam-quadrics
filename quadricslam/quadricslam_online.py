@@ -124,6 +124,9 @@ class QuadricSLAM_Online(object):
     def create_optimizer(self, config):
         if config['Optimizer'] == "ISAM-D":
             opt_params = gtsam.ISAM2DoglegParams()
+            # opt_params.setWildfireThreshold(1e-2)
+            opt_params.setAdaptationMode('ONE_STEP_PER_ITERATION')
+            # opt_params.setVerbose(True)
         else:
             opt_params = gtsam.ISAM2GaussNewtonParams()
         parameters = gtsam.ISAM2Params()
@@ -196,12 +199,13 @@ class QuadricSLAM_Online(object):
                 atexit.register(self.video_writer.release)
             self.video_writer.write(img)
 
-    def update(self, image, associated_detections, camera_pose, initial_quadrics=None, dont_optimize=False):
+    def update(self, image, associated_detections, camera_pose, initial_quadrics=None, dont_optimize=False, visualize=False, pose_key=None):
         """
         Initialize new objects using the current estimate of trajectory
         """
-        pose_key = self.frames # current frame number (0-x)
-        self.frames += 1 # internal only
+        if pose_key is None:
+            pose_key = self.frames # current frame number (0-x)
+            self.frames += 1 # internal only
 
 
         # # filter object detections
@@ -210,16 +214,17 @@ class QuadricSLAM_Online(object):
 
         # # draw current map and measurements
         # self.visualize(image, image_detections, camera_pose)
-        # self.visualize(image, associated_detections.values(), camera_pose)
+        if visualize:
+            self.visualize(image, associated_detections.values(), camera_pose)
 
-        # visualize associated detections
-        # img = image.copy()
-        # drawing = CV2Drawing(img)
-        # for (pkey, object_key), detection in associated_detections.items():
-        #     assert pkey == pose_key
-        #     drawing.box_and_text(detection.box, (255,255,0), '{}'.format(object_key), (255,255,255))
-        # cv2.imshow('data-association', img)
-        # cv2.waitKey(1)
+            # visualize associated detections
+            # img = image.copy()
+            # drawing = CV2Drawing(img)
+            # for (pkey, object_key), detection in associated_detections.items():
+            #     assert pkey == pose_key
+            #     drawing.box_and_text(detection.box, (255,255,0), '{}'.format(object_key), (0,0,0))
+            # cv2.imshow('data-association', img)
+            # cv2.waitKey(1)
 
         # associate new measurements with existing keys
         # associated_detections = self.data_association.associate(image, image_detections, camera_pose, pose_key, self.current_quadrics, visualize=True, verbose=True)
@@ -304,17 +309,17 @@ class QuadricSLAM_Online(object):
                 prior_quad = quadric
 
             if self.config['QuadricSLAM.quad_priors']:
-                prior_factor = gtsam_quadrics.PriorFactorConstrainedDualQuadric(self.Q(object_key), prior_quad, self.quad_prior_noise)
-                local_graph.add(prior_factor)
+                factor = gtsam_quadrics.PriorFactorConstrainedDualQuadric(self.Q(object_key), prior_quad, self.quad_prior_noise)
+                local_graph.add(factor)
 
             if self.config['QuadricSLAM.prior_rots']:
-                prior_factor = gtsam_quadrics.PriorFactorConstrainedDualQuadric(self.Q(object_key), prior_quad, self.rot_prior_noise)
-                local_graph.add(prior_factor)
+                factor = gtsam_quadrics.PriorFactorConstrainedDualQuadric(self.Q(object_key), prior_quad, self.rot_prior_noise)
+                local_graph.add(factor)
                 
-
             if self.config['QuadricSLAM.angle_factors']:
-                angle_factor = gtsam_quadrics.QuadricAngleFactor(self.Q(object_key), prior_quad.pose().rotation(), self.angle_factor_noise)
-                local_graph.add(angle_factor)
+                factor = gtsam_quadrics.QuadricAngleFactor(self.Q(object_key), prior_quad.pose().rotation(), self.angle_factor_noise)
+                local_graph.add(factor)
+                
 
             # add quadric to current quadrics
             # we do this to avoid reinitialization and as a flag to add new measurements
@@ -340,10 +345,10 @@ class QuadricSLAM_Online(object):
         self.global_values.insert(local_estimate)
 
         # check global graph/values
-        global_factors = [self.global_graph.at(idx) for idx in range(self.global_graph.size())]
-        startkeys = [f.keys().at(0) for f in global_factors]
+        # global_factors = [self.global_graph.at(idx) for idx in range(self.global_graph.size())]
+        # startkeys = [f.keys().at(0) for f in global_factors]
 
-        bbfs = [f for f in global_factors if f.keys().size() == 2 and gtsam.symbolChr(f.keys().at(1)) == 'q']
+        # bbfs = [f for f in global_factors if f.keys().size() == 2 and gtsam.symbolChr(f.keys().at(1)) == 'q']
         
         # TODO: check using only global graph/values. How to know which factor is bbf?
         if len(self.current_quadrics) > 0 and False:

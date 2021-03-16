@@ -7,10 +7,10 @@ QuadricSLAM.zero_prior: False
 # prior set to SVD quadric
 # NOTE: what if set to unit sphere?
 QuadricSLAM.quad_priors: False
-QuadricSLAM.quad_prior_sd: 1e2
+QuadricSLAM.quad_prior_sd: 1e3
 # prior Q with inf sigma for all but rotation, which has prior 0
 QuadricSLAM.prior_rots: True
-QuadricSLAM.prior_rots_sd: 1e2
+QuadricSLAM.prior_rots_sd: 1e3
 QuadricSLAM.inf_sd: 1e18
 #
 QuadricSLAM.angle_factors: False
@@ -23,10 +23,10 @@ QuadricSLAM.odom_sd: 0.001
 QuadricSLAM.n_priors: 2
 QuadricSLAM.pose_prior_sd: 1.0
 
-QuadricSLAM.box_sd: 1.0
+QuadricSLAM.box_sd: 40.0
 
-QuadricSLAM.init_method: "SVD" # SVD, SIMPLE, TRUE
-QuadricSLAM.min_views: 5
+QuadricSLAM.init_method: "SIMPLE" # SVD, SIMPLE, TRUE
+QuadricSLAM.min_views: 15
 
 QuadricSLAM.measurement_model: "STANDARD" # STANDARD, TRUNCATED
 
@@ -43,7 +43,7 @@ Recording.record: False
 #====================#
 # Optimizer Settings #
 #====================#
-Optimizer: "ISAM" # ISAM, ISAM-D, LVM, GN
+Optimizer: "ISAM-D" # ISAM, ISAM-D, LVM, GN
 ISAM.factorization: "QR" # CHOLESKY, QR
 ISAM.relinearization: True
 ISAM.relinearize_skip: 1
