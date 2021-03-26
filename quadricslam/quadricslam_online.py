@@ -124,18 +124,22 @@ class QuadricSLAM_Online(object):
     def create_optimizer(self, config):
         if config['Optimizer'] == "ISAM-D":
             opt_params = gtsam.ISAM2DoglegParams()
-            # opt_params.setWildfireThreshold(1e-2)
-            opt_params.setAdaptationMode('ONE_STEP_PER_ITERATION')
+            # opt_params.setWildfireThreshold(1e8)
+            # opt_params.setInitialDelta(1e3)
+            # opt_params.setAdaptationMode('ONE_STEP_PER_ITERATION')
             # opt_params.setVerbose(True)
         else:
             opt_params = gtsam.ISAM2GaussNewtonParams()
+            opt_params.setWildfireThreshold(1e-5)
         parameters = gtsam.ISAM2Params()
         parameters.setOptimizationParams(opt_params)
         parameters.setEnableRelinearization(config['ISAM.relinearization'])
         parameters.setRelinearizeThreshold(config['ISAM.relinearize_thresh'])
         parameters.setRelinearizeSkip(config['ISAM.relinearize_skip'])
         parameters.setFactorization(config['ISAM.factorization'])
-        parameters.setEnableDetailedResults(True)
+        # parameters.setEnableDetailedResults(True)
+        # parameters.setEvaluateNonlinearError()
+        parameters.setCacheLinearizedFactors(False)
         # parameters.print_("ISAM2 Parameters")
         isam = gtsam.ISAM2(parameters)
         return isam
@@ -429,7 +433,7 @@ class QuadricSLAM_Online(object):
                 self.current_estimate = self.isam.calculateEstimate()
             elif self.config['Optimizer'] == "LVM":
                 params = gtsam.LevenbergMarquardtParams()
-                params.setVerbosityLM("SUMMARY")    
+                params.setVerbosityLM("SILENT") #SUMMARY
                 params.setMaxIterations(20)
                 params.setlambdaInitial(1.0e-5)
                 params.setlambdaUpperBound(1.0e+10)
@@ -442,13 +446,18 @@ class QuadricSLAM_Online(object):
                     raise RuntimeError('lambda reached')
             elif self.config['Optimizer'] == "GN":
                 params = gtsam.GaussNewtonParams()
-                params.setVerbosity("ERROR")   
+                params.setVerbosity("SILENT") #ERROR   
                 params.setMaxIterations(20)
                 params.setRelativeErrorTol(1.0e-5)
                 params.setAbsoluteErrorTol(1.0e-5)
                 optimizer = gtsam.GaussNewtonOptimizer(self.global_graph, self.global_values, params)
                 self.current_estimate = optimizer.optimize()
         except Exception as e:
+            # add current values to previous estimate (if not already done)
+            try:
+                self.current_estimate.insert(local_estimate)
+            except:
+                pass
             return False
 
 

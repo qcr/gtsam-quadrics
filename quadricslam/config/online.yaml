@@ -23,10 +23,10 @@ QuadricSLAM.odom_sd: 0.001
 QuadricSLAM.n_priors: 2
 QuadricSLAM.pose_prior_sd: 1.0
 
-QuadricSLAM.box_sd: 40.0
+QuadricSLAM.box_sd: 20.0
 
-QuadricSLAM.init_method: "SIMPLE" # SVD, SIMPLE, TRUE
-QuadricSLAM.min_views: 15
+QuadricSLAM.init_method: "SVD" # SVD, SIMPLE, TRUE
+QuadricSLAM.min_views: 3
 
 QuadricSLAM.measurement_model: "STANDARD" # STANDARD, TRUNCATED
 
