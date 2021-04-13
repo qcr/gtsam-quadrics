@@ -48,6 +48,203 @@ import gtsam_quadrics
 
 
 
+def test_closeness():
+    config = yaml.safe_load(open('/home/lachness/git_ws/quadricslam/quadricslam/config/online.yaml', 'r'))
+
+    points = []
+    points.append(gtsam.Point3(10,0,0))
+    points.append(gtsam.Point3(0,-10,0))
+    points.append(gtsam.Point3(-10,0,0))
+    points.append(gtsam.Point3(0,10,0))
+    points.append(gtsam.Point3(10,0,0))
+
+    
+    # scene = SimulatedSequence(points, [gtsam_quadrics.ConstrainedDualQuadric(gtsam.Pose3(), np.array([0.3,0.6,0.9]))], 5)
+    # true_bounds = {k:v.bounds() for k,v in scene.true_quadrics.items()}
+
+    optimizers = ["ISAM", "ISAM-D", "LVM", "GN"]
+    priors = ['None', 'Ri'] #['None', 'Q0', 'R0', 'Qi', 'Ri', 'A']
+    seeds = np.arange(10)
+    noisy = True
+
+    n = 30
+    axis_differences = [0]+np.logspace(-10, 1, n).tolist()
+
+
+    frames = []
+
+    for v in axis_differences:
+        print('~~ TESTING DIFFERENCE: {} ~~'.format(v))
+        
+        initial_quadric = gtsam_quadrics.ConstrainedDualQuadric(gtsam.Pose3(), np.array([0.6-v,0.6,0.6+v]))
+        scene = SimulatedSequence(points, [initial_quadric], 5)
+        true_bounds = {k:v.bounds() for k,v in scene.true_quadrics.items()}
+
+        initial_quadrics = Quadrics()
+        initial_quadrics.add(initial_quadric, 0)
+
+        for opt in optimizers:
+            print('~~~~~~ OPT {} ~~~~~~~~'.format(opt))
+            config['Optimizer'] = opt
+
+            for prior in priors:
+                if prior == 'None':
+                    config['QuadricSLAM.quad_priors'] = False
+                    config['QuadricSLAM.prior_rots'] = False
+                    config['QuadricSLAM.angle_factors'] = False
+                if prior == 'Q0': 
+                    config['QuadricSLAM.zero_prior'] = True
+                    config['QuadricSLAM.quad_priors'] = True
+                    config['QuadricSLAM.prior_rots'] = False
+                    config['QuadricSLAM.angle_factors'] = False
+                if prior == 'R0': 
+                    config['QuadricSLAM.zero_prior'] = True
+                    config['QuadricSLAM.quad_priors'] = False
+                    config['QuadricSLAM.prior_rots'] = True
+                    config['QuadricSLAM.angle_factors'] = False
+                if prior == 'Qi': 
+                    config['QuadricSLAM.zero_prior'] = False
+                    config['QuadricSLAM.quad_priors'] = True
+                    config['QuadricSLAM.prior_rots'] = False
+                    config['QuadricSLAM.angle_factors'] = False
+                if prior == 'Ri': 
+                    config['QuadricSLAM.zero_prior'] = False
+                    config['QuadricSLAM.quad_priors'] = False
+                    config['QuadricSLAM.prior_rots'] = True
+                    config['QuadricSLAM.angle_factors'] = False
+                if prior == 'A': 
+                    config['QuadricSLAM.zero_prior'] = False
+                    config['QuadricSLAM.quad_priors'] = False
+                    config['QuadricSLAM.prior_rots'] = False
+                    config['QuadricSLAM.angle_factors'] = True
+
+                for seed in seeds:
+                    np.random.seed(seed)
+
+                    # make SLAM system
+                    SLAM = QuadricSLAM_Online(scene.calibration, config)
+
+                    # record GT partial trajectory
+                    partial_true = Trajectory()
+
+                    # inject noise into trajectory
+                    true_trajectory = scene.true_trajectory
+                    if noisy:
+                        true_odometry = true_trajectory.as_odometry()
+                        noisy_odometry = true_odometry.add_noise(mu=0.0, sd=0.01)
+                        noisy_trajectory = noisy_odometry.as_trajectory(true_trajectory.values()[0])
+                    else:
+                        noisy_trajectory = scene.true_trajectory
+
+                    # inject noise into measurements
+                    true_detections = scene.true_detections
+                    if noisy:
+                        noisy_detections = true_detections.add_noise_strict(mu=0.0, sd=2, image_dimensions=(320,240))
+                    else:
+                        noisy_detections = scene.true_detections
+
+
+                    # iteratively pass new info
+                    for pose_key, pose in noisy_trajectory.items():
+                        partial_true.add(true_trajectory.at(pose_key), pose_key)
+                        image = np.zeros((240,320,3))
+
+                        # get image detections
+                        image_detections = Detections()
+                        for object_key, detection in noisy_detections.at_pose(pose_key).items():
+                            image_detections.add(detection, pose_key, object_key)
+
+                        # SLAM update
+                        success = SLAM.update(image, image_detections, pose, initial_quadrics)
+
+
+                        # get current graph / values
+                        graph = SLAM.global_graph
+                        initial_values = SLAM.global_values
+                        current_values = SLAM.current_estimate
+
+                        # check validity
+                        is_valid, cond = check_quadric_constrained(graph, current_values)
+
+                        # get estimates
+                        estimated_quadrics = SLAM.current_quadrics
+                        estimated_trajectory = SLAM.current_trajectory
+
+                        init_iou = Evaluation.evaluate_map(scene.true_quadrics, true_bounds, scene.true_trajectory, scene.true_trajectory, type='weak')[1]
+                        iou = Evaluation.evaluate_map(estimated_quadrics, true_bounds, estimated_trajectory, scene.true_trajectory, type='weak')[1]
+                        ate = Evaluation.evaluate_trajectory(estimated_trajectory, partial_true, 'weak')[0]
+
+                        if is_valid and success:
+                            valid = 'V'
+                        if is_valid and not success:
+                            valid = 'V-ILS'
+                        if not is_valid and success:
+                            valid = 'NV'
+                        if not is_valid and not success:
+                            valid = 'NV-ILS'
+
+                        
+                        
+                        frames.append({
+                            'diff': v,
+                            'seed': seed,
+                            'step': pose_key,
+                            'valid': valid,
+                            'cond': cond,
+                            'aiou': iou,
+                            'aiou_improve': (iou-init_iou)/init_iou,
+                            'ate': ate,
+                            'opt': opt,
+                            'prior': prior,
+                        })
+
+                        if not success:
+                            break
+
+    df = pd.DataFrame(frames)
+
+    # plot lineplots
+    # figure for each optimizer
+    # subplot for each metric
+    # plot lines for opt-fix-sigma
+    for opt in optimizers:
+        fig, axs = plt.subplots(2,2)
+        fig.suptitle('Optimizer {}'.format(opt))
+        for i, metric in enumerate(['ate','aiou','cond', 'valid']):
+            ax = axs[np.unravel_index(i, (2,2))]
+
+            subdata = df[df.opt==opt]
+            if metric != 'valid':
+                sns.lineplot(ax=ax, data=subdata, x='diff', y=metric, hue='prior', marker='o')
+            if metric == 'valid':
+                sns.swarmplot(ax=ax, data=subdata, x='diff', y=metric, hue='prior')
+            # sns.scatterplot(ax=ax, data=subdata, x='diff', y=metric, hue='prior', style='valid')
+
+            if metric == 'cond':
+                ax.set_yscale('log')
+            ax.set_xscale('log')
+    plt.show()
+
+    import code
+    code.interact(local=dict(globals(),**locals()))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def test_constrainment():
     config = yaml.safe_load(open('/home/lachness/git_ws/quadricslam/quadricslam/config/online.yaml', 'r'))
 
@@ -70,7 +267,8 @@ def test_constrainment():
 
     optimizers = ["ISAM", "ISAM-D", "LVM", "GN"]
     priors = ['None', 'Ri'] #['None', 'Q0', 'R0', 'Qi', 'Ri', 'A']
-    seeds = np.arange(10)
+    seeds = [121] #np.arange(10)
+    noisy = False
 
     frames = []
 
@@ -124,15 +322,19 @@ def test_constrainment():
 
                     # inject noise into trajectory
                     true_trajectory = scene.true_trajectory
-                    true_odometry = true_trajectory.as_odometry()
-                    noisy_odometry = true_odometry.add_noise(mu=0.0, sd=0.01)
-                    noisy_trajectory = noisy_odometry.as_trajectory(true_trajectory.values()[0])
-                    # noisy_trajectory = scene.true_trajectory
+                    if noisy:
+                        true_odometry = true_trajectory.as_odometry()
+                        noisy_odometry = true_odometry.add_noise(mu=0.0, sd=0.01)
+                        noisy_trajectory = noisy_odometry.as_trajectory(true_trajectory.values()[0])
+                    else:
+                        noisy_trajectory = scene.true_trajectory
 
                     # inject noise into measurements
                     true_detections = scene.true_detections
-                    noisy_detections = true_detections.add_noise_strict(mu=0.0, sd=2, image_dimensions=(320,240))
-                    # noisy_detections = scene.true_detections
+                    if noisy:
+                        noisy_detections = true_detections.add_noise_strict(mu=0.0, sd=2, image_dimensions=(320,240))
+                    else:
+                        noisy_detections = scene.true_detections
 
 
                     # iteratively pass new info
@@ -658,4 +860,4 @@ def remove_small(detections, dim_limit=5.0):
 
 if __name__ == '__main__':
     np.random.seed(121)
-    test_constrainment()
+    test_closeness()
