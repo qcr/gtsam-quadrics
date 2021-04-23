@@ -24,15 +24,8 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..
 
 # import custom python modules
 sys.dont_write_bytecode = True
-from base.data_association import DataAssociation
-from base.data_association import KeepAssociator
-from base.data_association import MergeAssociator
-from visualization.drawing import CV2Drawing
-from base.containers import Trajectory, Quadrics, Detections, ObjectDetection
-from base.initialisation import Initialize
-
-from dataset_interfaces.scenenet_dataset import SceneNetDataset
-from dataset_interfaces.tumrgbd_dataset import TUMDataset
+# from visualization.drawing import CV2Drawing
+# from base.containers import Trajectory, Quadrics, Detections, ObjectDetection
 from detectors.faster_rcnn import FasterRCNN
 
 # import gtsam and extension
@@ -40,7 +33,6 @@ import gtsam
 import gtsam_quadrics
 
 import pyrealsense2 as rs
-from quadric_slam import QuadricSLAM
 import atexit
 
 
@@ -104,8 +96,6 @@ class RealsenseCamera(object):
         print('\nclosing camera')
         self.pipeline.stop()
 
-
-
 class OdometryWrapper(object):
     def __init__(self, intrinsics):
         """intrinsics: 3x3 camera calibration"""
@@ -147,8 +137,14 @@ if __name__ == '__main__':
     # setup detector
     predictor = FasterRCNN('COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml', batch_size=5)
 
-    # setup slam system 
+    # -------- setup slam system -----------------------------------
+    settings = quadricslam.settings() # default or load from file 
+    calibration = matrix_to_cal(camera.intrinsics)
+    qslam = quadricslam.QuadricSLAM(camera_settings, method_settings, optimizer_settings)
+    # -----------------------------------------------------------------
 
+    # setup associator
+    associator = quadricslam.associator(settings)
 
     while True:
         # get new images
@@ -167,13 +163,110 @@ if __name__ == '__main__':
         boxes = [d.box for d in detections]
 
         # associate detections
+        associated_boxes = associator.associate(color, boxes)
 
-        # initialize quadrics
-        # update slam system
-        # optimize
+        # initialize new quadrics
+        new_quadrics = quadricslam.initialize(measurement_history, current_quadrics, associated_boxes)
         
+        # ------------------------------------------------------
+        # update slam system
+        qslam.update(odom, associated_detections, new_quadrics)
 
-        np.set_printoptions(precision=3)
-        print(odom.translation().vector())
+        # optimize
+        quadrics, poses = qslam.optimize()
+        
+        # visualize current pose
+        qslam.visualize(quadrics, poses)
+        # ------------------------------------------------------
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# qslam.update()
+# adds new odometry to graph
+# adds new pose estimate to values
+# runs measurements through data-association
+# records associated measurments
+# tries to initialize new landmarks
+# adds new measurements/landmarks to graph/values if valid
+
+
+
+# initializer
+# NOTE: check if we have any object keys in history that are uninitialized (needs full measurement history, current quadrics)
+# NOTE: check they will be constrained if init
+# NOTE: check they have been initialized correctly 
+# NOTE: either provide a way for user to get measurement history / quadric keys
+# NOTE: OR get the user to overload the initialization method / pass the function in
+# new init methods have different constraints (n views, depth info, etc)
+
+
+# NOTE: cant we just make a base qslam system and derive to modify odometry / initialization
+# what if the user wants to know the current pose_key?
+# associator also needs copy of detections history
+# QSLAM should HAVE-A associator/initializer and they can derive?
+
+
+# COMPONENTS: core, odometry, detection, data-association, initialization, visualization, evaluation 
+
+
+
+# camera (settings): 
+    # .get_next_images (void): returns rgb/depth
+    # .intrinsics: 3x3 matrix
+# odometry (settings, intrinsics): 
+    # .compute (color, depth): returns relative pose
+# detector (settings): takes in image(s) and returns boxes
+    # .detect (color): returns [boxes]
+
+
+# new image, odom, detections!
+
+
+# associator (settings)
+    # .associate (history, color, boxes): returns associated boxes
+    # probably stores some version of history (cnn codes / full detections) to aid future associations
+
+    # NOTE: might need .get_past_measurements()
+
+# initializer (settings)
+    # .initialize (history, current_quadrics, new_associated_boxes): returns new_quadrics
+        # tries to initialize objects that haven't been initialized before
+        # checks to make sure object is constrained and initialization is valid
+
+    # NOTE: needs .get_past_measurements(), .get_current_quadric_keys()
+
+# system (settings)
+    # .update (odom, associated_boxes, new_quadrics, history)
+    # .optimize (void): quadrics, trajectory
+
+    # only adds unused measurements to graphs
+    # trusts initializer that quadrics are new, constrained, valid
+
+
+
+# if init strategy is single-view, should be initialized immedietly and added when constrained
+# does the user need to know the current pose_key? 
+    # either give qslam.update() all the information and let it do the background magic
+    # or only give it things it can immedietly add to graph/values and optimize
+
+# quadricslam controls when to initialize new landmarks
+# 
+
+# trajectory: list[gtsam.Pose3]
+# odometry: list[gtsam.Pose3]
 
