@@ -126,6 +126,72 @@ class OdometryWrapper(object):
 
 
 
+
+
+
+
+
+def intrinsics_to_gtsam(intrinsics):
+    fx = intrinsics[0,0]
+    fy = intrinsics[1,1]
+    cx = intrinsics[0,2]
+    cy = intrinsics[1,2]
+    return gtsam.Cal3_S2(fx, fy, 0, cx, cy)
+
+
+
+
+def associate(boxes, quadrics, pose, calibration, iou_thresh=0.5):
+
+
+class Associator(object):
+    def __init__(self, iou_thresh, calibration):
+        self.iou_thresh = iou_thresh
+        self.calibration = calibration
+        self.n_landmarks = 0
+
+    def associate(boxes, quadrics, pose, pose_key):
+        # handle situation with no quadrics
+        if len(quadrics) == 0:
+            return [{'box':box, 'quadric_key':i} for i, box in enumerate(boxes)]
+        
+        quadric_keys = list(quadrics.keys())
+        quadric_values = list(quadrics.values())
+        ious = np.zeros(len(boxes), len(quadrics))
+
+        # calculate iou for each box-quad pair
+        for i, box in enumerate(boxes):
+            for j, quadric in enumerate(quadric_values):
+                dual_conic = gtsam.QuadricCamera.project(quadric, pose, self.calibration)
+                conic_box = dual_conic.bounds() # NOTE: we can use smartBounds here for more accuracy
+                ious[i,j] = box.iou(conic_box)
+
+        # solve optimal assignment problem
+        box_indices, quadric_indices = linear_sum_assignment(-ious)
+
+        # check validity of each association
+        associated_boxes = []
+        for i,j in zip(box_indices, quadric_indices):
+            associated_box = {
+                'box': boxes[i], 
+                'quadric_key': quadric_keys[j],
+                'pose_key': pose_key
+            }
+
+            # create new landmark
+            if ious[i,j] < self.iou_thresh:
+                associated_box['quadric_key'] = self.n_landmarks
+                self.n_landmarks += 1
+            associated_boxes.append(associated_box)
+
+        return associated_boxes
+
+
+
+
+
+
+
 if __name__ == '__main__': 
 
     # setup camera 
@@ -138,13 +204,40 @@ if __name__ == '__main__':
     predictor = FasterRCNN('COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml', batch_size=5)
 
     # -------- setup slam system -----------------------------------
-    settings = quadricslam.settings() # default or load from file 
-    calibration = matrix_to_cal(camera.intrinsics)
-    qslam = quadricslam.QuadricSLAM(camera_settings, method_settings, optimizer_settings)
-    # -----------------------------------------------------------------
+
+    # get camera calibration
+    calibration = intrinsics_to_gtsam(camera.intrinsics)
 
     # setup associator
-    associator = quadricslam.associator(settings)
+    associator = Associator(iou_thresh=0.5, calibration=calibration)
+
+    # create isam optimizer 
+    opt_params = gtsam.ISAM2DoglegParams()
+    params = gtsam.ISAM2Params()
+    params.setOptimizationParams(opt_params)
+    params.setEnableRelinearization(True)
+    params.setRelinearizeThreshold(0.01)
+    params.setRelinearizeSkip(1)
+    params.setCacheLinearizedFactors(False)
+    isam = gtsam.ISAM2(params)
+
+    # declare symbol shortcuts
+    X = lambda i: int(gtsam.symbol(ord('x'), i))
+    Q = lambda i: int(gtsam.symbol(ord('q'), i))
+
+    # declare noise models
+    odom_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.001]*6, dtype=np.float))
+    box_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([20]*4, dtype=np.float))
+    pose_prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([1.0]*6, dtype=np.float))
+
+    # declare storage
+    previous_pose = None
+    detection_history = []
+    quadrics = {}
+    step = 0
+
+    # -----------------------------------------------------------------
+
 
     while True:
         # get new images
@@ -162,13 +255,21 @@ if __name__ == '__main__':
         detections = predictor(color)
         boxes = [d.box for d in detections]
 
+
+        # ------------------------------------------------------
+        # NOTE: can we get pose_key from current estimate?
+        pose_key = step
+        step += 1
+        
         # associate detections
-        associated_boxes = associator.associate(color, boxes)
+        associated_boxes = associator.associate(boxes, quadrics)
+
+        # store associated detections for future
+        detection_history += associated_boxes
 
         # initialize new quadrics
         new_quadrics = quadricslam.initialize(measurement_history, current_quadrics, associated_boxes)
         
-        # ------------------------------------------------------
         # update slam system
         qslam.update(odom, associated_detections, new_quadrics)
 
@@ -180,6 +281,31 @@ if __name__ == '__main__':
         # ------------------------------------------------------
 
 
+
+
+
+
+
+# UPDATE:
+# - filter
+# - data association
+# - compound odom onto last pose 
+# - add odom/prior onto last pose
+# - check which objects can be initialized
+# - add new quadrics to graph (if constrained+initialized)
+# - add measurements (if not previously added) if quadric is in values
+# - optimize
+
+
+# required:
+# - store detections to add after quad is initialized and constrained 
+# - store initialized quadric keys (or lookup from last estimate)
+# - store previous pose (or lookup from last estimate)
+# - store frame_n / pose_key (or count pose values)
+
+
+# NOTES:
+# can do purely map based DA if single-view init and only add quads to values/graph when constrained
 
 
 
