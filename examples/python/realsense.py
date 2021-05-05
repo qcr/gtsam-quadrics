@@ -15,7 +15,6 @@ import sys
 import numpy as np
 import time
 import cv2
-import atexit
 import yaml
 import argparse
 
@@ -24,7 +23,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..
 
 # import custom python modules
 sys.dont_write_bytecode = True
-# from visualization.drawing import CV2Drawing
+from visualization.drawing import CV2Drawing
 # from base.containers import Trajectory, Quadrics, Detections, ObjectDetection
 from detectors.faster_rcnn import FasterRCNN
 
@@ -34,7 +33,7 @@ import gtsam_quadrics
 
 import pyrealsense2 as rs
 import atexit
-
+from scipy.optimize import linear_sum_assignment
 
 
 
@@ -141,8 +140,6 @@ def intrinsics_to_gtsam(intrinsics):
 
 
 
-def associate(boxes, quadrics, pose, calibration, iou_thresh=0.5):
-
 
 class Associator(object):
     def __init__(self, iou_thresh, calibration):
@@ -150,19 +147,29 @@ class Associator(object):
         self.calibration = calibration
         self.n_landmarks = 0
 
-    def associate(boxes, quadrics, pose, pose_key):
+    def associate(self, boxes, quadrics, pose):
+        """
+        boxes: [gtsam_quadrics.AlignedBox2]
+        quadrics: {"quadric_key": gtsam_quadrics.ConstrainedDualQuadric}
+        pose: gtsam.Pose3
+
+        returns [quadric_key]
+        """
+
         # handle situation with no quadrics
         if len(quadrics) == 0:
-            return [{'box':box, 'quadric_key':i} for i, box in enumerate(boxes)]
+            keys = np.arange(len(boxes)) + self.n_landmarks
+            self.n_landmarks + len(boxes)
+            return keys
         
         quadric_keys = list(quadrics.keys())
         quadric_values = list(quadrics.values())
-        ious = np.zeros(len(boxes), len(quadrics))
+        ious = np.zeros((len(boxes), len(quadrics)))
 
         # calculate iou for each box-quad pair
         for i, box in enumerate(boxes):
             for j, quadric in enumerate(quadric_values):
-                dual_conic = gtsam.QuadricCamera.project(quadric, pose, self.calibration)
+                dual_conic = gtsam_quadrics.QuadricCamera.project(quadric, pose, self.calibration)
                 conic_box = dual_conic.bounds() # NOTE: we can use smartBounds here for more accuracy
                 ious[i,j] = box.iou(conic_box)
 
@@ -170,26 +177,40 @@ class Associator(object):
         box_indices, quadric_indices = linear_sum_assignment(-ious)
 
         # check validity of each association
-        associated_boxes = []
+        associated_keys = []
         for i,j in zip(box_indices, quadric_indices):
-            associated_box = {
-                'box': boxes[i], 
-                'quadric_key': quadric_keys[j],
-                'pose_key': pose_key
-            }
 
             # create new landmark
             if ious[i,j] < self.iou_thresh:
-                associated_box['quadric_key'] = self.n_landmarks
+                associated_keys.append(self.n_landmarks)
                 self.n_landmarks += 1
-            associated_boxes.append(associated_box)
+            else:
+                associated_keys.append(quadric_keys[j])
 
-        return associated_boxes
-
-
-
+        return associated_keys
 
 
+
+def initialize_quadric(depth, box, camera_pose, calibration, object_depth=0.1):
+    """
+    depth: (h,w) depth image in meters
+    """
+    # get average box depth 
+    dbox = box.vector().astype('int') # get discrete box bounds
+    box_depth = depth[dbox[1]:dbox[3], dbox[0]:dbox[2]].mean()
+    
+    center = box.center()
+    x = (center.x() - calibration.px()) * box_depth / calibration.fx()
+    y = (center.y() - calibration.py()) * box_depth / calibration.fy()
+    relative_point = gtsam.Point3(x, y, box_depth)
+    quadric_center = camera_pose.compose(gtsam.Pose3(camera_pose.rotation(), relative_point))
+
+    tx = (box.xmin() - calibration.px()) * box_depth / calibration.fx()
+    ty = (box.ymin() - calibration.py()) * box_depth / calibration.fy()
+    radii = np.array([np.abs(tx-x), np.abs(ty-y), object_depth])
+
+    quadric = gtsam_quadrics.ConstrainedDualQuadric(quadric_center, radii)
+    return quadric
 
 
 if __name__ == '__main__': 
@@ -205,18 +226,22 @@ if __name__ == '__main__':
 
     # -------- setup slam system -----------------------------------
 
-    # get camera calibration
+    # convert calibration matrix to gtsam
     calibration = intrinsics_to_gtsam(camera.intrinsics)
 
     # setup associator
-    associator = Associator(iou_thresh=0.5, calibration=calibration)
+    associator = Associator(iou_thresh=0.2, calibration=calibration)
+
+    # setup initializer
+    object_depth = 0.1
 
     # create isam optimizer 
     opt_params = gtsam.ISAM2DoglegParams()
     params = gtsam.ISAM2Params()
     params.setOptimizationParams(opt_params)
     params.setEnableRelinearization(True)
-    params.setRelinearizeThreshold(0.01)
+    # params.setRelinearizeThreshold(0.01)
+    params.setRelinearizeThreshold(0.1)
     params.setRelinearizeSkip(1)
     params.setCacheLinearizedFactors(False)
     isam = gtsam.ISAM2(params)
@@ -226,15 +251,38 @@ if __name__ == '__main__':
     Q = lambda i: int(gtsam.symbol(ord('q'), i))
 
     # declare noise models
-    odom_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.001]*6, dtype=np.float))
-    box_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([20]*4, dtype=np.float))
-    pose_prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([1.0]*6, dtype=np.float))
+    odom_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.1]*6, dtype=np.float))
+    box_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([60]*4, dtype=np.float))
+    pose_prior_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.00001]*6, dtype=np.float))
 
-    # declare storage
-    previous_pose = None
+    # create local graph and estimate
+    # these variables are cleared every time we update isam
+    local_graph = gtsam.NonlinearFactorGraph()
+    local_estimate = gtsam.Values()
+
+    # create estimates
+    # these variables consistently reflect the best estimate for every variable
+    # including variables that have not yet been optimized or constrained
+    # while not strictly necessary, this saves us having to check both local_estimate and estimate
+    # when we don't optimize every step, and it saves us searching the c++ values
+    current_trajectory = {}
+    current_quadrics = {}
+
+    # store quadrics until they have been viewed enough times to be constrained
+    unconstrained_quadrics = {}
+
+    # add initial pose/prior to estimate
+    prior_factor = gtsam.PriorFactorPose3(X(0), gtsam.Pose3(), pose_prior_noise)
+    local_graph.add(prior_factor)
+    local_estimate.insert(X(0), gtsam.Pose3())
+    current_trajectory[0] = gtsam.Pose3()
+
+    # stores all past measurements 
+    # so we can add measurements once a quadric is constrained
+    # and to recall measurements for initialization purposes
     detection_history = []
-    quadrics = {}
-    step = 0
+
+    step = 1
 
     # -----------------------------------------------------------------
 
@@ -250,40 +298,140 @@ if __name__ == '__main__':
         odom = odometry.compute(gray, depth)
         if odom is None: 
             continue
+        odom = gtsam.Pose3(odom)
 
         # run detector 
-        detections = predictor(color)
+        detections = predictor([color])[0]
+
+        # filter classes
+        # detections = [d for d in detections if np.argmax(d.scores)==41]
+
+        # wrap
         boxes = [d.box for d in detections]
 
+        # filter partials
+        image_bounds = gtsam_quadrics.AlignedBox2(0,0,640,480)
+        filter_pixels = 15
+        filter_bounds = image_bounds.vector() + np.array([1,1,-1,-1])*filter_pixels
+        filter_bounds = gtsam_quadrics.AlignedBox2(filter_bounds)
+        boxes = [box for box in boxes if filter_bounds.contains(box)]
 
         # ------------------------------------------------------
-        # NOTE: can we get pose_key from current estimate?
-        pose_key = step
-        step += 1
-        
-        # associate detections
-        associated_boxes = associator.associate(boxes, quadrics)
 
-        # store associated detections for future
+        # get the current pose_key
+        pose_key = step
+
+        previous_pose = current_trajectory[pose_key-1] # get previous pose from storage
+        camera_pose = previous_pose.compose(odom) # compound odometry to global pose
+        local_estimate.insert(X(pose_key), camera_pose) # add pose estimate to values
+        current_trajectory[pose_key] = camera_pose # add pose to current estimate 
+        odom_factor = gtsam.BetweenFactorPose3(X(pose_key-1), X(pose_key), odom, odom_noise)
+        local_graph.add(odom_factor) # add odometry factor to graph
+
+        # associate detections
+        associated_keys = associator.associate(boxes, current_quadrics, camera_pose)
+
+        # wrap boxes with keys 
+        associated_boxes = []
+        for box, quadric_key in zip(boxes, associated_keys):
+            associated_boxes.append({
+                'box': box,
+                'quadric_key': quadric_key,
+                'pose_key': pose_key,
+                'used': False,
+            })
+
+        # add associated measurements to history
         detection_history += associated_boxes
 
-        # initialize new quadrics
-        new_quadrics = quadricslam.initialize(measurement_history, current_quadrics, associated_boxes)
-        
-        # update slam system
-        qslam.update(odom, associated_detections, new_quadrics)
+        # initialize new landmarks
+        new_boxes = [f for f in associated_boxes if f['quadric_key'] not in current_quadrics.keys()]
+        for detection in new_boxes:
+            box = detection['box']
+            quadric_key = detection['quadric_key']
+            quadric = initialize_quadric(depth, box, camera_pose, calibration, object_depth)
+            current_quadrics[quadric_key] = quadric
 
-        # optimize
-        quadrics, poses = qslam.optimize()
-        
-        # visualize current pose
-        qslam.visualize(quadrics, poses)
+            # queue quadric to be added to problem when constrained
+            unconstrained_quadrics[quadric_key] = quadric 
+
+        # add initialized landmarks to values (if constrained)
+        temporary_copy = unconstrained_quadrics.copy()
+        for quadric_key, quadric in unconstrained_quadrics.items():
+            quadric_measurements = [d for d in detection_history if d['quadric_key'] == quadric_key]
+            if len(quadric_measurements) > 3:
+                quadric.addToValues(local_estimate, Q(quadric_key))
+                temporary_copy.pop(quadric_key)
+        unconstrained_quadrics = temporary_copy
+
+        # add measurements to graph if quadric is initialized and constrained
+        for detection in detection_history:
+            if detection['used']:
+                continue
+
+            box = detection['box']
+            quadric_key = detection['quadric_key']
+            pose_key = detection['pose_key']
+
+            # add to graph if quadric is constrained
+            if quadric_key not in unconstrained_quadrics.keys():
+                detection['used'] = True
+                bbf = gtsam_quadrics.BoundingBoxFactor(box, calibration, X(pose_key), Q(quadric_key), box_noise, "STANDARD")
+                local_graph.add(bbf)
+
+
+        # if not step%10:
+        if True:
+
+            # add local graph and estimate to isam
+            isam.update(local_graph, local_estimate)
+            estimate = isam.calculateEstimate()
+
+            # clear graph/estimate
+            local_graph.resize(0)
+            local_estimate.clear()
+
+            # update the estimated quadrics and trajectory
+            for i in range(estimate.keys().size()):
+                key = estimate.keys().at(i)
+                if chr(gtsam.symbolChr(key)) == 'q':
+                    quadric = gtsam_quadrics.ConstrainedDualQuadric.getFromValues(estimate, key)
+                    current_quadrics[gtsam.symbolIndex(key)] = quadric
+                elif chr(gtsam.symbolChr(key)) == 'x':
+                    current_trajectory[gtsam.symbolIndex(key)] = estimate.atPose3(key)
+
+
+        # visualize current view into map
+        image = color.copy()
+        drawing = CV2Drawing(image)
+        for frame in associated_boxes:
+            text = '{}'.format(frame['quadric_key'])
+            drawing.box_and_text(frame['box'], (0,0,255), text, (0,0,0))
+
+        # NOTE: get newest pose estimate
+        camera_pose = current_trajectory[max(current_trajectory.keys())]
+        for quadric in current_quadrics.values():
+            drawing.quadric(camera_pose, quadric, calibration, (255,0,255))
+
+        cv2.imshow('current view', image)
+        cv2.waitKey(1)
+
+        step += 1
         # ------------------------------------------------------
 
 
 
 
-
+# CHOICES:
+# 1. offline/online
+# 2. class-based vs classless
+# 3. optimize/update every step? or update every x steps
+# 4. single-view init vs SVD
+#       - SVD requires a) DA that can associate without map
+#       - b) checking enough measurements to initialize 
+#       - c) assumes there may be some measurements associated to quadrics we've seen before that we didn't initialize
+#       - d) requires storing all measurements for initialization
+#       - e) single-view requires: storing quadrics before adding to values
 
 
 # UPDATE:
