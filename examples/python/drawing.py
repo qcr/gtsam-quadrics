@@ -27,62 +27,12 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 # import custom python modules
 sys.dont_write_bytecode = True
-from base.containers import Trajectory
-from base.containers import Quadrics
 
 symbolChr = lambda i: chr(gtsam.symbolChr(i))
 
 class MPLDrawing(object):
     def __init__(self, figname):
         self._figname = figname
-
-    def plot_system(self, graph, estimate):
-        """
-        Plots the trajectory and quadrics
-        Color represents the sum of boundingbox factor errors at each pose
-        """
-        
-        # extract variables and factors
-        trajectory = Trajectory.from_values(estimate)
-        quadrics = Quadrics.from_values(estimate)
-
-        # collect nonlinear factors from graph
-        box_factors = []
-        for i in range(graph.size()):
-            factor = graph.at(i)
-            if factor.keys().size() == 2 and chr(gtsam.symbolChr(factor.keys().at(1))) == 'q':
-                box_factors.append(gtsam_quadrics.dynamic_cast_BoundingBoxFactor_NonlinearFactor(factor))
-
-        # extract x-y positions
-        xy = np.array([[pose.x(), pose.y()] for pose in trajectory.values()])
-
-        # extract error at each pose
-        errors = []
-        for pose_key in trajectory.keys():
-
-            # get factors for current pose
-            bbfs = [f for f in box_factors if gtsam.symbolIndex(f.keys().at(0)) == pose_key]
-
-            # get sum of each bbf error at pose 
-            error = np.sum([np.square(bbf.unwhitenedError(estimate)).sum() for bbf in bbfs])
-            errors.append(error)
-
-        # open and clear figure
-        figure = plt.figure(self._figname)
-        figure.clf()
-
-        # plot trajectory x-y
-        plt.plot(xy[:,0], xy[:,1], linestyle='-', c='c', zorder=1)
-        plt.scatter(xy[:,0], xy[:,1], s=25, c=errors, zorder=9)
-        plt.colorbar()
-        
-        # plot quadrics
-        for quadric in quadrics.values():
-            plt.plot(quadric.pose().x(), quadric.pose().y(), marker='o', markersize=5, c='m', fillstyle='none')
-            plt.plot(quadric.pose().x(), quadric.pose().y(), marker='o', markersize=5, c='m', alpha=0.5)
-        
-        # show plot
-        plt.show()
 
     def plot_result(self, trajectories, maps, colors, names=None):
         """ 

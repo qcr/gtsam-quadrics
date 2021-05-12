@@ -23,9 +23,12 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..
 
 # import custom python modules
 sys.dont_write_bytecode = True
-from visualization.drawing import CV2Drawing
-# from base.containers import Trajectory, Quadrics, Detections, ObjectDetection
-from detectors.faster_rcnn import FasterRCNN
+from drawing import CV2Drawing
+
+# detectron
+from detectron2 import model_zoo
+from detectron2.engine import DefaultPredictor
+from detectron2.config import get_cfg
 
 # import gtsam and extension
 import gtsam
@@ -122,25 +125,6 @@ class OdometryWrapper(object):
         self.prev_depth = depth
         return odom
 
-
-
-
-
-
-
-
-
-def intrinsics_to_gtsam(intrinsics):
-    fx = intrinsics[0,0]
-    fy = intrinsics[1,1]
-    cx = intrinsics[0,2]
-    cy = intrinsics[1,2]
-    return gtsam.Cal3_S2(fx, fy, 0, cx, cy)
-
-
-
-
-
 class Associator(object):
     def __init__(self, iou_thresh, calibration):
         self.iou_thresh = iou_thresh
@@ -189,7 +173,46 @@ class Associator(object):
 
         return associated_keys
 
+class PredictorWrapper(object):
+    def __init__(self, model_zoo_path, keep_classes=None):
+        cfg = get_cfg()
+        cfg.merge_from_file(model_zoo.get_config_file(model_zoo_path))
+        cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5 
+        cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model_zoo_path)
+        self.predictor = DefaultPredictor(cfg)
+        self.keep_classes = keep_classes
 
+    def __call__(self, image):
+        prediction = self.predictor(image)
+        instances = prediction['instances']
+
+        # convert instances to boxes
+        boxes = []
+        for i in range(len(instances)):
+            instance = instances[i]
+            class_index = instance.pred_classes.item()
+            if self.keep_classes is None or class_index in self.keep_classes:
+                box = instance.pred_boxes.tensor.squeeze(0).cpu().numpy()
+                gtsam_box = gtsam_quadrics.AlignedBox2(*box)
+                boxes.append(gtsam_box)
+
+        # filter partials
+        image_bounds = gtsam_quadrics.AlignedBox2(0,0,640,480)
+        filter_pixels = 15
+        filter_bounds = image_bounds.vector() + np.array([1,1,-1,-1])*filter_pixels
+        filter_bounds = gtsam_quadrics.AlignedBox2(filter_bounds)
+        boxes = [box for box in boxes if filter_bounds.contains(box)]
+
+        return boxes
+
+
+
+def intrinsics_to_gtsam(intrinsics):
+    fx = intrinsics[0,0]
+    fy = intrinsics[1,1]
+    cx = intrinsics[0,2]
+    cy = intrinsics[1,2]
+    return gtsam.Cal3_S2(fx, fy, 0, cx, cy)
 
 def initialize_quadric(depth, box, camera_pose, calibration, object_depth=0.1):
     """
@@ -213,6 +236,9 @@ def initialize_quadric(depth, box, camera_pose, calibration, object_depth=0.1):
     return quadric
 
 
+
+
+
 if __name__ == '__main__': 
 
     # setup camera 
@@ -222,7 +248,7 @@ if __name__ == '__main__':
     odometry = OdometryWrapper(camera.intrinsics)
 
     # setup detector
-    predictor = FasterRCNN('COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml', batch_size=5)
+    predictor = PredictorWrapper('COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml') # 41 is mug
 
     # -------- setup slam system -----------------------------------
 
@@ -301,20 +327,7 @@ if __name__ == '__main__':
         odom = gtsam.Pose3(odom)
 
         # run detector 
-        detections = predictor([color])[0]
-
-        # filter classes
-        # detections = [d for d in detections if np.argmax(d.scores)==41]
-
-        # wrap
-        boxes = [d.box for d in detections]
-
-        # filter partials
-        image_bounds = gtsam_quadrics.AlignedBox2(0,0,640,480)
-        filter_pixels = 15
-        filter_bounds = image_bounds.vector() + np.array([1,1,-1,-1])*filter_pixels
-        filter_bounds = gtsam_quadrics.AlignedBox2(filter_bounds)
-        boxes = [box for box in boxes if filter_bounds.contains(box)]
+        boxes = predictor(color)
 
         # ------------------------------------------------------
 
