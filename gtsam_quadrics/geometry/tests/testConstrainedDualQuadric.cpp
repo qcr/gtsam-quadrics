@@ -102,7 +102,7 @@ TEST(ConstrainedDualQuadric, NormalizedMatrix) {
 TEST(ConstrainedDualQuadric, Bounds) {
   ConstrainedDualQuadric Q(Pose3(Rot3(), Point3(2,3,-4.1)), Vector3(0.9,1.0,1.1));
 
-  AlignedBox3 expected = AlignedBox3(1.1, 2.0, -5.2, 2.9, 4.0, -3.0);
+  AlignedBox3 expected = AlignedBox3(1.1, 2.9, 2.0, 4.0, -5.2, -3.0);
   AlignedBox3 actual = Q.bounds();
 
   EXPECT(assert_equal(expected, actual));
