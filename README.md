@@ -147,13 +147,13 @@ If you are using this library in academic work, please cite the [publication](ht
 L. Nicholson, M. Milford and N. Sünderhauf, "QuadricSLAM: Dual Quadrics From Object Detections as Landmarks in Object-Oriented SLAM," in IEEE Robotics and Automation Letters, vol. 4, no. 1, pp. 1-8, Jan. 2019, doi: 10.1109/LRA.2018.2866205. [PDF](https://arxiv.org/abs/1804.04011).
 
 ```bibtext
-@ARTICLE{8440105,
+@article{nicholson2018,
   author={L. {Nicholson} and M. {Milford} and N. {Sünderhauf}},
   journal={IEEE Robotics and Automation Letters}, 
   title={QuadricSLAM: Dual Quadrics From Object Detections as Landmarks in Object-Oriented SLAM}, 
   year={2019},
   volume={4},
   number={1},
-  pages={1-8},
+  pages={1-8}
 }
 ```
