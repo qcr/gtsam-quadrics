@@ -58,6 +58,8 @@ The following table summarizes the available targets
 
 ### Dependencies 
 
+Base requirements:
+
 * g++ compiler (`sudo apt-get install build-essential`)
 * cmake >= 3.0 (`sudo apt-get install cmake`) 
 * boost >= 1.43 (`sudo apt-get install libboost-all-dev`)
@@ -66,7 +68,7 @@ The following table summarizes the available targets
 
 Requirements to build gtsam_quadrics python module:
 
-* gtsam: build with GTSAM_INSTALL_CYTHON_TOOLBOX=ON, and included on PYTHONPATH
+* gtsam <= 4.0.3: ensure the gtsam python library is built and on the python path
 * cython: both `sudo apt-get install cython` and `pip3 install cython` required <!-- gtsam requisite --> <!-- maybe we can use one and update our CYTHON_PATH? --> <!-- gtsam only needs apt-get version -->
 * python >= 3.0 <!-- gtsam requisite -->
 * numpy <!-- gtsam requisite --> 
@@ -78,9 +80,13 @@ Optional requirements to build documentation:
 
 
 ### Notes on installation
+**You may find gtsam does not install gtsam.pxd automatically:** in this case, add the gtsam build/cython folder to your $PYTHONPATH with the following `export PYTHONPATH=$PYTHONPATH:/path/to/gtsam/build/cython`
+
+**If using GTSAM 4.0.3 or exponential-map rotations:** gtsam 4.0.3 moved to exponential map by default to parametrize rotations. The analytical derivatives we've calculated from this library are based on the cayley transform. Please either select cayley rotations in the gtsam CMakelists or use numerical derivatives (defined in boundingboxfactor.cpp).
+
 **If you plan to use gtsam_quadrics in c++:** You can find the installed C++ headers using the cmake command `find_package(GTSAM_QUADRICS REQUIRED)` which will load `GTSAM_QUADRICS_INCLUDE_DIR`. The default header installation is `/usr/local/include/gtsam_quadrics/`, and by default library is installed to `/usr/local/lib/libgtsam_quadrics.so`. 
 
-**If you plan to use gtsam_quadrics in python:** ensure you have build location (`/build/cython/gtsam_quadrics`) or the install location (default: `/usr/local/cython/gtsam_quadrics`) on your PYTHONPATH. If you plan to make changes to the gtsam_quadrics source code, I advice adding the build location instead to avoid having to install every time you recompile the library. Assuming you have followed the instructions above, we can automatically source the installed gtsam_quadrics library by explicitly adding the following line to your ~/.bashrc file. 
+**If you plan to use gtsam_quadrics in python:** ensure you have build location (`/build/cython/gtsam_quadrics`) or the install location (default: `/usr/local/cython/gtsam_quadrics`) on your PYTHONPATH. If you plan to make changes to the gtsam_quadrics source code, I advise adding the build location instead to avoid having to install every time you recompile the library. Assuming you have followed the instructions above, we can automatically source the installed gtsam_quadrics library by explicitly adding the following line to your ~/.bashrc file. 
 
 ```sh
 # add gtsam_quadrics to PYTHONPATH
@@ -101,42 +107,37 @@ This library can be used to incorperate quadric landmarks into existing SLAM sys
 
 ## Planned developments
 * High-level SLAM front-end (akin to ORBSLAM2)
-* A BoundingBoxFactor error function robust to partially visible objects
-* Faster and more robust data-association strategy 
-* Easy webcam running (without ROS2) by using a python based odometry system
-* Depth-based initialization for quadrics
-* Semantic factors 
+* Support for GTSAM 4.1.0, pybind and expmap/logmap
+* Tools to visualize and evaluate quadric landmarks
 
 ## Notes ##
 
 ### Adding Quadrics to gtsam::Values ###
-When using the python interface, ConstrainedDualQuadrics can be added or retrieved from Values using the following. Since GTSAM 4.0 the python interface for Values manually specializes each type. In future we plan to derive the gtsam::Values class and add the insert/at methods for ConstrainedDualQuadric. 
+When using the python interface, ConstrainedDualQuadrics can be added or retrieved from Values using the following. Since GTSAM 4.0 the python interface for Values manually specializes each type. When supported by GTSAM, we plan to derive the gtsam::Values class and add the insert/at methods for ConstrainedDualQuadric. 
 
 ```Python
 quadric.addToValues(values, key)
-quadric = quadricslam.ConstrainedDualQuadric.getFromValues(values, key)
+quadric = gtsam_quadrics.ConstrainedDualQuadric.getFromValues(values, key)
 ```
 
 
 ## Common Issues ##
-If you attempt to build quadricslam and receive:
 
 ```
-cython/quadricslam/quadricslam.pxd:1:0: 'gtsam/gtsam.pxd' not found
+cython/gtsam_quadrics/gtsam_quadrics.pxd:1:0: 'gtsam/gtsam.pxd' not found
 ```
 
-Ensure that gtsam is installed with the cython toolbox enabled, and that it is on the PYTHONPATH. You can test this by attempting to import gtsam from within python. By default, gtsam is installed to /usr/local/cython. 
+If you attempt to build gtsam_quadrics and receive the above error, ensure that gtsam is installed with the cython toolbox enabled, and that it is on the PYTHONPATH. Some versions of GTSAM do not seem to install this file, in which case you will need to add the gtsam/build/cython folder to your PYTHONPATH manually, i.e `export PYTHONPATH=$PYTHONPATH:/path/to/gtsam/build/cython`. 
 
-If you import quadricslam and find it does not contain any attributes, or recieve:
-
-```
-AttributeError: module 'quadricslam' has no attribute 'ConstrainedDualQuadric'
-```
-
-Ensure that quadricslam is built with BUILD_PYTHON_WRAP set ON, the correct python version is used, and that the generated quadricslam.so shared library is on your PYTHONPATH. I.e, if you have installed quadricslam, that you have the following line in your ~/.bashrc
 
 ```
-export PYTHONPATH=$PYTHONPATH:/usr/local/cython/quadricslam
+AttributeError: module 'gtsam_quadrics' has no attribute 'ConstrainedDualQuadric'
+```
+
+If you import gtsam_quadrics and find it does not contain any attributes, or receive the above, ensure that gtsam_quadrics is built with BUILD_PYTHON_WRAP set ON, the correct python version is used, and that the generated gtsam_quadrics.so shared library is on your PYTHONPATH. I.e, if you have installed gtsam_quadrics, that you have the following line in your ~/.bashrc
+
+```
+export PYTHONPATH=$PYTHONPATH:/usr/local/cython/gtsam_quadrics
 ```
 
 ## Citing our work ##
