@@ -101,7 +101,45 @@ This library can be used to incorperate quadric landmarks into existing SLAM sys
 <!-- Three types of users. 2. modifies our scripts to add their own methods -->
 <!-- Three types of users. 3. uses our scripts -->
 
+## Basic Usage 
 
+```python
+import gtsam
+import gtsam_quadrics
+
+# setup constants
+pose_key = int(gtsam.symbol(ord('x'), 0))
+quadric_key = int(gtsam.symbol(ord('q'), 5))
+
+# create calibration
+calibration = gtsam.Cal3_S2(525.0, 525.0, 0.0, 160.0, 120.0)
+
+# create graph/values
+graph = gtsam.NonlinearFactorGraph()
+values = gtsam.Values()
+
+# create noise model (SD=10)
+bbox_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([10]*4, dtype=np.float))
+
+# create quadric landmark (pose=eye(4), radii=[1,2,3])
+initial_quadric = gtsam_quadrics.ConstrainedDualQuadric(gtsam.Pose3(), np.array([1.,2.,3.]))
+
+# create bounding-box measurement (xmin,ymin,xmax,ymax)
+bounds = gtsam_quadrics.AlignedBox2(15,12,25,50)
+
+# create bounding-box factor
+bbf = gtsam_quadrics.BoundingBoxFactor(bounds, calibration, pose_key, quadric_key, bbox_noise)
+
+# add landmark to values
+initial_quadric.addToValues(values, quadric_key)
+
+# add bbf to graph
+graph.add(bbf)
+
+
+# get quadric estimate from values (assuming the values have changed)
+quadric_estimate = gtsam_quadrics.ConstrainedDualQuadric.getFromValues(values, object_key)
+```
 
 
 
