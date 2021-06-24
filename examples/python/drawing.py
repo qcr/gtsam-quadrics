@@ -102,8 +102,6 @@ class CV2Drawing(object):
         if alpha!=1:
             cv2.addWeighted(self._image, alpha, full_image, 1-alpha, 0, self._image)
 
-
-
     def generate_uv_spherical(self, quadric, pose, calibration, theta_points=30, phi_points=30):
         rotation = quadric.pose().rotation().matrix()
         translation = quadric.pose().translation().vector()
