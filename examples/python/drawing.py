@@ -28,80 +28,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 # import custom python modules
 sys.dont_write_bytecode = True
 
-symbolChr = lambda i: chr(gtsam.symbolChr(i))
-
-class MPLDrawing(object):
-    def __init__(self, figname):
-        self._figname = figname
-
-    def plot_result(self, trajectories, maps, colors, names=None):
-        """ 
-        Compares a number of trajectories and maps. 
-
-        :param - trajectories: list of Trajectory objects
-        :param - maps: list of Quadrics objects
-        :param - colors: list of matplotlib colors for each trajectory/map
-        :param - names: list of names for legend
-        """
-
-        # open and clear figure
-        figure = plt.figure(self._figname)
-        figure.clf()
-
-        # plot trajectories
-        for i, trajectory in enumerate(trajectories):
-            xy = np.array([[pose.x(), pose.y()] for pose in trajectory.values()])
-            plt.plot(xy[:,0], xy[:,1], marker='o', markersize=3, c=colors[i], label='traj {}'.format(i))
-        
-        # plot quadrics
-        for i, quadrics in enumerate(maps):
-            for quadric in quadrics.values():
-                plt.plot(quadric.pose().x(), quadric.pose().y(), marker='o', markersize=3, c=colors[i], label='quads {}'.format(i))
-
-        # draw legend
-        if names is not None:
-            legend_lines = [Line2D([0], [0], color=colors[i], lw=2) for i in range(len(names))]
-            figure.legend(legend_lines, names)
-
-        # show plot
-        plt.show()
-
-    def conic(self, dual_conic):
-        conic = np.linalg.inv(dual_conic)
-
-        irange = 1000
-        points = 10000
-        x = np.linspace(-irange, irange, points)
-        y = np.linspace(-irange, irange, points)
-        x, y = np.meshgrid(x, y)
-
-        a = conic[0,0]; 
-        b = conic[1,0]*2.0; 
-        c = conic[1,1]
-        d = conic[2,0]*2.0; 
-        e = conic[2,1]*2.0; 
-        f = conic[2,2]
-
-        # conic_descriminant = b**2 - 4*a*c
-        # print('conic_descriminant: {}'.format(conic_descriminant))
-
-        plt.contour(x, y, (a*x**2 + b*x*y + c*y**2 + d*x + e*y + f), [0], colors='r')
-
-        fig = plt.gcf()
-        ax = fig.gca()
-        ax.invert_yaxis()
-        # rect = patches.Rectangle((0,0),320,240,linewidth=1,edgecolor='r',facecolor='none')
-        # ax.add_patch(rect)
-
-        # dual_conic = dual_conic/dual_conic[-1,-1]
-        # conic_point = [dual_conic[0,2], dual_conic[1,2]]
-
-        # plt.scatter(conic_point[0], conic_point[1], c='r')
-        # plt.xlim((0,320))
-        # plt.ylim((0,240))
-        plt.show()
-
-
 class CV2Drawing(object):
     def __init__(self, image):
         self._image = image
@@ -151,7 +77,7 @@ class CV2Drawing(object):
             return
         
         image_box = gtsam_quadrics.AlignedBox2(0,0,self.image_width, self.image_height)
-        points_2D = generate_uv_spherical(quadric, pose, calibration, 10, 10)
+        points_2D = self.generate_uv_spherical(quadric, pose, calibration, 10, 10)
         points_2D = np.round(points_2D).astype('int')
         # color = (0,0,255)
         color = (color[2], color[1], color[0]) # rgb to bgr
@@ -176,84 +102,40 @@ class CV2Drawing(object):
         if alpha!=1:
             cv2.addWeighted(self._image, alpha, full_image, 1-alpha, 0, self._image)
 
-    def points_3D(self, points3D, pose, calibration, color=(255,0,255)):
-        # project 3D points to 2D
-        P = gtsam_quadrics.QuadricCamera.transformToImage(pose, calibration)
-        points_3DTH = np.concatenate((points3D.T, np.ones((1,points3D.shape[0]))))
-        points_2D = P.dot(points_3DTH)
-        points_2D = points_2D[0:2,:] / points_2D[2]
-        points_2D = points_2D.transpose()
-        
-        # draw points
-        for point in points_2D:
-            cv2.circle(self._image, tuple(point.astype('int')), 1, color=(0,0,255), thickness=-1, lineType=cv2.LINE_AA)
 
 
-    def bounds_3D(self, box3D, pose, calibration, color=(255,0,255)):
-        # convert 3D box to set of 8 points
-        b = box3D.vector()
-        points_3D = np.array([[x,y,z] for x in b[0:2] for y in b[2:4] for z in b[4:6]])
+    def generate_uv_spherical(self, quadric, pose, calibration, theta_points=30, phi_points=30):
+        rotation = quadric.pose().rotation().matrix()
+        translation = quadric.pose().translation().vector()
 
-        # ensure points infront of camera
-        for point in points_3D:
-            if pose.between(gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(point))).translation().vector()[-1] < 0:
-                return
+        # Radii corresponding to the coefficients:
+        rx, ry, rz = quadric.radii()
 
-        # project 3D points to 2D
-        P = gtsam_quadrics.QuadricCamera.transformToImage(pose, calibration)
-        points_3DTH = np.concatenate((points_3D.T, np.ones((1,points_3D.shape[0]))))
-        points_2D = P.dot(points_3DTH)
-        points_2D = points_2D[0:2,:] / points_2D[2]
-        points_2D = points_2D.transpose()
+        # Set of all spherical angles:
+        u = np.linspace(0, 2 * np.pi, theta_points)
+        v = np.linspace(0, np.pi, phi_points)
 
-        # only draw if all points project correctly
-        if np.any(np.isinf(points_2D)) or np.any(np.isnan(points_2D)):
-            return
-        
-        # draw points
-        for point in points_2D:
-            cv2.circle(self._image, tuple(point.astype('int')), 1, color=(0,0,255), thickness=-1, lineType=cv2.LINE_AA)
+        # Cartesian coordinates that correspond to the spherical angles:
+        x = rx * np.outer(np.cos(u), np.sin(v))
+        y = ry * np.outer(np.sin(u), np.sin(v))
+        z = rz * np.outer(np.ones_like(u), np.cos(v))
+        # w = np.ones(x.shape)
+        points = np.stack((x,y,z))
 
-        # draw lines
-        for index in [(0,1),(1,3),(3,2),(2,0),(4,5),(5,7),(7,6),(6,4),(2,6),(1,5),(0,4),(3,7)]:
-            p1 = tuple(points_2D[index[0]].astype('int'))
-            p2 = tuple(points_2D[index[1]].astype('int'))
-            cv2.line(self._image, p1, p2, color=color, thickness=1, lineType=cv2.LINE_AA)
+        points_2D = np.zeros((points.shape[1], points.shape[2], 2))
+        transform_to_image = gtsam_quadrics.QuadricCamera.transformToImage(pose, calibration)
 
+        # warp points to quadric (3D) and project to image (2D)
+        for i in range(points.shape[1]):
+            for j in range(points.shape[2]):
+                # point = [x[i,j], y[i,j], z[i,j], 1.0]
+                point = points[:,i,j]
+                warped_point = point.dot(np.linalg.inv(rotation))
+                warped_point += translation
 
+                point_3D = np.array([warped_point[0], warped_point[1], warped_point[2], 1.0])
+                point_2D = transform_to_image.dot(point_3D)
+                point_2D = point_2D[:-1]/point_2D[-1]
+                points_2D[i,j] = point_2D
 
-def generate_uv_spherical(quadric, pose, calibration, theta_points=30, phi_points=30):
-    rotation = quadric.pose().rotation().matrix()
-    translation = quadric.pose().translation().vector()
-
-    # Radii corresponding to the coefficients:
-    rx, ry, rz = quadric.radii()
-
-    # Set of all spherical angles:
-    u = np.linspace(0, 2 * np.pi, theta_points)
-    v = np.linspace(0, np.pi, phi_points)
-
-    # Cartesian coordinates that correspond to the spherical angles:
-    x = rx * np.outer(np.cos(u), np.sin(v))
-    y = ry * np.outer(np.sin(u), np.sin(v))
-    z = rz * np.outer(np.ones_like(u), np.cos(v))
-    # w = np.ones(x.shape)
-    points = np.stack((x,y,z))
-
-    points_2D = np.zeros((points.shape[1], points.shape[2], 2))
-    transform_to_image = gtsam_quadrics.QuadricCamera.transformToImage(pose, calibration)
-
-    # warp points to quadric (3D) and project to image (2D)
-    for i in range(points.shape[1]):
-        for j in range(points.shape[2]):
-            # point = [x[i,j], y[i,j], z[i,j], 1.0]
-            point = points[:,i,j]
-            warped_point = point.dot(np.linalg.inv(rotation))
-            warped_point += translation
-
-            point_3D = np.array([warped_point[0], warped_point[1], warped_point[2], 1.0])
-            point_2D = transform_to_image.dot(point_3D)
-            point_2D = point_2D[:-1]/point_2D[-1]
-            points_2D[i,j] = point_2D
-
-    return points_2D
+        return points_2D
