@@ -338,14 +338,19 @@ def initialize_quadric(depth, box, camera_pose, calibration, object_depth=0.1):
     x = (center.x() - calibration.px()) * box_depth / calibration.fx()
     y = (center.y() - calibration.py()) * box_depth / calibration.fy()
     relative_point = gtsam.Point3(x, y, box_depth)
-    quadric_center = camera_pose.compose(gtsam.Pose3(camera_pose.rotation(), relative_point))
+    quadric_center = camera_pose.transformFrom(relative_point)
+
+    # compute quadric rotation using .Lookat
+    up_vector = camera_pose.transformFrom(gtsam.Point3(0,-1,0))
+    quadric_rotation = gtsam.SimpleCamera.Lookat(camera_pose.translation(), quadric_center, up_vector).pose().rotation()
+    quadric_pose = gtsam.Pose3(quadric_rotation, quadric_center)
 
     # compute the quadric radii from the box shape
     tx = (box.xmin() - calibration.px()) * box_depth / calibration.fx()
     ty = (box.ymin() - calibration.py()) * box_depth / calibration.fy()
     radii = np.array([np.abs(tx-x), np.abs(ty-y), object_depth])
 
-    quadric = gtsam_quadrics.ConstrainedDualQuadric(quadric_center, radii)
+    quadric = gtsam_quadrics.ConstrainedDualQuadric(quadric_pose, radii)
     return quadric
 
 
