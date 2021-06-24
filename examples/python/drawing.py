@@ -77,7 +77,7 @@ class CV2Drawing(object):
             return
         
         image_box = gtsam_quadrics.AlignedBox2(0,0,self.image_width, self.image_height)
-        points_2D = self.generate_uv_spherical(quadric, pose, calibration, 10, 10)
+        points_2D = self.generate_uv_spherical(quadric, pose, calibration, 20, 20)
         points_2D = np.round(points_2D).astype('int')
         # color = (0,0,255)
         color = (color[2], color[1], color[0]) # rgb to bgr
