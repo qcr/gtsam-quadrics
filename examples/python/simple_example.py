@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 
 # import gtsam and extension
 import gtsam
-import quadricslam
+import gtsam_quadrics
 
 if __name__ == '__main__':
 
@@ -51,8 +51,8 @@ if __name__ == '__main__':
 
     # define quadrics
     quadrics = []
-    quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(), np.array([1.,2.,3.])))
-    quadrics.append(quadricslam.ConstrainedDualQuadric(gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(0.1,0.1,0.1)), np.array([1.,2.,3.])))
+    quadrics.append(gtsam_quadrics.ConstrainedDualQuadric(gtsam.Pose3(), np.array([1.,2.,3.])))
+    quadrics.append(gtsam_quadrics.ConstrainedDualQuadric(gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(0.1,0.1,0.1)), np.array([1.,2.,3.])))
 
     # add prior on first pose
     prior_factor = gtsam.PriorFactorPose3(X(0), poses[0], prior_noise)
@@ -78,10 +78,10 @@ if __name__ == '__main__':
     # reproject true quadrics into each true pose
     for j, quadric in enumerate(quadrics):
         for i, pose in enumerate(poses):
-            conic = quadricslam.QuadricCamera.project(quadric, pose, calibration)
+            conic = gtsam_quadrics.QuadricCamera.project(quadric, pose, calibration)
             bounds = conic.bounds()
-            bbf = quadricslam.BoundingBoxFactor(bounds, calibration, X(i), Q(j), bbox_noise)
-            bbf.addToGraph(graph)
+            bbf = gtsam_quadrics.BoundingBoxFactor(bounds, calibration, X(i), Q(j), bbox_noise)
+            graph.add(bbf)
 
     # define lm parameters
     parameters = gtsam.LevenbergMarquardtParams()

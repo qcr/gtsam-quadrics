@@ -13,3 +13,11 @@ doc/latex/
 
 *.pyc
 
+ros/install/
+ros/log/
+ros/build/
+
+
+ros/src/py_detector/py_detector/weights/yolov3.weights
+
+.python-version
