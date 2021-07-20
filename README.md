@@ -106,6 +106,7 @@ This library can be used to incorperate quadric landmarks into existing SLAM sys
 ```python
 import gtsam
 import gtsam_quadrics
+import numpy as np
 
 # setup constants
 pose_key = int(gtsam.symbol(ord('x'), 0))
@@ -138,7 +139,7 @@ graph.add(bbf)
 
 
 # get quadric estimate from values (assuming the values have changed)
-quadric_estimate = gtsam_quadrics.ConstrainedDualQuadric.getFromValues(values, object_key)
+quadric_estimate = gtsam_quadrics.ConstrainedDualQuadric.getFromValues(values, quadric_key)
 ```
 
 
