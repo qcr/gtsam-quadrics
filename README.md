@@ -7,14 +7,13 @@
 This repository contains an extension to the popular [GTSAM](https://github.com/borglab/gtsam) factor graph optimization library. We introduce constrained dual quadrics as GTSAM variables, and support the estimation of the quadric parameters using 2-D bounding box measurements. These tools are available for both c++ and Python and are designed to be used in conjunction with GTSAM. Also provided are a number of c++ and Python examples that demonstrate how quadric landmarks can be used in the SLAM context, alongside doxygen documentation and unit tests. 
 
 <p align="center">
-<img alt="RefineNet sample image on PASCAL VOC dataset" src=doc/quadricslam_still1.png width="400"/>
-<img alt="RefineNet sample image on PASCAL VOC dataset" src=doc/quadricslam_still2.png width="400"/>
+<img alt="QuadricSLAM sample output image 1" src=https://github.com/best-of-acrv/gtsam_quadrics/raw/master/doc/quadricslam_still1.png width="400"/>
+<img alt="QuadricSLAM sample output image 1" src=https://github.com/best-of-acrv/gtsam_quadrics/raw/master/doc/quadricslam_still2.png width="400"/>
 </p>
 
 We expect this repository to be active and continually improved upon. If you have any feature requests or experience any bugs, don't hesitate to let us know. Our code is free to use, and licensed under BSD-3. We simply ask that you [cite our work](#citing-our-work) if you use QuadricSLAM in your own research. 
 
-[![IMAGE ALT TEXT HERE](doc/quadricslam_video.png)](https://www.youtube.com/watch?v=n-j0DFDFSKU)
-
+[![@youtube QuadricSLAM demonstration for RA-L](https://github.com/best-of-acrv/gtsam_quadrics/raw/master/doc/quadricslam_video.png)](https://www.youtube.com/watch?v=n-j0DFDFSKU)
 
 
 ## Installation ## 
