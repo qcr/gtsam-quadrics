@@ -22,7 +22,6 @@
 #include <gtsam_quadrics/geometry/DualConic.h>
 #include <gtsam_quadrics/geometry/QuadricCamera.h>
 
-#include <boost/function.hpp>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
@@ -268,7 +267,7 @@ AlignedBox2 DualConic::smartBounds(
 
     // cast to boost::function for numericalDerivative
     auto boost_funptr(
-        static_cast<boost::function<Vector(const Matrix33&)>>(bounds_funptr));
+        static_cast<std::function<Vector(const Matrix33&)>>(bounds_funptr));
 
     // calculate derivative of conic_matrix wrt quadric vector
     Eigen::Matrix<double, 4, 9> db_dC =

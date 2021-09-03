@@ -19,8 +19,6 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam_quadrics/geometry/QuadricAngleFactor.h>
 
-#include <boost/function.hpp>
-
 #define NUMERICAL_DERIVATIVE false
 
 using namespace std;
@@ -35,7 +33,7 @@ Vector QuadricAngleFactor::evaluateError(const ConstrainedDualQuadric& quadric,
   Vector3 error = measured_.localCoordinates(QRot);
   // Rot3::LocalCoordinates(quadric.pose().rotation());
 
-  boost::function<Vector(const ConstrainedDualQuadric&)> funPtr(
+  std::function<Vector(const ConstrainedDualQuadric&)> funPtr(
       boost::bind(&QuadricAngleFactor::evaluateError, this, _1, boost::none));
   if (H) {
     Eigen::Matrix<double, 3, 9> de_dr =
