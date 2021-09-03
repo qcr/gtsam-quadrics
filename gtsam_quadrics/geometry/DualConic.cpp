@@ -304,7 +304,7 @@ bool DualConic::isEllipse(void) const {
 
 /* ************************************************************************* */
 bool DualConic::contains(const Point2& p) const {
-  Vector3 point = (Vector3() << p.vector(), 1.0).finished();
+  Vector3 point = (Vector3() << p, 1.0).finished();
   double pointError = point.transpose() * this->matrix().inverse() * point;
 
   // apply a threshold due to noisy matrix inversion
