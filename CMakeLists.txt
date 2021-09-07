@@ -26,9 +26,23 @@ include(GtsamTesting)         # Easy functions for creating unit tests and scrip
 include(GtsamMakeConfigFile)  # Defines a function for generating config file so package can be found with find_package function
 
 ###################################################################################
-# Build Python wrappers for GTSAM 4.1+
+# Add Python wrapping tools from gtwrap (used in GTSAM 4.1+)
 if(BUILD_PYTHON_WRAP)
-  add_subdirectory(gtwrap)
+  # The config.cmake for gtwrap seems to be buggy as hell at the moment; so
+  # instead we manually hack in what we need from it here...
+  # find_package(gtwrap REQUIRED)
+  set(gtwrap_DIR ${CMAKE_SOURCE_DIR}/gtwrap)
+
+  list(APPEND CMAKE_MODULE_PATH ${gtwrap_DIR}/cmake)
+
+  set(GTWRAP_PYTHON_PACKAGE_DIR ${gtwrap_DIR})
+
+  include(${gtwrap_DIR}/cmake/PybindWrap.cmake)
+  include(${gtwrap_DIR}/cmake/GtwrapUtils.cmake)
+
+  set(PYBIND_WRAP_SCRIPT ${gtwrap_DIR}/scripts/pybind_wrap.py)
+
+  add_subdirectory(${gtwrap_DIR}/pybind11 pybind11)
 endif()
 
 ###################################################################################
