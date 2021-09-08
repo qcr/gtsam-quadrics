@@ -127,7 +127,8 @@ if(BUILD_PYTHON_WRAP)
     ${PROJECT_NAME}
     "${PROJECT_NAME}"
     )
-  message(STATUS "Successfully pybinded!")
+
+  set_target_properties(${PROJECT_NAME}_py PROPERTIES OUTPUT_NAME "${PROJECT_NAME}")
 endif()
 
 ###################################################################################
