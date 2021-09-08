@@ -114,31 +114,20 @@ add_subdirectory(examples/c++)
 add_dependencies(examples examples_folder)
 
 ###################################################################################
-# Build MATLAB wrapper (CMake tracks the dependecy to link with GTSAM through our project's static library)
-# wrap_and_install_library("example.h" "${CONVENIENCE_LIB_NAME}" "" "")
-
-###################################################################################
-# Build Cython wrapper (CMake tracks the dependecy to link with GTSAM through our project's static library)
+# Build Python wrapper using gtwrap library for GTSAM 4.1+
 if(BUILD_PYTHON_WRAP)
-
-  # # include gtsam eigency (handles numpy->eigen conversion)
-  # include_directories(${GTSAM_EIGENCY_INSTALL_PATH})
-
-  # # create __init__.py to allow build/cython/gtsam_quadrics be imported as a python package
-  # file(WRITE "${PROJECT_BINARY_DIR}/cython/gtsam_quadrics/__init__.py" "from .gtsam_quadrics import *")
-
-  # set(GTSAM_QUADRICS_CYTHON_INSTALL_PATH "${PROJECT_BINARY_DIR}/cython/gtsam_quadrics" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
-
-  # # use gtsams cython wrapping functionality
-  # wrap_and_install_library_cython("./gtsam_quadrics.h" # interface_header path
-  #   "from gtsam.gtsam cimport *" # extra imports for cython pxd
-  #   "${GTSAM_QUADRICS_CYTHON_INSTALL_PATH}" # install_path
-  #   "gtsam;${CONVENIENCE_LIB_NAME}" # libraries to link with
-  #   "wrap;gtsam;${CONVENIENCE_LIB_NAME}" # dependencies)
-  #   )
-
-  # install __init__.py so package can be loaded
-  # install_cython_files("${PROJECT_BINARY_DIR}/cython/gtsam_quadrics/__init__.py" "${GTSAM_QUADRICS_CYTHON_INSTALL_PATH}")
+  pybind_wrap(
+    ${PROJECT_NAME}_py
+    ./${PROJECT_NAME}.i
+    "${PROJECT_NAME}.cpp"
+    "${PROJECT_NAME}"
+    "${PROJECT_NAME}"
+    ""
+    ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.tpl
+    ${PROJECT_NAME}
+    "${PROJECT_NAME}"
+    )
+  message(STATUS "Successfully pybinded!")
 endif()
 
 ###################################################################################
