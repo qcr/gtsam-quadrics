@@ -82,11 +82,11 @@ class QuadricAngleFactor
   bool equals(const QuadricAngleFactor& other, double tol = 1e-9) const;
 };
 
+}  // namespace gtsam_quadrics
+
 /** \cond PRIVATE */
 // Add to testable group
 template <>
-struct gtsam::traits<QuadricAngleFactor>
-    : public gtsam::Testable<QuadricAngleFactor> {};
+struct gtsam::traits<gtsam_quadrics::QuadricAngleFactor>
+    : public gtsam::Testable<gtsam_quadrics::QuadricAngleFactor> {};
 /** \endcond */
-
-}  // namespace gtsam_quadrics

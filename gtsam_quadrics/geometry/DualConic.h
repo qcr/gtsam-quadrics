@@ -104,10 +104,11 @@ class DualConic {
   /// @}
 };
 
+}  // namespace gtsam_quadrics
+
 /** \cond PRIVATE */
 // Add DualConic to Testable group
 template <>
-struct gtsam::traits<DualConic> : public gtsam::Testable<DualConic> {};
+struct gtsam::traits<gtsam_quadrics::DualConic>
+    : public gtsam::Testable<gtsam_quadrics::DualConic> {};
 /** \endcond */
-
-}  // namespace gtsam_quadrics

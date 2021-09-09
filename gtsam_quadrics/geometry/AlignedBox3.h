@@ -108,10 +108,11 @@ class AlignedBox3 {
   /// @}
 };
 
+}  // namespace gtsam_quadrics
+
 /** \cond PRIVATE */
 // Add to testable group
 template <>
-struct gtsam::traits<AlignedBox3> : public gtsam::Testable<AlignedBox3> {};
+struct gtsam::traits<gtsam_quadrics::AlignedBox3>
+    : public gtsam::Testable<gtsam_quadrics::AlignedBox3> {};
 /** \endcond */
-
-}  // namespace gtsam_quadrics

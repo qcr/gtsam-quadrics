@@ -170,15 +170,17 @@ class ConstrainedDualQuadric {
   /// @}
 };
 
+}  // namespace gtsam_quadrics
+
 /** \cond PRIVATE */
 // Add ConstrainedDualQuadric to Manifold group
 template <>
-struct gtsam::traits<ConstrainedDualQuadric>
-    : public gtsam::internal::Manifold<ConstrainedDualQuadric> {};
+struct gtsam::traits<gtsam_quadrics::ConstrainedDualQuadric>
+    : public gtsam::internal::Manifold<gtsam_quadrics::ConstrainedDualQuadric> {
+};
 
 template <>
-struct gtsam::traits<const ConstrainedDualQuadric>
-    : public gtsam::internal::Manifold<ConstrainedDualQuadric> {};
+struct gtsam::traits<const gtsam_quadrics::ConstrainedDualQuadric>
+    : public gtsam::internal::Manifold<gtsam_quadrics::ConstrainedDualQuadric> {
+};
 /** \endcond */
-
-}  // namespace gtsam_quadrics

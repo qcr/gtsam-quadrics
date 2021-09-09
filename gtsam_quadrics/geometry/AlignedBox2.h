@@ -134,13 +134,14 @@ class AlignedBox2 {
   /// @}
 };
 
-/** \cond PRIVATE */
-// Add to testable group
-template <>
-struct gtsam::traits<AlignedBox2> : public gtsam::Testable<AlignedBox2> {};
-/** \endcond */
-
 // Add vector<> typedef for python wrapper
 typedef std::vector<gtsam::Vector3> Vector3Vector;
 
 }  // namespace gtsam_quadrics
+
+/** \cond PRIVATE */
+// Add to testable group
+template <>
+struct gtsam::traits<gtsam_quadrics::AlignedBox2>
+    : public gtsam::Testable<gtsam_quadrics::AlignedBox2> {};
+/** \endcond */

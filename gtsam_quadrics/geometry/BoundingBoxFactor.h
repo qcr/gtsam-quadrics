@@ -149,11 +149,11 @@ class BoundingBoxFactor
   bool equals(const BoundingBoxFactor& other, double tol = 1e-9) const;
 };
 
+}  // namespace gtsam_quadrics
+
 /** \cond PRIVATE */
 // Add to testable group
 template <>
-struct gtsam::traits<BoundingBoxFactor>
-    : public gtsam::Testable<BoundingBoxFactor> {};
+struct gtsam::traits<gtsam_quadrics::BoundingBoxFactor>
+    : public gtsam::Testable<gtsam_quadrics::BoundingBoxFactor> {};
 /** \endcond */
-
-}  // namespace gtsam_quadrics
