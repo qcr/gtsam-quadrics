@@ -22,7 +22,7 @@
 
 #include <vector>
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
   /**
    * @class AlignedBox2
@@ -142,4 +142,4 @@ namespace gtsam {
   typedef std::vector<Vector3> Vector3Vector;
 
 
-} // namespace gtsam
+} // namespace gtsam_quadrics

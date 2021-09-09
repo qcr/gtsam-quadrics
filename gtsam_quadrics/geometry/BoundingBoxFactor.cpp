@@ -25,7 +25,7 @@
 
 using namespace std;
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
 /* ************************************************************************* */
 Vector BoundingBoxFactor::evaluateError(const Pose3& pose,
@@ -184,4 +184,4 @@ bool BoundingBoxFactor::equals(const BoundingBoxFactor& other,
   return equal;
 }
 
-}  // namespace gtsam
+}  // namespace gtsam_quadrics

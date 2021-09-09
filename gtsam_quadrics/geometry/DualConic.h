@@ -23,7 +23,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Cal3_S2.h>
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
   /**
    * @class DualConic
@@ -111,4 +111,4 @@ namespace gtsam {
   struct traits<DualConic> : public Testable<DualConic> {};
   /** \endcond */
     
-} // namespace gtsam
+} // namespace gtsam_quadrics

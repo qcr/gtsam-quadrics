@@ -28,7 +28,7 @@
 
 using namespace std;
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
 /* ************************************************************************* */
 DualConic::DualConic() {
@@ -324,4 +324,4 @@ bool DualConic::equals(const DualConic& other, double tol) const {
   return this->normalize().matrix().isApprox(other.normalize().matrix(), tol);
 }
 
-}  // namespace gtsam
+}  // namespace gtsam_quadrics

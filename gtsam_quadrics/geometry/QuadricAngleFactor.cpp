@@ -23,7 +23,7 @@
 
 using namespace std;
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
 /* ************************************************************************* */
 Vector QuadricAngleFactor::evaluateError(const ConstrainedDualQuadric& quadric,
@@ -60,4 +60,4 @@ bool QuadricAngleFactor::equals(const QuadricAngleFactor& other,
   return equal;
 }
 
-}  // namespace gtsam
+}  // namespace gtsam_quadrics

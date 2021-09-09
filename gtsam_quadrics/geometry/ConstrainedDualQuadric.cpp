@@ -26,7 +26,7 @@
 
 using namespace std;
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
 /* ************************************************************************* */
 ConstrainedDualQuadric::ConstrainedDualQuadric() {
@@ -217,4 +217,4 @@ ConstrainedDualQuadric ConstrainedDualQuadric::getFromValues(const Values& v,
   return v.at<ConstrainedDualQuadric>(k);
 }
 
-}  // namespace gtsam
+}  // namespace gtsam_quadrics

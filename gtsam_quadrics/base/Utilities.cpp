@@ -21,7 +21,7 @@
 
 using namespace std;
 
-namespace gtsam {
+namespace gtsam_quadrics {
 namespace utils {
   
 /* ************************************************************************* */
@@ -142,4 +142,4 @@ Matrix TVEC(const int m, const int n) {
 }
 
 } // namespace utils
-} // namespace gtsam
+} // namespace gtsam_quadrics

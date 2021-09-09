@@ -26,7 +26,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 using namespace std;
-using namespace gtsam;
+using namespace gtsam_quadrics;
 
 static NonlinearFactorGraph graph;
 static AlignedBox2 measured(15.2, 18.5, 120.5, 230.2);

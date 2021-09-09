@@ -19,7 +19,7 @@
 
 using namespace std;
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
 /* ************************************************************************* */
 AlignedBox3::AlignedBox3(const double& xmin, const double& xmax, const double& ymin, const double& ymax, const double& zmin, const double& zmax) {
@@ -72,4 +72,4 @@ bool AlignedBox3::equals(const AlignedBox3& other, double tol) const {
   return xxyyzz_.isApprox(other.xxyyzz_, tol);
 }
 
-} // namespace gtsam
+} // namespace gtsam_quadrics

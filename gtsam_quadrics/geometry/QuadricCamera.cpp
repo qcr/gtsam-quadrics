@@ -20,7 +20,7 @@
 
 #include <gtsam/base/numericalDerivative.h>
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
 /* ************************************************************************* */
 Matrix34 QuadricCamera::transformToImage(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration) {
@@ -77,4 +77,4 @@ std::vector<Vector4> QuadricCamera::project(const AlignedBox2& box, const Pose3&
 }
 
 
-} // namespace gtsam
+} // namespace gtsam_quadrics

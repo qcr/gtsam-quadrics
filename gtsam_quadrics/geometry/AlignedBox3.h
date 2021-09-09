@@ -21,7 +21,7 @@
 
 #include <vector>
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
   /**
    * @class AlignedBox3
@@ -112,4 +112,4 @@ namespace gtsam {
   struct traits<AlignedBox3> : public Testable<AlignedBox3> {};
   /** \endcond */
 
-} // namespace gtsam
+} // namespace gtsam_quadrics

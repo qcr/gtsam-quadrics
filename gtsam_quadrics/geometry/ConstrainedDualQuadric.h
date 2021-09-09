@@ -25,7 +25,7 @@
 
 #include <random>
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
   /**
    * @class ConstrainedDualQuadric
@@ -177,4 +177,4 @@ namespace gtsam {
   struct traits<const ConstrainedDualQuadric> : public internal::Manifold<ConstrainedDualQuadric> {};
   /** \endcond */
 
-} // namespace gtsam
+} // namespace gtsam_quadrics

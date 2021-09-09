@@ -26,7 +26,7 @@
 #include <gtsam/geometry/Rot3.h>
 
 using namespace std;
-using namespace gtsam;
+using namespace gtsam_quadrics;
 
 static const Vector6 v = (Vector6() << 1.,2.,3.,4.,5.,6.).finished();
 static const Vector6 v0 = (Vector6().setZero());

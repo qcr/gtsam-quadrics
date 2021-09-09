@@ -19,7 +19,7 @@
 
 using namespace std;
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
 /* ************************************************************************* */
 std::vector<Vector3> AlignedBox2::lines() const {
@@ -90,4 +90,4 @@ bool AlignedBox2::equals(const AlignedBox2& other, double tol) const {
   return tlbr_.isApprox(other.tlbr_, tol);
 }
 
-} // namespace gtsam
+} // namespace gtsam_quadrics

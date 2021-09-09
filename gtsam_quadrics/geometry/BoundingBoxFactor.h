@@ -26,7 +26,7 @@
 #include <gtsam/nonlinear/Expression.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
   /**
    * @class BoundingBoxFactor
@@ -127,4 +127,4 @@ namespace gtsam {
   struct traits<BoundingBoxFactor> : public Testable<BoundingBoxFactor> {};
   /** \endcond */
 
-} // namespace gtsam
+} // namespace gtsam_quadrics

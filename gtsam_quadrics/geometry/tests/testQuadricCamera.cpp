@@ -25,7 +25,7 @@
 #include <gtsam/geometry/Rot3.h>
 
 using namespace std;
-using namespace gtsam;
+using namespace gtsam_quadrics;
 
 static const DualConic conic1 = DualConic((Matrix33() << 2.181975e+06, 1.843200e+06, 7.680000e+03,
                                               1.843200e+06, 1.106775e+06, 5.760000e+03,

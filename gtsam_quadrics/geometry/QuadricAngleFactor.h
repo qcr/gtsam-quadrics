@@ -26,7 +26,7 @@
 #include <gtsam/nonlinear/Expression.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
   /**
    * @class QuadricAngleFactor
@@ -82,4 +82,4 @@ namespace gtsam {
   struct traits<QuadricAngleFactor> : public Testable<QuadricAngleFactor> {};
   /** \endcond */
 
-} // namespace gtsam
+} // namespace gtsam_quadrics

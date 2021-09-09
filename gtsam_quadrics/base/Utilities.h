@@ -23,7 +23,7 @@
 
 #include <vector>
 
-namespace gtsam {
+namespace gtsam_quadrics {
 namespace utils {
 
 /**
@@ -71,4 +71,4 @@ Matrix kron(const Matrix m1, const Matrix m2);
 Matrix TVEC(const int m, const int n);
 
 }  // namespace utils
-}  // namespace gtsam
+}  // namespace gtsam_quadrics

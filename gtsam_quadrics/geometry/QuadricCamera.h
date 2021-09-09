@@ -26,7 +26,7 @@
 #include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/base/types.h>
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
   /**
    * @class QuadricCamera
@@ -52,4 +52,4 @@ namespace gtsam {
       
   };
 
-} // namespace gtsam
+} // namespace gtsam_quadrics

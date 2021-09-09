@@ -20,7 +20,7 @@
 
 #include <string>
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
     /**
      * @class QuadricProjectionException
@@ -44,4 +44,4 @@ namespace gtsam {
         Key j_;
     };
 
-} // namespace gtsam
+} // namespace gtsam_quadrics
