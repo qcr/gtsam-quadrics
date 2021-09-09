@@ -12,9 +12,9 @@
 
 // These are the included headers listed in `gtsam.i`
 {includes}
-#include <boost/serialization/export.hpp>
 
 // Export classes for serialization
+#include <boost/serialization/export.hpp>
 {boost_class_export}
 
 // Holder type for pybind11

@@ -82,14 +82,15 @@ class ConstrainedDualQuadric {
 #include <gtsam_quadrics/geometry/BoundingBoxFactor.h>
 virtual class BoundingBoxFactor : gtsam::NoiseModelFactor {
   BoundingBoxFactor();
-  // BoundingBoxFactor(const gtsam_quadrics::AlignedBox2& measured,
-  //                   const gtsam::Cal3_S2* calibration, const size_t& poseKey,
-  //                   const size_t& quadricKey,
-  //                   const gtsam::noiseModel::Base* model);
-  // BoundingBoxFactor(const AlignedBox2& measured, const Cal3_S2* calibration,
-  //                   const size_t& poseKey, const size_t& quadricKey,
-  //                   const gtsam::noiseModel::Base* model,
-  //                   const string& errorString);
+  BoundingBoxFactor(const gtsam_quadrics::AlignedBox2& measured,
+                    const gtsam::Cal3_S2* calibration, const size_t& poseKey,
+                    const size_t& quadricKey,
+                    const gtsam::noiseModel::Base* model);
+  BoundingBoxFactor(const gtsam_quadrics::AlignedBox2& measured,
+                    const gtsam::Cal3_S2* calibration, const size_t& poseKey,
+                    const size_t& quadricKey,
+                    const gtsam::noiseModel::Base* model,
+                    const string& errorString);
   AlignedBox2 measurement() const;
   size_t poseKey() const;
   size_t objectKey() const;
@@ -108,8 +109,8 @@ virtual class BoundingBoxFactor : gtsam::NoiseModelFactor {
 
 #include <gtsam_quadrics/geometry/QuadricAngleFactor.h>
 virtual class QuadricAngleFactor : gtsam::NoiseModelFactor {
-  // QuadricAngleFactor(const size_t& quadricKey, const gtsam::Rot3& measured,
-  //                    const gtsam::noiseModel::Base* model);
+  QuadricAngleFactor(const size_t& quadricKey, const gtsam::Rot3& measured,
+                     const gtsam::noiseModel::Base* model);
   Vector evaluateError(
       const gtsam_quadrics::ConstrainedDualQuadric& quadric) const;
 };
@@ -196,11 +197,11 @@ class DualConic {
 
 #include <gtsam_quadrics/geometry/QuadricCamera.h>
 class QuadricCamera {
-  // static Matrix transformToImage(const gtsam::Pose3& pose,
-  //                                const gtsam::Cal3_S2* calibration);
-  // static gtsam::DualConic project(
-  //     const gtsam_quadrics::ConstrainedDualQuadric& quadric, const Pose3&
-  //     pose, const Cal3_S2* calibration);
+  static Matrix transformToImage(const gtsam::Pose3& pose,
+                                 const gtsam::Cal3_S2* calibration);
+  static gtsam_quadrics::DualConic project(
+      const gtsam_quadrics::ConstrainedDualQuadric& quadric,
+      const gtsam::Pose3& pose, const gtsam::Cal3_S2* calibration);
 };
 
 }  // namespace gtsam_quadrics

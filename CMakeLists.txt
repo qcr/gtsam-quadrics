@@ -126,6 +126,7 @@ if(BUILD_PYTHON_WRAP)
     ${PROJECT_SOURCE_DIR}/${PROJECT_NAME}.tpl
     ${PROJECT_NAME}
     "${PROJECT_NAME}"
+    ON
     )
 
   set_target_properties(${PROJECT_NAME}_py PROPERTIES OUTPUT_NAME "${PROJECT_NAME}")
