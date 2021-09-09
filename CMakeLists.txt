@@ -38,18 +38,18 @@ if(BUILD_PYTHON_WRAP)
   # The config.cmake for gtwrap seems to be buggy as hell at the moment; so
   # instead we manually hack in what we need from it here...
   # find_package(gtwrap REQUIRED)
-  # set(gtwrap_DIR ${CMAKE_SOURCE_DIR}/gtsam/wrap)
+  set(gtwrap_DIR ${CMAKE_SOURCE_DIR}/gtsam/wrap)
 
-  # list(APPEND CMAKE_MODULE_PATH ${gtwrap_DIR}/cmake)
+  list(APPEND CMAKE_MODULE_PATH ${gtwrap_DIR}/cmake)
 
-  # set(GTWRAP_PYTHON_PACKAGE_DIR ${gtwrap_DIR})
+  set(GTWRAP_PYTHON_PACKAGE_DIR ${gtwrap_DIR})
 
-  # include(${gtwrap_DIR}/cmake/PybindWrap.cmake)
-  # include(${gtwrap_DIR}/cmake/GtwrapUtils.cmake)
+  include(${gtwrap_DIR}/cmake/GtwrapUtils.cmake)
+  include(${gtwrap_DIR}/cmake/PybindWrap.cmake)
 
-  # set(PYBIND_WRAP_SCRIPT ${gtwrap_DIR}/scripts/pybind_wrap.py)
+  set(PYBIND_WRAP_SCRIPT ${gtwrap_DIR}/scripts/pybind_wrap.py)
 
-  # add_subdirectory(${gtwrap_DIR}/pybind11 pybind11)
+  add_subdirectory(${gtwrap_DIR}/pybind11 pybind11)
 endif()
 
 ###################################################################################
@@ -122,22 +122,22 @@ gtsamAddTestsGlob("geometry" "gtsam_quadrics/base/tests/test*.cpp" "" "${CONVENI
 
 ###################################################################################
 # Build Python wrapper using gtwrap library for GTSAM 4.1+
-# if(BUILD_PYTHON_WRAP)
-#   pybind_wrap(
-#     ${PROJECT_NAME}_py
-#     ${PROJECT_SOURCE_DIR}/${PROJECT_NAME}.i
-#     "${PROJECT_NAME}.cpp"
-#     "${PROJECT_NAME}"
-#     "${PROJECT_NAME}"
-#     ""
-#     ${PROJECT_SOURCE_DIR}/${PROJECT_NAME}.tpl
-#     ${PROJECT_NAME}
-#     "${PROJECT_NAME}"
-#     ON
-#     )
+if(BUILD_PYTHON_WRAP)
+  pybind_wrap(
+    ${PROJECT_NAME}_py
+    ${PROJECT_SOURCE_DIR}/${PROJECT_NAME}.i
+    "${PROJECT_NAME}.cpp"
+    "${PROJECT_NAME}"
+    "${PROJECT_NAME}"
+    ""
+    ${PROJECT_SOURCE_DIR}/${PROJECT_NAME}.tpl
+    ${PROJECT_NAME}
+    "${PROJECT_NAME}"
+    ON
+    )
 
-#   set_target_properties(${PROJECT_NAME}_py PROPERTIES OUTPUT_NAME "${PROJECT_NAME}")
-# endif()
+  set_target_properties(${PROJECT_NAME}_py PROPERTIES OUTPUT_NAME "${PROJECT_NAME}")
+endif()
 
 ###################################################################################
 # Build Doxygen documentation
