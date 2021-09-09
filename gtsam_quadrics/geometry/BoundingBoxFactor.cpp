@@ -28,10 +28,10 @@ using namespace std;
 namespace gtsam_quadrics {
 
 /* ************************************************************************* */
-Vector BoundingBoxFactor::evaluateError(const Pose3& pose,
-                                        const ConstrainedDualQuadric& quadric,
-                                        boost::optional<Matrix&> H1,
-                                        boost::optional<Matrix&> H2) const {
+gtsam::Vector BoundingBoxFactor::evaluateError(
+    const gtsam::Pose3& pose, const ConstrainedDualQuadric& quadric,
+    boost::optional<gtsam::Matrix&> H1,
+    boost::optional<gtsam::Matrix&> H2) const {
   try {
     // check pose-quadric pair
     if (quadric.isBehind(pose)) {
@@ -73,20 +73,21 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose,
     }
 
     // evaluate error
-    Vector4 error = predictedBounds.vector() - measured_.vector();
+    gtsam::Vector4 error = predictedBounds.vector() - measured_.vector();
 
     if (NUMERICAL_DERIVATIVE) {
-      std::function<Vector(const Pose3&, const ConstrainedDualQuadric&)> funPtr(
-          boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2,
-                      boost::none, boost::none));
+      std::function<gtsam::Vector(const gtsam::Pose3&,
+                                  const ConstrainedDualQuadric&)>
+          funPtr(boost::bind(&BoundingBoxFactor::evaluateError, this, _1, _2,
+                             boost::none, boost::none));
       if (H1) {
         Eigen::Matrix<double, 4, 6> db_dx_ =
-            numericalDerivative21(funPtr, pose, quadric, 1e-6);
+            gtsam::numericalDerivative21(funPtr, pose, quadric, 1e-6);
         *H1 = db_dx_;
       }
       if (H2) {
         Eigen::Matrix<double, 4, 9> db_dq_ =
-            numericalDerivative22(funPtr, pose, quadric, 1e-6);
+            gtsam::numericalDerivative22(funPtr, pose, quadric, 1e-6);
         *H2 = db_dq_;
       }
     } else {
@@ -119,12 +120,12 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose,
 
     // if error cannot be calculated
     // set error vector and jacobians to zero
-    Vector4 error = Vector4::Ones() * 1000.0;
+    gtsam::Vector4 error = gtsam::Vector4::Ones() * 1000.0;
     if (H1) {
-      *H1 = Matrix::Zero(4, 6);
+      *H1 = gtsam::Matrix::Zero(4, 6);
     }
     if (H2) {
-      *H2 = Matrix::Zero(4, 9);
+      *H2 = gtsam::Matrix::Zero(4, 9);
     }
 
     return error;
@@ -132,32 +133,32 @@ Vector BoundingBoxFactor::evaluateError(const Pose3& pose,
 }
 
 /* ************************************************************************* */
-Matrix BoundingBoxFactor::evaluateH1(
-    const Pose3& pose, const ConstrainedDualQuadric& quadric) const {
-  Matrix H1;
+gtsam::Matrix BoundingBoxFactor::evaluateH1(
+    const gtsam::Pose3& pose, const ConstrainedDualQuadric& quadric) const {
+  gtsam::Matrix H1;
   this->evaluateError(pose, quadric, H1, boost::none);
   return H1;
 }
 
 /* ************************************************************************* */
-Matrix BoundingBoxFactor::evaluateH2(
-    const Pose3& pose, const ConstrainedDualQuadric& quadric) const {
-  Matrix H2;
+gtsam::Matrix BoundingBoxFactor::evaluateH2(
+    const gtsam::Pose3& pose, const ConstrainedDualQuadric& quadric) const {
+  gtsam::Matrix H2;
   this->evaluateError(pose, quadric, boost::none, H2);
   return H2;
 }
 
 /* ************************************************************************* */
-Matrix BoundingBoxFactor::evaluateH1(const Values& x) const {
-  const Pose3 pose = x.at<Pose3>(this->poseKey());
+gtsam::Matrix BoundingBoxFactor::evaluateH1(const gtsam::Values& x) const {
+  const gtsam::Pose3 pose = x.at<gtsam::Pose3>(this->poseKey());
   const ConstrainedDualQuadric quadric =
       x.at<ConstrainedDualQuadric>(this->objectKey());
   return this->evaluateH1(pose, quadric);
 }
 
 /* ************************************************************************* */
-Matrix BoundingBoxFactor::evaluateH2(const Values& x) const {
-  const Pose3 pose = x.at<Pose3>(this->poseKey());
+gtsam::Matrix BoundingBoxFactor::evaluateH2(const gtsam::Values& x) const {
+  const gtsam::Pose3 pose = x.at<gtsam::Pose3>(this->poseKey());
   const ConstrainedDualQuadric quadric =
       x.at<ConstrainedDualQuadric>(this->objectKey());
   return this->evaluateH2(pose, quadric);
@@ -165,7 +166,7 @@ Matrix BoundingBoxFactor::evaluateH2(const Values& x) const {
 
 /* ************************************************************************* */
 void BoundingBoxFactor::print(const std::string& s,
-                              const KeyFormatter& keyFormatter) const {
+                              const gtsam::KeyFormatter& keyFormatter) const {
   cout << s << "BoundingBoxFactor(" << keyFormatter(key1()) << ","
        << keyFormatter(key2()) << ")" << endl;
   measured_.print("    Measured: ");

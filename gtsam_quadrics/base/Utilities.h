@@ -32,16 +32,18 @@ namespace utils {
  * If disc == 0: 1 real solution
  * If disc < 0: 2 imaginary solutions
  */
-Vector2 solvePolynomial(const double& a, const double& b, const double& c);
+gtsam::Vector2 solvePolynomial(const double& a, const double& b,
+                               const double& c);
 
-Vector2 getConicPointsAtX(const Eigen::Matrix<long double, 3, 3>& pointConic,
-                          const double& x);
+gtsam::Vector2 getConicPointsAtX(
+    const Eigen::Matrix<long double, 3, 3>& pointConic, const double& x);
 
-Vector2 getConicPointsAtY(const Eigen::Matrix<long double, 3, 3>& pointConic,
-                          const double& y);
+gtsam::Vector2 getConicPointsAtY(
+    const Eigen::Matrix<long double, 3, 3>& pointConic, const double& y);
 
 /** Interpolate poses */
-Pose3 interpolate(const Pose3& p1, const Pose3& p2, const double& percent);
+gtsam::Pose3 interpolate(const gtsam::Pose3& p1, const gtsam::Pose3& p2,
+                         const double& percent);
 
 /**
  * Converts Pose3 to Matrix and provides optional jacobians
@@ -56,19 +58,20 @@ Pose3 interpolate(const Pose3& p1, const Pose3& p2, const double& percent);
  * https://jinyongjeong.github.io/Download/SE3/jlblanco2010geometry3d_techrep.pdf
  * http://www.ee.ic.ac.uk/hp/staff/dmb/matrix/special.html#VecTranspose
  */
-Matrix44 matrix(const Pose3& pose, OptionalJacobian<16, 6> H = boost::none);
+gtsam::Matrix44 matrix(const gtsam::Pose3& pose,
+                       gtsam::OptionalJacobian<16, 6> H = boost::none);
 
 /**
  * Performs the kronecker product
  * See: https://en.wikipedia.org/wiki/Kronecker_product
  */
-Matrix kron(const Matrix m1, const Matrix m2);
+gtsam::Matrix kron(const gtsam::Matrix m1, const gtsam::Matrix m2);
 
 /**
  * Builds the orthogonal transpose vectorization matrix of an m by n matrix
  * See: http://www.ee.ic.ac.uk/hp/staff/dmb/matrix/special.html#VecTranspose
  */
-Matrix TVEC(const int m, const int n);
+gtsam::Matrix TVEC(const int m, const int n);
 
 }  // namespace utils
 }  // namespace gtsam_quadrics

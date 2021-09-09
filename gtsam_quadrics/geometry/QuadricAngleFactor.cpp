@@ -26,18 +26,19 @@ using namespace std;
 namespace gtsam_quadrics {
 
 /* ************************************************************************* */
-Vector QuadricAngleFactor::evaluateError(const ConstrainedDualQuadric& quadric,
-                                         boost::optional<Matrix&> H) const {
+gtsam::Vector QuadricAngleFactor::evaluateError(
+    const ConstrainedDualQuadric& quadric,
+    boost::optional<gtsam::Matrix&> H) const {
   // evaluate error
-  Rot3 QRot = quadric.pose().rotation();
-  Vector3 error = measured_.localCoordinates(QRot);
+  gtsam::Rot3 QRot = quadric.pose().rotation();
+  gtsam::Vector3 error = measured_.localCoordinates(QRot);
   // Rot3::LocalCoordinates(quadric.pose().rotation());
 
-  std::function<Vector(const ConstrainedDualQuadric&)> funPtr(
+  std::function<gtsam::Vector(const ConstrainedDualQuadric&)> funPtr(
       boost::bind(&QuadricAngleFactor::evaluateError, this, _1, boost::none));
   if (H) {
     Eigen::Matrix<double, 3, 9> de_dr =
-        numericalDerivative11(funPtr, quadric, 1e-6);
+        gtsam::numericalDerivative11(funPtr, quadric, 1e-6);
     *H = de_dr;
   }
   return error;
@@ -45,7 +46,7 @@ Vector QuadricAngleFactor::evaluateError(const ConstrainedDualQuadric& quadric,
 
 /* ************************************************************************* */
 void QuadricAngleFactor::print(const std::string& s,
-                               const KeyFormatter& keyFormatter) const {
+                               const gtsam::KeyFormatter& keyFormatter) const {
   cout << s << "QuadricAngleFactor(" << keyFormatter(key()) << ")" << endl;
   cout << "    NoiseModel: ";
   noiseModel()->print();
