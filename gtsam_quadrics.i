@@ -62,30 +62,32 @@ gtsam::Pose3 interpolate(const gtsam::Pose3& p1, const gtsam::Pose3& p2,
                          const double& percent);
 }  // namespace utils
 
-// #include <gtsam_quadrics/geometry/ConstrainedDualQuadric.h>
-// class ConstrainedDualQuadric {
-//   ConstrainedDualQuadric();
-//   ConstrainedDualQuadric(const Matrix& dQ);
-//   ConstrainedDualQuadric(const Pose3& pose, const Vector& radii);
-//   ConstrainedDualQuadric(const Rot3& R, const Point3& t, const Vector& r);
-//   Pose3 pose() const;
-//   Vector radii() const;
-//   Point3 centroid() const;
-//   Matrix matrix() const;
-//   static ConstrainedDualQuadric constrain(const Matrix& dual_quadric);
-//   gtsam::AlignedBox3 bounds() const;
-//   bool isBehind(const Pose3& cameraPose) const;
-//   bool contains(const Pose3& cameraPose) const;
-//   static ConstrainedDualQuadric Retract(const Vector& v);
-//   static Vector LocalCoordinates(const ConstrainedDualQuadric& q);
-//   gtsam::ConstrainedDualQuadric retract(const Vector& v) const;
-//   Vector localCoordinates(const ConstrainedDualQuadric& other) const;
-//   void addToValues(Values& v, const size_t& k);
-//   static ConstrainedDualQuadric getFromValues(const Values& v, const size_t&
-//   k); void print(const string& s) const; void print() const; bool
-//   equals(const ConstrainedDualQuadric& other, double tol) const; bool
-//   equals(const ConstrainedDualQuadric& other) const;
-// };
+#include <gtsam_quadrics/geometry/ConstrainedDualQuadric.h>
+class ConstrainedDualQuadric {
+  ConstrainedDualQuadric();
+  ConstrainedDualQuadric(const Matrix& dQ);
+  // ConstrainedDualQuadric(const Pose3& pose, const Vector& radii);
+  // ConstrainedDualQuadric(const Rot3& R, const Point3& t, const Vector& r);
+  Pose3 pose() const;
+  Vector radii() const;
+  Point3 centroid() const;
+  Matrix matrix() const;
+  static ConstrainedDualQuadric constrain(const Matrix& dual_quadric);
+  gtsam::AlignedBox3 bounds() const;
+  // bool isBehind(const Pose3& cameraPose) const;
+  // bool contains(const Pose3& cameraPose) const;
+  static ConstrainedDualQuadric Retract(const Vector& v);
+  // static Vector LocalCoordinates(const ConstrainedDualQuadric& q);
+  gtsam::ConstrainedDualQuadric retract(const Vector& v) const;
+  // Vector localCoordinates(const ConstrainedDualQuadric& other) const;
+  // void addToValues(Values& v, const size_t& k);
+  // static ConstrainedDualQuadric getFromValues(const Values& v, const size_t&
+  // k);
+  void print(const string& s) const;
+  void print() const;
+  // bool equals(const ConstrainedDualQuadric& other, double tol) const;
+  // bool equals(const ConstrainedDualQuadric& other) const;
+};
 
 // #include <gtsam_quadrics/geometry/BoundingBoxFactor.h>
 // virtual class BoundingBoxFactor : NoiseModelFactor {
