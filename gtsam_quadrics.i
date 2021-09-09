@@ -56,15 +56,11 @@
 
 namespace gtsam_quadrics {
 
-#include <gtsam_quadrics/debug.h>
-double my_function(int my_arg);
-
-}  // namespace gtsam_quadrics
-
-// #include <gtsam_quadrics/base/Utilities.h>
-// namespace utils {
-// // Pose3 interpolate(const Pose3& p1, const Pose3& p2, const double&
-// percent); }  // namespace utils
+#include <gtsam_quadrics/base/Utilities.h>
+namespace utils {
+gtsam::Pose3 interpolate(const gtsam::Pose3& p1, const gtsam::Pose3& p2,
+                         const double& percent);
+}  // namespace utils
 
 // #include <gtsam_quadrics/geometry/ConstrainedDualQuadric.h>
 // class ConstrainedDualQuadric {
@@ -132,39 +128,39 @@ double my_function(int my_arg);
 //   void serialize() const;
 // };
 
-// #include <gtsam_quadrics/geometry/AlignedBox2.h>
-// class Vector3Vector {
-//   Vector3Vector();
-//   size_t size() const;
-//   bool empty() const;
-//   Vector at(size_t n) const;
-//   void push_back(const Vector& pose);
-// };
+#include <gtsam_quadrics/geometry/AlignedBox2.h>
+class Vector3Vector {
+  Vector3Vector();
+  size_t size() const;
+  bool empty() const;
+  Vector at(size_t n) const;
+  void push_back(const Vector& pose);
+};
 
-// class AlignedBox2 {
-//   AlignedBox2();
-//   AlignedBox2(const double& xmin, const double& ymin, const double& xmax,
-//               const double& ymax);
-//   AlignedBox2(const Vector& tlbr);
-//   AlignedBox2(const AlignedBox2& other);
-//   double xmin() const;
-//   double ymin() const;
-//   double xmax() const;
-//   double ymax() const;
-//   Vector vector() const;
-//   Point2 center() const;
-//   double width() const;
-//   double height() const;
-//   bool contains(const Point2& point) const;
-//   bool contains(const AlignedBox2& other) const;
-//   bool intersects(const AlignedBox2& other) const;
-//   double iou(const AlignedBox2& other) const;
-//   gtsam::Vector3Vector lines() const;
-//   void print(const string& s) const;
-//   void print() const;
-//   bool equals(const AlignedBox2& other, double tol) const;
-//   bool equals(const AlignedBox2& other) const;
-// };
+class AlignedBox2 {
+  AlignedBox2();
+  AlignedBox2(const double& xmin, const double& ymin, const double& xmax,
+              const double& ymax);
+  AlignedBox2(const Vector& tlbr);
+  // AlignedBox2(const AlignedBox2& other);
+  double xmin() const;
+  double ymin() const;
+  double xmax() const;
+  double ymax() const;
+  Vector vector() const;
+  Point2 center() const;
+  double width() const;
+  double height() const;
+  // bool contains(const Point2& point) const;
+  // bool contains(const AlignedBox2& other) const;
+  // bool intersects(const AlignedBox2& other) const;
+  // double iou(const AlignedBox2& other) const;
+  gtsam::Vector3Vector lines() const;
+  void print(const string& s) const;
+  void print() const;
+  // bool equals(const AlignedBox2& other, double tol) const;
+  // bool equals(const AlignedBox2& other) const;
+};
 
 // #include <gtsam_quadrics/geometry/AlignedBox3.h>
 // class AlignedBox3 {
@@ -209,3 +205,5 @@ double my_function(int my_arg);
 //                                   const Pose3& pose,
 //                                   const Cal3_S2* calibration);
 // };
+
+}  // namespace gtsam_quadrics

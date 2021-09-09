@@ -8,6 +8,8 @@
 #include <pybind11/functional.h>
 #include <pybind11/iostream.h>
 
+#include "gtsam/base/utilities.h"
+
 // These are the included headers listed in `gtsam.i`
 {includes}
 #include <boost/serialization/export.hpp>
