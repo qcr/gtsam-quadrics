@@ -89,35 +89,35 @@ class ConstrainedDualQuadric {
   // bool equals(const ConstrainedDualQuadric& other) const;
 };
 
-// #include <gtsam_quadrics/geometry/BoundingBoxFactor.h>
-// virtual class BoundingBoxFactor : NoiseModelFactor {
-//   BoundingBoxFactor();
-//   BoundingBoxFactor(const AlignedBox2& measured, const Cal3_S2* calibration,
-//                     const size_t& poseKey, const size_t& quadricKey,
-//                     const gtsam::noiseModel::Base* model);
-//   BoundingBoxFactor(const AlignedBox2& measured, const Cal3_S2* calibration,
-//                     const size_t& poseKey, const size_t& quadricKey,
-//                     const gtsam::noiseModel::Base* model,
-//                     const string& errorString);
-//   gtsam::AlignedBox2 measurement() const;
-//   size_t poseKey() const;
-//   size_t objectKey() const;
-//   Vector evaluateError(const Pose3& pose,
-//                        const ConstrainedDualQuadric& quadric) const;
-//   Matrix evaluateH1(const Pose3& pose,
-//                     const ConstrainedDualQuadric& quadric) const;
-//   Matrix evaluateH2(const Pose3& pose,
-//                     const ConstrainedDualQuadric& quadric) const;
-//   Matrix evaluateH1(const Values& x) const;
-//   Matrix evaluateH2(const Values& x) const;
-// };
+#include <gtsam_quadrics/geometry/BoundingBoxFactor.h>
+virtual class BoundingBoxFactor : gtsam::NoiseModelFactor {
+  BoundingBoxFactor();
+  // BoundingBoxFactor(const AlignedBox2& measured, const Cal3_S2* calibration,
+  //                   const size_t& poseKey, const size_t& quadricKey,
+  //                   const gtsam::noiseModel::Base* model);
+  // BoundingBoxFactor(const AlignedBox2& measured, const Cal3_S2* calibration,
+  //                   const size_t& poseKey, const size_t& quadricKey,
+  //                   const gtsam::noiseModel::Base* model,
+  //                   const string& errorString);
+  // gtsam::AlignedBox2 measurement() const;
+  size_t poseKey() const;
+  size_t objectKey() const;
+  // Vector evaluateError(const Pose3& pose,
+  //                      const ConstrainedDualQuadric& quadric) const;
+  // Matrix evaluateH1(const Pose3& pose,
+  //                   const ConstrainedDualQuadric& quadric) const;
+  // Matrix evaluateH2(const Pose3& pose,
+  //                   const ConstrainedDualQuadric& quadric) const;
+  // Matrix evaluateH1(const Values& x) const;
+  // Matrix evaluateH2(const Values& x) const;
+  // };
 
-// #include <gtsam_quadrics/geometry/QuadricAngleFactor.h>
-// virtual class QuadricAngleFactor : NoiseModelFactor {
-//   QuadricAngleFactor(const size_t& quadricKey, const Rot3& measured,
-//                      const gtsam::noiseModel::Base* model);
-//   Vector evaluateError(const ConstrainedDualQuadric& quadric) const;
-// };
+  // #include <gtsam_quadrics/geometry/QuadricAngleFactor.h>
+  // virtual class QuadricAngleFactor : NoiseModelFactor {
+  //   QuadricAngleFactor(const size_t& quadricKey, const Rot3& measured,
+  //                      const gtsam::noiseModel::Base* model);
+  //   Vector evaluateError(const ConstrainedDualQuadric& quadric) const;
+};
 
 // #include <gtsam/nonlinear/PriorFactor.h>
 // template <T = {gtsam::ConstrainedDualQuadric}>
