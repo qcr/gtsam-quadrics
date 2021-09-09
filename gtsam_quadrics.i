@@ -40,20 +40,6 @@
     - how to wrap methods to belong inside a namespace?
  */
 
-// virtual class NonlinearFactor;
-// virtual class NoiseModelFactor : NonlinearFactor;
-// class NonlinearFactorGraph;
-// class PriorFactor;
-// class Cal3_S2;
-// class Point2;
-// class Point3;
-// class Values;
-
-// class ConstrainedDualQuadric;
-// class AlignedBox2;
-// class AlignedBox3;
-// class DualConic;
-
 namespace gtsam_quadrics {
 
 #include <gtsam_quadrics/base/Utilities.h>
@@ -78,23 +64,27 @@ class ConstrainedDualQuadric {
   bool isBehind(const gtsam::Pose3& cameraPose) const;
   bool contains(const gtsam::Pose3& cameraPose) const;
   static ConstrainedDualQuadric Retract(const gtsam::Vector& v);
-  // static Vector LocalCoordinates(const ConstrainedDualQuadric& q);
+  static gtsam::Vector LocalCoordinates(
+      const gtsam_quadrics::ConstrainedDualQuadric& q);
   gtsam::ConstrainedDualQuadric retract(const gtsam::Vector& v) const;
-  // Vector localCoordinates(const ConstrainedDualQuadric& other) const;
+  Vector localCoordinates(
+      const gtsam_quadrics::ConstrainedDualQuadric& other) const;
   void addToValues(gtsam::Values& v, const size_t& k);
   static ConstrainedDualQuadric getFromValues(const gtsam::Values& v,
                                               const size_t& k);
   void print(const string& s) const;
   void print() const;
-  // bool equals(const ConstrainedDualQuadric& other, double tol) const;
-  // bool equals(const ConstrainedDualQuadric& other) const;
+  bool equals(const gtsam_quadrics::ConstrainedDualQuadric& other,
+              double tol) const;
+  bool equals(const gtsam_quadrics::ConstrainedDualQuadric& other) const;
 };
 
 #include <gtsam_quadrics/geometry/BoundingBoxFactor.h>
 virtual class BoundingBoxFactor : gtsam::NoiseModelFactor {
   BoundingBoxFactor();
-  // BoundingBoxFactor(const AlignedBox2& measured, const Cal3_S2* calibration,
-  //                   const size_t& poseKey, const size_t& quadricKey,
+  // BoundingBoxFactor(const gtsam_quadrics::AlignedBox2& measured,
+  //                   const gtsam::Cal3_S2* calibration, const size_t& poseKey,
+  //                   const size_t& quadricKey,
   //                   const gtsam::noiseModel::Base* model);
   // BoundingBoxFactor(const AlignedBox2& measured, const Cal3_S2* calibration,
   //                   const size_t& poseKey, const size_t& quadricKey,
@@ -103,12 +93,15 @@ virtual class BoundingBoxFactor : gtsam::NoiseModelFactor {
   AlignedBox2 measurement() const;
   size_t poseKey() const;
   size_t objectKey() const;
-  // gtsam::Vector evaluateError(const gtsam::Pose3& pose,
-  //                             const ConstrainedDualQuadric& quadric) const;
-  // gtsam::Matrix evaluateH1(const gtsam::Pose3& pose,
-  //                          const ConstrainedDualQuadric& quadric) const;
-  // gtsam::Matrix evaluateH2(const gtsam::Pose3& pose,
-  //                          const ConstrainedDualQuadric& quadric) const;
+  gtsam::Vector evaluateError(
+      const gtsam::Pose3& pose,
+      const gtsam_quadrics::ConstrainedDualQuadric& quadric) const;
+  gtsam::Matrix evaluateH1(
+      const gtsam::Pose3& pose,
+      const gtsam_quadrics::ConstrainedDualQuadric& quadric) const;
+  gtsam::Matrix evaluateH2(
+      const gtsam::Pose3& pose,
+      const gtsam_quadrics::ConstrainedDualQuadric& quadric) const;
   gtsam::Matrix evaluateH1(const gtsam::Values& x) const;
   gtsam::Matrix evaluateH2(const gtsam::Values& x) const;
 };
@@ -117,7 +110,8 @@ virtual class BoundingBoxFactor : gtsam::NoiseModelFactor {
 virtual class QuadricAngleFactor : gtsam::NoiseModelFactor {
   // QuadricAngleFactor(const size_t& quadricKey, const gtsam::Rot3& measured,
   //                    const gtsam::noiseModel::Base* model);
-  // Vector evaluateError(const ConstrainedDualQuadric& quadric) const;
+  Vector evaluateError(
+      const gtsam_quadrics::ConstrainedDualQuadric& quadric) const;
 };
 
 #include <gtsam/nonlinear/PriorFactor.h>
@@ -145,7 +139,7 @@ class AlignedBox2 {
   AlignedBox2(const double& xmin, const double& ymin, const double& xmax,
               const double& ymax);
   AlignedBox2(const gtsam::Vector& tlbr);
-  // AlignedBox2(const AlignedBox2& other);
+  AlignedBox2(const gtsam_quadrics::AlignedBox2& other);
   double xmin() const;
   double ymin() const;
   double xmax() const;
@@ -155,14 +149,14 @@ class AlignedBox2 {
   double width() const;
   double height() const;
   bool contains(const gtsam::Point2& point) const;
-  // bool contains(const AlignedBox2& other) const;
-  // bool intersects(const AlignedBox2& other) const;
-  // double iou(const AlignedBox2& other) const;
+  bool contains(const gtsam_quadrics::AlignedBox2& other) const;
+  bool intersects(const gtsam_quadrics::AlignedBox2& other) const;
+  double iou(const gtsam_quadrics::AlignedBox2& other) const;
   Vector3Vector lines() const;
   void print(const string& s) const;
   void print() const;
-  // bool equals(const AlignedBox2& other, double tol) const;
-  // bool equals(const AlignedBox2& other) const;
+  bool equals(const gtsam_quadrics::AlignedBox2& other, double tol) const;
+  bool equals(const gtsam_quadrics::AlignedBox2& other) const;
 };
 
 #include <gtsam_quadrics/geometry/AlignedBox3.h>
@@ -171,7 +165,7 @@ class AlignedBox3 {
   AlignedBox3(const double& xmin, const double& xmax, const double& ymin,
               const double& ymax, const double& zmin, const double& zmax);
   AlignedBox3(const gtsam::Vector& xxyyzz);
-  //   AlignedBox3(const AlignedBox3& other);
+  AlignedBox3(const gtsam_quadrics::AlignedBox3& other);
   double xmin() const;
   double xmax() const;
   double ymin() const;
@@ -182,11 +176,11 @@ class AlignedBox3 {
   gtsam::Vector dimensions() const;
   gtsam::Vector centroid() const;
   double volume() const;
-  //   double iou(const AlignedBox3& other) const;
+  double iou(const gtsam_quadrics::AlignedBox3& other) const;
   void print(const string& s) const;
   void print() const;
-  //   bool equals(const AlignedBox3& other, double tol) const;
-  //   bool equals(const AlignedBox3& other) const;
+  bool equals(const gtsam_quadrics::AlignedBox3& other, double tol) const;
+  bool equals(const gtsam_quadrics::AlignedBox3& other) const;
 };
 
 #include <gtsam_quadrics/geometry/DualConic.h>
@@ -204,9 +198,9 @@ class DualConic {
 class QuadricCamera {
   // static Matrix transformToImage(const gtsam::Pose3& pose,
   //                                const gtsam::Cal3_S2* calibration);
-  // static gtsam::DualConic project(const ConstrainedDualQuadric& quadric,
-  //                                 const Pose3& pose,
-  //                                 const Cal3_S2* calibration);
+  // static gtsam::DualConic project(
+  //     const gtsam_quadrics::ConstrainedDualQuadric& quadric, const Pose3&
+  //     pose, const Cal3_S2* calibration);
 };
 
 }  // namespace gtsam_quadrics
