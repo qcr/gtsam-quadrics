@@ -186,16 +186,16 @@ class AlignedBox3 {
   //   bool equals(const AlignedBox3& other) const;
 };
 
-// #include <gtsam_quadrics/geometry/DualConic.h>
-// class DualConic {
-//   DualConic();
-//   DualConic(const Matrix& dC);
-//   DualConic(const Pose2& pose, const Vector& radii);
-//   Matrix matrix() const;
-//   gtsam::AlignedBox2 bounds() const;
-//   bool isDegenerate() const;
-//   bool isEllipse() const;
-// };
+#include <gtsam_quadrics/geometry/DualConic.h>
+class DualConic {
+  DualConic();
+  DualConic(const Matrix& dC);
+  // DualConic(const Pose2& pose, const Vector& radii);
+  Matrix matrix() const;
+  gtsam::AlignedBox2 bounds() const;
+  bool isDegenerate() const;
+  bool isEllipse() const;
+};
 
 // #include <gtsam_quadrics/geometry/QuadricCamera.h>
 // class QuadricCamera {
