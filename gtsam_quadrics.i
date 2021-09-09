@@ -119,9 +119,9 @@ virtual class BoundingBoxFactor : gtsam::NoiseModelFactor {
   //   Vector evaluateError(const ConstrainedDualQuadric& quadric) const;
 };
 
-// #include <gtsam/nonlinear/PriorFactor.h>
-// template <T = {gtsam::ConstrainedDualQuadric}>
-// virtual class PriorFactor : NoiseModelFactor {
+#include <gtsam/nonlinear/PriorFactor.h>
+// template <T = {ConstrainedDualQuadric}>
+// virtual class PriorFactor : gtsam::NoiseModelFactor {
 //   PriorFactor(size_t key, const T& prior,
 //               const gtsam::noiseModel::Base* noiseModel);
 //   T prior() const;
