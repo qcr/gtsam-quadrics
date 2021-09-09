@@ -65,24 +65,25 @@ gtsam::Pose3 interpolate(const gtsam::Pose3& p1, const gtsam::Pose3& p2,
 #include <gtsam_quadrics/geometry/ConstrainedDualQuadric.h>
 class ConstrainedDualQuadric {
   ConstrainedDualQuadric();
-  ConstrainedDualQuadric(const Matrix& dQ);
-  // ConstrainedDualQuadric(const Pose3& pose, const Vector& radii);
-  // ConstrainedDualQuadric(const Rot3& R, const Point3& t, const Vector& r);
-  Pose3 pose() const;
-  Vector radii() const;
-  Point3 centroid() const;
-  Matrix matrix() const;
-  static ConstrainedDualQuadric constrain(const Matrix& dual_quadric);
-  gtsam::AlignedBox3 bounds() const;
-  // bool isBehind(const Pose3& cameraPose) const;
-  // bool contains(const Pose3& cameraPose) const;
-  static ConstrainedDualQuadric Retract(const Vector& v);
+  ConstrainedDualQuadric(const gtsam::Matrix& dQ);
+  ConstrainedDualQuadric(const gtsam::Pose3& pose, const gtsam::Vector& radii);
+  ConstrainedDualQuadric(const gtsam::Rot3& R, const gtsam::Point3& t,
+                         const gtsam::Vector& r);
+  gtsam::Pose3 pose() const;
+  gtsam::Vector radii() const;
+  gtsam::Point3 centroid() const;
+  gtsam::Matrix matrix() const;
+  static ConstrainedDualQuadric constrain(const gtsam::Matrix& dual_quadric);
+  AlignedBox3 bounds() const;
+  bool isBehind(const gtsam::Pose3& cameraPose) const;
+  bool contains(const gtsam::Pose3& cameraPose) const;
+  static ConstrainedDualQuadric Retract(const gtsam::Vector& v);
   // static Vector LocalCoordinates(const ConstrainedDualQuadric& q);
-  gtsam::ConstrainedDualQuadric retract(const Vector& v) const;
+  gtsam::ConstrainedDualQuadric retract(const gtsam::Vector& v) const;
   // Vector localCoordinates(const ConstrainedDualQuadric& other) const;
-  // void addToValues(Values& v, const size_t& k);
-  // static ConstrainedDualQuadric getFromValues(const Values& v, const size_t&
-  // k);
+  void addToValues(gtsam::Values& v, const size_t& k);
+  static ConstrainedDualQuadric getFromValues(const gtsam::Values& v,
+                                              const size_t& k);
   void print(const string& s) const;
   void print() const;
   // bool equals(const ConstrainedDualQuadric& other, double tol) const;
@@ -99,24 +100,24 @@ virtual class BoundingBoxFactor : gtsam::NoiseModelFactor {
   //                   const size_t& poseKey, const size_t& quadricKey,
   //                   const gtsam::noiseModel::Base* model,
   //                   const string& errorString);
-  // gtsam::AlignedBox2 measurement() const;
+  AlignedBox2 measurement() const;
   size_t poseKey() const;
   size_t objectKey() const;
-  // Vector evaluateError(const Pose3& pose,
-  //                      const ConstrainedDualQuadric& quadric) const;
-  // Matrix evaluateH1(const Pose3& pose,
-  //                   const ConstrainedDualQuadric& quadric) const;
-  // Matrix evaluateH2(const Pose3& pose,
-  //                   const ConstrainedDualQuadric& quadric) const;
-  // Matrix evaluateH1(const Values& x) const;
-  // Matrix evaluateH2(const Values& x) const;
-  // };
+  // gtsam::Vector evaluateError(const gtsam::Pose3& pose,
+  //                             const ConstrainedDualQuadric& quadric) const;
+  // gtsam::Matrix evaluateH1(const gtsam::Pose3& pose,
+  //                          const ConstrainedDualQuadric& quadric) const;
+  // gtsam::Matrix evaluateH2(const gtsam::Pose3& pose,
+  //                          const ConstrainedDualQuadric& quadric) const;
+  gtsam::Matrix evaluateH1(const gtsam::Values& x) const;
+  gtsam::Matrix evaluateH2(const gtsam::Values& x) const;
+};
 
-  // #include <gtsam_quadrics/geometry/QuadricAngleFactor.h>
-  // virtual class QuadricAngleFactor : NoiseModelFactor {
-  //   QuadricAngleFactor(const size_t& quadricKey, const Rot3& measured,
-  //                      const gtsam::noiseModel::Base* model);
-  //   Vector evaluateError(const ConstrainedDualQuadric& quadric) const;
+#include <gtsam_quadrics/geometry/QuadricAngleFactor.h>
+virtual class QuadricAngleFactor : gtsam::NoiseModelFactor {
+  // QuadricAngleFactor(const size_t& quadricKey, const gtsam::Rot3& measured,
+  //                    const gtsam::noiseModel::Base* model);
+  // Vector evaluateError(const ConstrainedDualQuadric& quadric) const;
 };
 
 #include <gtsam/nonlinear/PriorFactor.h>
@@ -135,15 +136,15 @@ class Vector3Vector {
   Vector3Vector();
   size_t size() const;
   bool empty() const;
-  Vector at(size_t n) const;
-  void push_back(const Vector& pose);
+  gtsam::Vector at(size_t n) const;
+  void push_back(const gtsam::Vector& pose);
 };
 
 class AlignedBox2 {
   AlignedBox2();
   AlignedBox2(const double& xmin, const double& ymin, const double& xmax,
               const double& ymax);
-  AlignedBox2(const Vector& tlbr);
+  AlignedBox2(const gtsam::Vector& tlbr);
   // AlignedBox2(const AlignedBox2& other);
   double xmin() const;
   double ymin() const;
@@ -153,11 +154,11 @@ class AlignedBox2 {
   Point2 center() const;
   double width() const;
   double height() const;
-  // bool contains(const Point2& point) const;
+  bool contains(const gtsam::Point2& point) const;
   // bool contains(const AlignedBox2& other) const;
   // bool intersects(const AlignedBox2& other) const;
   // double iou(const AlignedBox2& other) const;
-  gtsam::Vector3Vector lines() const;
+  Vector3Vector lines() const;
   void print(const string& s) const;
   void print() const;
   // bool equals(const AlignedBox2& other, double tol) const;
@@ -169,7 +170,7 @@ class AlignedBox3 {
   AlignedBox3();
   AlignedBox3(const double& xmin, const double& xmax, const double& ymin,
               const double& ymax, const double& zmin, const double& zmax);
-  AlignedBox3(const Vector& xxyyzz);
+  AlignedBox3(const gtsam::Vector& xxyyzz);
   //   AlignedBox3(const AlignedBox3& other);
   double xmin() const;
   double xmax() const;
@@ -177,9 +178,9 @@ class AlignedBox3 {
   double ymax() const;
   double zmin() const;
   double zmax() const;
-  Vector vector() const;
-  Vector dimensions() const;
-  Vector centroid() const;
+  gtsam::Vector vector() const;
+  gtsam::Vector dimensions() const;
+  gtsam::Vector centroid() const;
   double volume() const;
   //   double iou(const AlignedBox3& other) const;
   void print(const string& s) const;
@@ -191,9 +192,9 @@ class AlignedBox3 {
 #include <gtsam_quadrics/geometry/DualConic.h>
 class DualConic {
   DualConic();
-  DualConic(const Matrix& dC);
-  // DualConic(const Pose2& pose, const Vector& radii);
-  Matrix matrix() const;
+  DualConic(const gtsam::Matrix& dC);
+  DualConic(const gtsam::Pose2& pose, const gtsam::Vector& radii);
+  gtsam::Matrix matrix() const;
   gtsam::AlignedBox2 bounds() const;
   bool isDegenerate() const;
   bool isEllipse() const;
@@ -201,8 +202,8 @@ class DualConic {
 
 #include <gtsam_quadrics/geometry/QuadricCamera.h>
 class QuadricCamera {
-  // static Matrix transformToImage(const Pose3& pose, const Cal3_S2*
-  // calibration);
+  // static Matrix transformToImage(const gtsam::Pose3& pose,
+  //                                const gtsam::Cal3_S2* calibration);
   // static gtsam::DualConic project(const ConstrainedDualQuadric& quadric,
   //                                 const Pose3& pose,
   //                                 const Cal3_S2* calibration);
