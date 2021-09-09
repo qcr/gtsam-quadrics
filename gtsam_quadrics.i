@@ -197,13 +197,13 @@ class DualConic {
   bool isEllipse() const;
 };
 
-// #include <gtsam_quadrics/geometry/QuadricCamera.h>
-// class QuadricCamera {
-//   static Matrix transformToImage(const Pose3& pose, const Cal3_S2*
-//   calibration); static gtsam::DualConic project(const ConstrainedDualQuadric&
-//   quadric,
-//                                   const Pose3& pose,
-//                                   const Cal3_S2* calibration);
-// };
+#include <gtsam_quadrics/geometry/QuadricCamera.h>
+class QuadricCamera {
+  // static Matrix transformToImage(const Pose3& pose, const Cal3_S2*
+  // calibration);
+  // static gtsam::DualConic project(const ConstrainedDualQuadric& quadric,
+  //                                 const Pose3& pose,
+  //                                 const Cal3_S2* calibration);
+};
 
 }  // namespace gtsam_quadrics
