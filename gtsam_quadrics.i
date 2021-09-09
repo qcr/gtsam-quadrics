@@ -162,29 +162,29 @@ class AlignedBox2 {
   // bool equals(const AlignedBox2& other) const;
 };
 
-// #include <gtsam_quadrics/geometry/AlignedBox3.h>
-// class AlignedBox3 {
-//   AlignedBox3();
-//   AlignedBox3(const double& xmin, const double& xmax, const double& ymin,
-//               const double& ymax, const double& zmin, const double& zmax);
-//   AlignedBox3(const Vector& xxyyzz);
-//   AlignedBox3(const AlignedBox3& other);
-//   double xmin() const;
-//   double xmax() const;
-//   double ymin() const;
-//   double ymax() const;
-//   double zmin() const;
-//   double zmax() const;
-//   Vector vector() const;
-//   Vector dimensions() const;
-//   Vector centroid() const;
-//   double volume() const;
-//   double iou(const AlignedBox3& other) const;
-//   void print(const string& s) const;
-//   void print() const;
-//   bool equals(const AlignedBox3& other, double tol) const;
-//   bool equals(const AlignedBox3& other) const;
-// };
+#include <gtsam_quadrics/geometry/AlignedBox3.h>
+class AlignedBox3 {
+  AlignedBox3();
+  AlignedBox3(const double& xmin, const double& xmax, const double& ymin,
+              const double& ymax, const double& zmin, const double& zmax);
+  AlignedBox3(const Vector& xxyyzz);
+  //   AlignedBox3(const AlignedBox3& other);
+  double xmin() const;
+  double xmax() const;
+  double ymin() const;
+  double ymax() const;
+  double zmin() const;
+  double zmax() const;
+  Vector vector() const;
+  Vector dimensions() const;
+  Vector centroid() const;
+  double volume() const;
+  //   double iou(const AlignedBox3& other) const;
+  void print(const string& s) const;
+  void print() const;
+  //   bool equals(const AlignedBox3& other, double tol) const;
+  //   bool equals(const AlignedBox3& other) const;
+};
 
 // #include <gtsam_quadrics/geometry/DualConic.h>
 // class DualConic {
