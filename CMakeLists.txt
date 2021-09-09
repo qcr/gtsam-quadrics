@@ -125,12 +125,12 @@ gtsamAddTestsGlob("geometry" "gtsam_quadrics/base/tests/test*.cpp" "" "${CONVENI
 if(BUILD_PYTHON_WRAP)
   pybind_wrap(
     ${PROJECT_NAME}_py
-    ${PROJECT_SOURCE_DIR}/${PROJECT_NAME}.i
+    ${PROJECT_SOURCE_DIR}/${PROJECT_NAME}/${PROJECT_NAME}.i
     "${PROJECT_NAME}.cpp"
     "${PROJECT_NAME}"
     "${PROJECT_NAME}"
     ""
-    ${PROJECT_SOURCE_DIR}/${PROJECT_NAME}.tpl
+    ${PROJECT_SOURCE_DIR}/${PROJECT_NAME}/${PROJECT_NAME}.tpl
     ${PROJECT_NAME}
     "${PROJECT_NAME}"
     ON
