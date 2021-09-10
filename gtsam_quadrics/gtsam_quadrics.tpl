@@ -33,6 +33,13 @@ namespace py = pybind11;
 {module_def} {{
     m_.doc() = "pybind11 wrapper of {module_name}";
 
+    // At the moment we have to import the gtsam Python module before importing
+    // gtsam_quadrics, as there are errors about finding gtsam classes. The
+    // PyBind solution is something like below, but currently the
+    // auto-scripting in gtwrap gets in our way:
+    //   https://pybind11.readthedocs.io/en/stable/advanced/misc.html#partitioning-code-over-multiple-extension-modules
+    // py::module::import("gtsam").attr("NoiseModelFactor");
+
 {submodules_init}
 
 {wrapped_namespace}
