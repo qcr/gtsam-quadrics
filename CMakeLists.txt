@@ -11,29 +11,18 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
 option(BUILD_PYTHON_WRAP "Enable/Disable building of cython wrapper" ON)
 set(PYTHON_VERSION "3" CACHE STRING "The version of python to build the cython wrapper for (or Default)")
 
-
-
 ###################################################################################
 # Explicitly include GTSAM
 if (BUILD_PYTHON_WRAP)
-  set(GTSAM_BUILD_PYTHON ON)
+  set(GTSAM_BUILD_PYTHON ON CACHE BOOL "")
   set(GTSAM_CONFIG_TEMPLATE_PATH ${CMAKE_SOURCE_DIR}/gtsam/cmake)
 endif()
-set(GTSAM_BUILD_UNSTABLE OFF)
+set(GTSAM_BUILD_UNSTABLE OFF CACHE BOOL "")
 add_subdirectory(./gtsam)
-
-# find_package(GTSAM REQUIRED)
-# find_package(GTSAMCMakeTools REQUIRED)
-
-# set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${GTSAM_DIR}/../GTSAMCMakeTools")
-
-# include gtsam cmake tools
-# include(GtsamBuildTypes)      # Load build type flags and default to Debug mode
-# include(GtsamTesting)         # Easy functions for creating unit tests and scripts
-# include(GtsamMakeConfigFile)  # Defines a function for generating config file so package can be found with find_package function
 
 ###################################################################################
 # Add Python wrapping tools from gtwrap (used in GTSAM 4.1+)
+# (we use the version of gtwrap explicitly bundled in the GTSAM submodule)
 if(BUILD_PYTHON_WRAP)
   # The config.cmake for gtwrap seems to be buggy as hell at the moment; so
   # instead we manually hack in what we need from it here...
@@ -42,14 +31,11 @@ if(BUILD_PYTHON_WRAP)
 
   list(APPEND CMAKE_MODULE_PATH ${gtwrap_DIR}/cmake)
 
-  set(GTWRAP_PYTHON_PACKAGE_DIR ${gtwrap_DIR})
-
   include(${gtwrap_DIR}/cmake/GtwrapUtils.cmake)
   include(${gtwrap_DIR}/cmake/PybindWrap.cmake)
 
+  set(GTWRAP_PYTHON_PACKAGE_DIR ${gtwrap_DIR})
   set(PYBIND_WRAP_SCRIPT ${gtwrap_DIR}/scripts/pybind_wrap.py)
-
-  add_subdirectory(${gtwrap_DIR}/pybind11 pybind11)
 endif()
 
 ###################################################################################
@@ -102,9 +88,6 @@ configure_file(
   "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
   IMMEDIATE @ONLY)
 
-# add_custom_target(uninstall
-#   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
-
 ###################################################################################
 # Build tests (CMake tracks the dependecy to link with GTSAM through our project's static library)
 gtsamAddTestsGlob("geometry" "gtsam_quadrics/geometry/tests/test*.cpp" "" "${CONVENIENCE_LIB_NAME}")
@@ -112,6 +95,7 @@ gtsamAddTestsGlob("geometry" "gtsam_quadrics/base/tests/test*.cpp" "" "${CONVENI
 
 ###################################################################################
 # Build example files (CMake tracks the dependecy to link with GTSAM through our project's static library)
+# TODO fix broken examples!
 # gtsamAddExamplesGlob("*.cpp" "" "${CONVENIENCE_LIB_NAME}")
 # build examples if make examples
 # https://stackoverflow.com/questions/17765618/cmake-add-subdirectories-to-custom-target-and-adding-custom-target-to-vs-solut

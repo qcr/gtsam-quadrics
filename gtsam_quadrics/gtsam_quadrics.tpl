@@ -10,7 +10,7 @@
 
 #include "gtsam/base/utilities.h"
 
-// These are the included headers listed in `gtsam.i`
+// These are the included headers listed in `gtsam_quadrics.i`
 {includes}
 
 // Export classes for serialization

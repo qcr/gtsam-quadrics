@@ -42,6 +42,7 @@
 
 namespace gtsam_quadrics {
 
+#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_quadrics/base/Utilities.h>
 namespace utils {
 gtsam::Pose3 interpolate(const gtsam::Pose3& p1, const gtsam::Pose3& p2,
