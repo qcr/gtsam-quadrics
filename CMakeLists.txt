@@ -82,13 +82,6 @@ file(GLOB gtsam_quadrics_geometry_headers "gtsam_quadrics/geometry/*.h")
 install(FILES ${gtsam_quadrics_geometry_headers} DESTINATION include/gtsam_quadrics/geometry)
 
 ###################################################################################
-# uninstall target
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-  IMMEDIATE @ONLY)
-
-###################################################################################
 # Build tests (CMake tracks the dependecy to link with GTSAM through our project's static library)
 gtsamAddTestsGlob("geometry" "gtsam_quadrics/geometry/tests/test*.cpp" "" "${CONVENIENCE_LIB_NAME}")
 gtsamAddTestsGlob("geometry" "gtsam_quadrics/base/tests/test*.cpp" "" "${CONVENIENCE_LIB_NAME}")
