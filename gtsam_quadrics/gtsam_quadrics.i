@@ -117,6 +117,7 @@ virtual class QuadricAngleFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/nonlinear/PriorFactor.h>
+// TODO need to figure out how to get this to import...
 // template <T = {gtsam_quadrics::ConstrainedDualQuadric}>
 // virtual class gtsam::PriorFactor : gtsam::NoiseModelFactor {
 //   PriorFactor(size_t key, const T& prior,
