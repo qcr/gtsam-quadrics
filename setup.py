@@ -24,7 +24,7 @@ class cmake_build_ext(build_ext):
 
         print(self.get_ext_fullpath(ext.name))
 
-        self.spawn(['cmake', '-B', build_dir, 'S', source_dir])
+        self.spawn(['cmake', '-G', 'Ninja', '-B', build_dir, 'S', source_dir])
         self.spawn(['cmake', '--build', build_dir])
 
 
