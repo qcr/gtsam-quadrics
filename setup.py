@@ -1,6 +1,7 @@
 import os
 from setuptools import find_packages, setup, Extension
 from setuptools.command.build_ext import build_ext
+import shutil
 
 
 class CMakeExtension(Extension):
@@ -13,19 +14,34 @@ class CMakeExtension(Extension):
 class cmake_build_ext(build_ext):
 
     def run(self):
-        for e in self.extensions:
-            self.build_cmake(e)
+        self.build_cmake(self.extensions)
         super().run()
 
-    def build_cmake(self, ext):
-        print("BUILD DETAILS:")
+    def build_cmake(self, exts):
+        # This code assumes 'gtsam' & 'gtsam_quadrics' extensions are specified
+        # in that order...
+        gtsam_ext = exts[0]
+        gtsam_quadrics_ext = exts[1]
+
+        # Build our CPython shared objects
         source_dir = os.getcwd()
         build_dir = self.build_temp
 
-        print(self.get_ext_fullpath(ext.name))
-
         self.spawn(['cmake', '-G', 'Ninja', '-B', build_dir, 'S', source_dir])
         self.spawn(['cmake', '--build', build_dir])
+
+        # Move shared objects to the expected output location
+        lib_dir = os.path.dirname(self.get_ext_fullpath(gtsam_ext.name))
+        os.makedirs(lib_dir, exist_ok=True)
+
+        shutil.copyfile(
+            os.path.join(build_dir, 'gtsam', 'python', 'gtsam',
+                         self.get_ext_filename(gtsam_ext.name)),
+            self.get_ext_fullpath(gtsam_ext.name))
+        shutil.copyfile(
+            os.path.join(build_dir,
+                         self.get_ext_filename(gtsam_quadrics_ext.name)),
+            self.get_ext_fullpath(gtsam_quadrics_ext.name))
 
 
 with open("README.md", 'r') as f:
@@ -41,7 +57,10 @@ setup(name='gtsam_quadrics',
       long_description_content_type='text/markdown',
       packages=find_packages(),
       install_requires=[],
-      ext_modules=[CMakeExtension('gtsam_quadrics', './CMakeLists.txt')],
+      ext_modules=[
+          CMakeExtension('gtsam', './gtsam/CMakeLists.txt'),
+          CMakeExtension('gtsam_quadrics', './CMakeLists.txt')
+      ],
       cmdclass={'build_ext': cmake_build_ext},
       classifiers=(
           "Development Status :: 4 - Beta",
