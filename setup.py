@@ -27,18 +27,22 @@ class cmake_build_ext(build_ext):
         source_dir = os.getcwd()
         build_dir = self.build_temp
 
-        self.spawn(['cmake', '-G', 'Ninja', '-B', build_dir, 'S', source_dir])
+        self.spawn([
+            'cmake', '-DBUILD_SHARED_LIBS=OFF',
+            '-DCMAKE_POSITION_INDEPENDENT_CODE=ON'
+            '-G', 'Ninja', '-B', build_dir, 'S', source_dir
+        ])
         self.spawn(['cmake', '--build', build_dir])
 
         # Move shared objects to the expected output location
         lib_dir = os.path.dirname(self.get_ext_fullpath(gtsam_ext.name))
         os.makedirs(lib_dir, exist_ok=True)
 
-        shutil.copyfile(
+        shutil.copy(
             os.path.join(build_dir, 'gtsam', 'python', 'gtsam',
                          self.get_ext_filename(gtsam_ext.name)),
             self.get_ext_fullpath(gtsam_ext.name))
-        shutil.copyfile(
+        shutil.copy(
             os.path.join(build_dir,
                          self.get_ext_filename(gtsam_quadrics_ext.name)),
             self.get_ext_fullpath(gtsam_quadrics_ext.name))

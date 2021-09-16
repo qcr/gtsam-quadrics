@@ -60,7 +60,7 @@ set(SOURCE_FILES
 ## Build static library from common sources
 
 set(CONVENIENCE_LIB_NAME "gtsam_quadrics")
-add_library(${CONVENIENCE_LIB_NAME} SHARED ${SOURCE_FILES})
+add_library(${CONVENIENCE_LIB_NAME} ${SOURCE_FILES})
 # set_target_properties(${CONVENIENCE_LIB_NAME} PROPERTIES PREFIX "")
 target_link_libraries(${CONVENIENCE_LIB_NAME} gtsam)
 
