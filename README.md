@@ -3,18 +3,18 @@
 <!-- badges -->
 
 [![Best of ACRV Repository](https://img.shields.io/badge/collection-best--of--acrv-%23a31b2a)](https://roboticvision.org/best-of-acrv)
-[![License](https://img.shields.io/github/license/best-of-acrv/gtsam_quadrics)](./LICENSE.txt)
+[![License](https://img.shields.io/github/license/best-of-acrv/gtsam-quadrics)](./LICENSE.txt)
 
 This repository contains an extension to the popular [GTSAM](https://github.com/borglab/gtsam) factor graph optimization library. We introduce constrained dual quadrics as GTSAM variables, and support the estimation of the quadric parameters using 2-D bounding box measurements. These tools are available for both C++ and Python and are designed to be used in conjunction with GTSAM. Also provided are a number of C++ and Python examples that demonstrate how quadric landmarks can be used in the SLAM context, alongside doxygen documentation and unit tests.
 
 <p align="center">
-<img alt="QuadricSLAM sample output image 1" src=https://github.com/best-of-acrv/gtsam_quadrics/raw/master/doc/quadricslam_still1.png width="400"/>
-<img alt="QuadricSLAM sample output image 1" src=https://github.com/best-of-acrv/gtsam_quadrics/raw/master/doc/quadricslam_still2.png width="400"/>
+<img alt="QuadricSLAM sample output image 1" src=https://github.com/best-of-acrv/gtsam-quadrics/raw/master/doc/quadricslam_still1.png width="400"/>
+<img alt="QuadricSLAM sample output image 1" src=https://github.com/best-of-acrv/gtsam-quadrics/raw/master/doc/quadricslam_still2.png width="400"/>
 </p>
 
 We expect this repository to be active and continually improved upon. If you have any feature requests or experience any bugs, don't hesitate to let us know. Our code is free to use, and licensed under BSD-3. We simply ask that you [cite our work](#citing-our-work) if you use QuadricSLAM in your own research.
 
-[![@youtube QuadricSLAM demonstration for RA-L](https://github.com/best-of-acrv/gtsam_quadrics/raw/master/doc/quadricslam_video.png)](https://www.youtube.com/watch?v=n-j0DFDFSKU)
+[![@youtube QuadricSLAM demonstration for RA-L](https://github.com/best-of-acrv/gtsam-quadrics/raw/master/doc/quadricslam_video.png)](https://www.youtube.com/watch?v=n-j0DFDFSKU)
 
 ## Installation
 
@@ -73,7 +73,7 @@ Installing from source is very similar to the `pip` method above, accept we inst
 Then clone the repository, and initialise the `gtsam` submodule:
 
 ```
-git clone --recurse-submodules https://github.com/best-of-acrv/gtsam_quadrics
+git clone --recurse-submodules https://github.com/best-of-acrv/gtsam-quadrics
 ```
 
 Enter the `gtsam_quadrics` directory, and simply install via `pip` (the build process will take a while):
@@ -89,7 +89,7 @@ This process will build the library from scratch using CMake. It is very similia
 Ensure required system dependencies are installed, then clone with the `gtsam` submodule initialised:
 
 ```
-git clone --recurse-submodules https://github.com/best-of-acrv/gtsam_quadrics
+git clone --recurse-submodules https://github.com/best-of-acrv/gtsam-quadrics
 ```
 
 Create an out-of-source build directory:
