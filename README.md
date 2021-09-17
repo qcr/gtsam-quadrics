@@ -132,15 +132,6 @@ cmake --build . --target install
 
 TODO check these all still work???
 
-### Notes on installation processes
-
-**How is the GTSAM dependency handled:** This repository includes GTSAM as a submodule, so you can see precisely which version we build against (currently it is post 4.1rc due to Python wrapper changes). The GTSAM Quadrics library is then built and linked against this copy of GTSAM to ensure compatibility. The Python module is also linked against the GTSAM Python module built from our submodule.
-
-TODO need to check we handle this correctly
-**If using GTSAM 4.0.3 or exponential-map rotations:** gtsam 4.0.3 moved to exponential map by default to parametrize rotations. The analytical derivatives we've calculated from this library are based on the cayley transform. Please either select cayley rotations in the gtsam CMakelists or use numerical derivatives (defined in boundingboxfactor.cpp).
-
-**If you plan to use gtsam_quadrics in C++:** You can find the installed C++ headers using the cmake command `find_package(GTSAM_QUADRICS REQUIRED)` which will load `GTSAM_QUADRICS_INCLUDE_DIR`. The default header installation is `/usr/local/include/gtsam_quadrics/`, and by default library is installed to `/usr/local/lib/libgtsam_quadrics.so`.
-
 ## Using the GTSAM Quadrics and GTSAM Python APIs
 
 GTSAM Quadrics and GTSAM can be used like native Python packages. Below are some examples to help get you started with using GTSAM Quadrics:
@@ -187,36 +178,30 @@ quadric_estimate = gtsam_quadrics.ConstrainedDualQuadric.getFromValues(values, q
 
 ## Planned developments
 
+TODO check these are up-to-date
+
 - High-level SLAM front-end (akin to ORBSLAM2)
-- Support for GTSAM 4.1.0, pybind and expmap/logmap
+- Support for expmap/logmap
 - Tools to visualize and evaluate quadric landmarks
 
-## Notes
+## Assorted notes and known issues
 
-### Adding Quadrics to gtsam::Values
+**How is the GTSAM dependency handled:** This repository includes GTSAM as a submodule, so you can see precisely which version we build against (currently it is post 4.1rc due to Python wrapper changes). The GTSAM Quadrics library is then built and linked against this copy of GTSAM to ensure compatibility. The Python module is also linked against the GTSAM Python module built from our submodule.
 
-When using the python interface, ConstrainedDualQuadrics can be added or retrieved from Values using the following. Since GTSAM 4.0 the python interface for Values manually specializes each type. When supported by GTSAM, we plan to derive the gtsam::Values class and add the insert/at methods for ConstrainedDualQuadric.
+TODO need to check we handle this correctly
+**If using GTSAM 4.0.3 or exponential-map rotations:** gtsam 4.0.3 moved to exponential map by default to parametrize rotations. The analytical derivatives we've calculated from this library are based on the cayley transform. Please either select cayley rotations in the gtsam CMakelists or use numerical derivatives (defined in boundingboxfactor.cpp).
+
+**If you plan to use gtsam_quadrics in C++:** You can find the installed C++ headers using the cmake command `find_package(GTSAM_QUADRICS REQUIRED)` which will load `GTSAM_QUADRICS_INCLUDE_DIR`. The default header installation is `/usr/local/include/gtsam_quadrics/`, and by default library is installed to `/usr/local/lib/libgtsam_quadrics.so`.
+
+**Adding Quadrics to `gtsam::Values`:** When using the python interface, ConstrainedDualQuadrics can be added or retrieved from Values using the following. Since GTSAM 4.0 the python interface for Values manually specializes each type. When supported by GTSAM, we plan to derive the gtsam::Values class and add the insert/at methods for ConstrainedDualQuadric.
 
 ```Python
 quadric.addToValues(values, key)
 quadric = gtsam_quadrics.ConstrainedDualQuadric.getFromValues(values, key)
 ```
 
-## Common Issues
-
-TODO ensure these are still relevant?
-
-```
-cython/gtsam_quadrics/gtsam_quadrics.pxd:1:0: 'gtsam/gtsam.pxd' not found
-```
-
-If you attempt to build gtsam_quadrics and receive the above error, ensure that gtsam is installed with the cython toolbox enabled, and that it is on the PYTHONPATH. Some versions of GTSAM do not seem to install this file, in which case you will need to add the gtsam/build/cython folder to your PYTHONPATH manually, i.e `export PYTHONPATH=$PYTHONPATH:/path/to/gtsam/build/cython`.
-
-```
-AttributeError: module 'gtsam_quadrics' has no attribute 'ConstrainedDualQuadric'
-```
-
-If you import gtsam_quadrics and find it does not contain any attributes, or receive the above, ensure that gtsam_quadrics is built with BUILD_PYTHON_WRAP set ON, the correct python version is used, and that the generated gtsam_quadrics.so shared library is on your PYTHONPATH. I.e, if you have installed gtsam_quadrics, that you have the following line in your ~/.bashrc
+TODO ensure this is still relevant?
+**`AttributeError: module 'gtsam_quadrics' has no attribute 'ConstrainedDualQuadric'`:** If you import gtsam_quadrics and find it does not contain any attributes, or receive the above, ensure that gtsam_quadrics is built with BUILD_PYTHON_WRAP set ON, the correct python version is used, and that the generated gtsam_quadrics.so shared library is on your PYTHONPATH. I.e, if you have installed gtsam_quadrics, that you have the following line in your ~/.bashrc
 
 ```
 export PYTHONPATH=$PYTHONPATH:/usr/local/cython/gtsam_quadrics
