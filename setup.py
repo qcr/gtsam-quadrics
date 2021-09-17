@@ -29,8 +29,8 @@ class cmake_build_ext(build_ext):
 
         self.spawn([
             'cmake', '-DBUILD_SHARED_LIBS=OFF',
-            '-DCMAKE_POSITION_INDEPENDENT_CODE=ON'
-            '-G', 'Ninja', '-B', build_dir, 'S', source_dir
+            '-DCMAKE_POSITION_INDEPENDENT_CODE=ON', '-G', 'Ninja', '-B',
+            build_dir, 'S', source_dir
         ])
         self.spawn(['cmake', '--build', build_dir])
 
