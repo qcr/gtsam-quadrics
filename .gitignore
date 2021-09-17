@@ -1,6 +1,9 @@
 *.sw*
 build*/
 
+dist/
+*.egg-info/
+
 .vscode/
 
 graveyard.txt
