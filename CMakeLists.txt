@@ -11,26 +11,31 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
 option(BUILD_PYTHON_WRAP "Enable/Disable building of cython wrapper" ON)
 set(PYTHON_VERSION "3" CACHE STRING "The version of python to build the cython wrapper for (or Default)")
 
-
+###################################################################################
+# Explicitly include GTSAM
+if (BUILD_PYTHON_WRAP)
+  set(GTSAM_BUILD_PYTHON ON CACHE BOOL "")
+  set(GTSAM_CONFIG_TEMPLATE_PATH ${CMAKE_SOURCE_DIR}/gtsam/cmake)
+endif()
+set(GTSAM_BUILD_UNSTABLE OFF CACHE BOOL "")
+add_subdirectory(./gtsam)
 
 ###################################################################################
-# find GTSAM and GTSAM CMake tools
-find_package(GTSAM REQUIRED)
-find_package(GTSAMCMakeTools REQUIRED)
-
-# set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${GTSAM_DIR}/../GTSAMCMakeTools")
-
-# include gtsam cmake tools
-include(GtsamBuildTypes) 			# Load build type flags and default to Debug mode
-include(GtsamTesting)    			# Easy functions for creating unit tests and scripts
-include(GtsamMakeConfigFile) 	# Defines a function for generating config file so package can be found with find_package function
-
-# NOTE: PYTHONPATH must include GTSAM_CYTHON_INSTALL_PATH for gtsam/gtsam.pxd
+# Add Python wrapping tools from gtwrap (used in GTSAM 4.1+)
+# (we use the version of gtwrap explicitly bundled in the GTSAM submodule)
 if(BUILD_PYTHON_WRAP)
-	# python version must be set before including gtsamcythonwrap
-	set(GTSAM_PYTHON_VERSION ${PYTHON_VERSION})
-	include(GtsamMatlabWrap) # Automatic MATLAB wrapper generation
-	include(GtsamCythonWrap) # Automatic MATLAB wrapper generation
+  # The config.cmake for gtwrap seems to be buggy as hell at the moment; so
+  # instead we manually hack in what we need from it here...
+  # find_package(gtwrap REQUIRED)
+  set(gtwrap_DIR ${CMAKE_SOURCE_DIR}/gtsam/wrap)
+
+  list(APPEND CMAKE_MODULE_PATH ${gtwrap_DIR}/cmake)
+
+  include(${gtwrap_DIR}/cmake/GtwrapUtils.cmake)
+  include(${gtwrap_DIR}/cmake/PybindWrap.cmake)
+
+  set(GTWRAP_PYTHON_PACKAGE_DIR ${gtwrap_DIR})
+  set(PYBIND_WRAP_SCRIPT ${gtwrap_DIR}/scripts/pybind_wrap.py)
 endif()
 
 ###################################################################################
@@ -41,32 +46,32 @@ include_directories(BEFORE "${PROJECT_SOURCE_DIR}")
 
 # set source files
 set(SOURCE_FILES
-	./gtsam_quadrics/base/Utilities.cpp
-	./gtsam_quadrics/geometry/ConstrainedDualQuadric.cpp
-	./gtsam_quadrics/geometry/AlignedBox2.cpp
-	./gtsam_quadrics/geometry/AlignedBox3.cpp
-	./gtsam_quadrics/geometry/BoundingBoxFactor.cpp
-	./gtsam_quadrics/geometry/QuadricAngleFactor.cpp
-	./gtsam_quadrics/geometry/QuadricCamera.cpp
-	./gtsam_quadrics/geometry/DualConic.cpp
-)
+  ./gtsam_quadrics/base/Utilities.cpp
+  ./gtsam_quadrics/geometry/ConstrainedDualQuadric.cpp
+  ./gtsam_quadrics/geometry/AlignedBox2.cpp
+  ./gtsam_quadrics/geometry/AlignedBox3.cpp
+  ./gtsam_quadrics/geometry/BoundingBoxFactor.cpp
+  ./gtsam_quadrics/geometry/QuadricAngleFactor.cpp
+  ./gtsam_quadrics/geometry/QuadricCamera.cpp
+  ./gtsam_quadrics/geometry/DualConic.cpp
+  )
 
 ###################################################################################
 ## Build static library from common sources
 
 set(CONVENIENCE_LIB_NAME "gtsam_quadrics")
-add_library(${CONVENIENCE_LIB_NAME} SHARED ${SOURCE_FILES})
+add_library(${CONVENIENCE_LIB_NAME} ${SOURCE_FILES})
 # set_target_properties(${CONVENIENCE_LIB_NAME} PROPERTIES PREFIX "")
 target_link_libraries(${CONVENIENCE_LIB_NAME} gtsam)
 
 ###################################################################################
 # install library and PACKAGEConfig.cmake
 install(
-	TARGETS ${CONVENIENCE_LIB_NAME} 
-	EXPORT GTSAM_QUADRICS-exports
-	LIBRARY DESTINATION lib 
-	ARCHIVE DESTINATION lib 
-	RUNTIME DESTINATION bin)
+  TARGETS ${CONVENIENCE_LIB_NAME}
+  EXPORT GTSAM_QUADRICS-exports
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin)
 GtsamMakeConfigFile(GTSAM_QUADRICS)
 # list(APPEND GTSAM_EXPORTED_TARGETS ${CONVENIENCE_LIB_NAME})
 # export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
@@ -77,65 +82,47 @@ file(GLOB gtsam_quadrics_geometry_headers "gtsam_quadrics/geometry/*.h")
 install(FILES ${gtsam_quadrics_geometry_headers} DESTINATION include/gtsam_quadrics/geometry)
 
 ###################################################################################
-# uninstall target 
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-  IMMEDIATE @ONLY)
-
-add_custom_target(uninstall
-  "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
-
-###################################################################################
 # Build tests (CMake tracks the dependecy to link with GTSAM through our project's static library)
 gtsamAddTestsGlob("geometry" "gtsam_quadrics/geometry/tests/test*.cpp" "" "${CONVENIENCE_LIB_NAME}")
 gtsamAddTestsGlob("geometry" "gtsam_quadrics/base/tests/test*.cpp" "" "${CONVENIENCE_LIB_NAME}")
 
 ###################################################################################
 # Build example files (CMake tracks the dependecy to link with GTSAM through our project's static library)
+# TODO fix broken examples!
 # gtsamAddExamplesGlob("*.cpp" "" "${CONVENIENCE_LIB_NAME}")
 # build examples if make examples
 # https://stackoverflow.com/questions/17765618/cmake-add-subdirectories-to-custom-target-and-adding-custom-target-to-vs-solut
 # TODO: pass ${CONVENIENCE_LIB_NAME} to examples/c++/CMakeLists.txt
 # add_custom_target(examples) <-- already exists from GtsamTesting
-add_subdirectory(examples/c++)
-add_dependencies(examples examples_folder)
+# add_subdirectory(examples/c++)
+# add_dependencies(examples examples_folder)
 
 ###################################################################################
-# Build MATLAB wrapper (CMake tracks the dependecy to link with GTSAM through our project's static library)
-# wrap_and_install_library("example.h" "${CONVENIENCE_LIB_NAME}" "" "")
-
-###################################################################################
-# Build Cython wrapper (CMake tracks the dependecy to link with GTSAM through our project's static library)
+# Build Python wrapper using gtwrap library for GTSAM 4.1+
 if(BUILD_PYTHON_WRAP)
+  pybind_wrap(
+    ${PROJECT_NAME}_py
+    ${PROJECT_SOURCE_DIR}/${PROJECT_NAME}/${PROJECT_NAME}.i
+    "${PROJECT_NAME}.cpp"
+    "${PROJECT_NAME}"
+    "${PROJECT_NAME}"
+    ""
+    ${PROJECT_SOURCE_DIR}/${PROJECT_NAME}/${PROJECT_NAME}.tpl
+    ${PROJECT_NAME}
+    "${PROJECT_NAME}"
+    ON
+    )
 
-	# include gtsam eigency (handles numpy->eigen conversion)
-	include_directories(${GTSAM_EIGENCY_INSTALL_PATH})
-
-	# create __init__.py to allow build/cython/gtsam_quadrics be imported as a python package
-	file(WRITE "${PROJECT_BINARY_DIR}/cython/gtsam_quadrics/__init__.py" "from .gtsam_quadrics import *")
-
-	set(GTSAM_QUADRICS_CYTHON_INSTALL_PATH "${PROJECT_BINARY_DIR}/cython/gtsam_quadrics" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
-
-	# use gtsams cython wrapping functionality
-	wrap_and_install_library_cython("./gtsam_quadrics.h" # interface_header path
-									"from gtsam.gtsam cimport *" # extra imports for cython pxd
-									"${GTSAM_QUADRICS_CYTHON_INSTALL_PATH}" # install_path
-									"gtsam;${CONVENIENCE_LIB_NAME}" # libraries to link with
-									"wrap;gtsam;${CONVENIENCE_LIB_NAME}" # dependencies)
-	)
-
-	# install __init__.py so package can be loaded
-	# install_cython_files("${PROJECT_BINARY_DIR}/cython/gtsam_quadrics/__init__.py" "${GTSAM_QUADRICS_CYTHON_INSTALL_PATH}")
+  set_target_properties(${PROJECT_NAME}_py PROPERTIES OUTPUT_NAME "${PROJECT_NAME}")
 endif()
 
 ###################################################################################
-# Build Doxygen documentation 
+# Build Doxygen documentation
 
 # find doxygen
 find_package(Doxygen)
 
 # add subdirectory with custom make doc, doc_clean targets
 if (DOXYGEN_FOUND)
-	add_subdirectory(doc)
+  add_subdirectory(doc)
 endif()

@@ -1,5 +1,8 @@
+*.sw*
+build*/
 
-build/
+dist/
+*.egg-info/
 
 .vscode/
 
@@ -21,3 +24,5 @@ ros/build/
 ros/src/py_detector/py_detector/weights/yolov3.weights
 
 .python-version
+
+compile_commands.json

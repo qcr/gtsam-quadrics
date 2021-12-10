@@ -1,6 +1,7 @@
 /* ----------------------------------------------------------------------------
 
- * QuadricSLAM Copyright 2020, ARC Centre of Excellence for Robotic Vision, Queensland University of Technology (QUT)
+ * QuadricSLAM Copyright 2020, ARC Centre of Excellence for Robotic Vision,
+ Queensland University of Technology (QUT)
  * Brisbane, QLD 4000
  * All Rights Reserved
  * Authors: Lachlan Nicholson, et al. (see THANKS for the full author list)
@@ -20,28 +21,30 @@
 
 #include <string>
 
-namespace gtsam {
+namespace gtsam_quadrics {
 
-    /**
-     * @class QuadricProjectionException
-     * Exception thrown when attemption to calculate quadric bounding box fails
-     */
-    class QuadricProjectionException: public ThreadsafeException<QuadricProjectionException> {
-    public:
-        QuadricProjectionException()
-        : QuadricProjectionException(std::numeric_limits<Key>::max()) {}
+/**
+ * @class QuadricProjectionException
+ * Exception thrown when attemption to calculate quadric bounding box fails
+ */
+class QuadricProjectionException
+    : public gtsam::ThreadsafeException<QuadricProjectionException> {
+ public:
+  QuadricProjectionException()
+      : QuadricProjectionException(std::numeric_limits<gtsam::Key>::max()) {}
 
-        QuadricProjectionException(Key j)
-        : ThreadsafeException<QuadricProjectionException>("QuadricProjectionException"),
-            j_(j) {}
+  QuadricProjectionException(gtsam::Key j)
+      : ThreadsafeException<QuadricProjectionException>(
+            "QuadricProjectionException"),
+        j_(j) {}
 
-        QuadricProjectionException(const std::string& description)
-        : ThreadsafeException<QuadricProjectionException>(description) {}
+  QuadricProjectionException(const std::string& description)
+      : ThreadsafeException<QuadricProjectionException>(description) {}
 
-        Key nearbyVariable() const {return j_;}
+  gtsam::Key nearbyVariable() const { return j_; }
 
-    private:
-        Key j_;
-    };
+ private:
+  gtsam::Key j_;
+};
 
-} // namespace gtsam
+}  // namespace gtsam_quadrics

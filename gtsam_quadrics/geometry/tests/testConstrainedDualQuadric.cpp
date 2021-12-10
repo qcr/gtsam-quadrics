@@ -29,7 +29,7 @@
 #include <gtsam/nonlinear/Values.h>
 
 using namespace std;
-using namespace gtsam;
+using namespace gtsam_quadrics;
 
 TEST(ConstrainedDualQuadric, Constructors) {
   ConstrainedDualQuadric q1;

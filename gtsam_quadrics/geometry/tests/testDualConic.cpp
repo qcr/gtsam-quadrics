@@ -30,7 +30,7 @@
 #include <gtsam/geometry/Rot3.h>
 
 using namespace std;
-using namespace gtsam;
+using namespace gtsam_quadrics;
 
 static const Matrix33 expectedDefault((Matrix33() << 1.0, 0.0, 0.0, 
                                                      0.0, 1.0, 0.0,

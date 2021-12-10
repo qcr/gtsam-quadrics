@@ -1,6 +1,7 @@
 /* ----------------------------------------------------------------------------
 
- * QuadricSLAM Copyright 2020, ARC Centre of Excellence for Robotic Vision, Queensland University of Technology (QUT)
+ * QuadricSLAM Copyright 2020, ARC Centre of Excellence for Robotic Vision,
+ Queensland University of Technology (QUT)
  * Brisbane, QLD 4000
  * All Rights Reserved
  * Authors: Lachlan Nicholson, et al. (see THANKS for the full author list)
@@ -15,41 +16,43 @@
  * @brief a class responsible for projecting quadrics
  */
 
-
 #pragma once
 
+#include <gtsam/base/ThreadsafeException.h>
+#include <gtsam/base/types.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/PinholePose.h>
 #include <gtsam_quadrics/geometry/ConstrainedDualQuadric.h>
 #include <gtsam_quadrics/geometry/DualConic.h>
 
-#include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/geometry/PinholePose.h>
-#include <gtsam/base/ThreadsafeException.h>
-#include <gtsam/base/types.h>
+namespace gtsam_quadrics {
 
-namespace gtsam {
+/**
+ * @class QuadricCamera
+ * A camera that projects quadrics
+ */
+class QuadricCamera {
+ public:
+  /** Static projection matrix */
+  static gtsam::Matrix34 transformToImage(
+      const gtsam::Pose3& pose,
+      const boost::shared_ptr<gtsam::Cal3_S2>& calibration);
 
   /**
-   * @class QuadricCamera
-   * A camera that projects quadrics
+   * Project a quadric at the stored 3D pose and calibration
+   * @param quadric the 3D quadric surface to be projected
+   * @return the projected dual conic
    */
-  class QuadricCamera {
+  static DualConic project(const ConstrainedDualQuadric& quadric,
+                           const gtsam::Pose3& pose,
+                           const boost::shared_ptr<gtsam::Cal3_S2>& calibration,
+                           gtsam::OptionalJacobian<9, 9> dC_dq = boost::none,
+                           gtsam::OptionalJacobian<9, 6> dC_dx = boost::none);
 
-    public:
+  /** Project box to planes */
+  static std::vector<gtsam::Vector4> project(
+      const AlignedBox2& box, const gtsam::Pose3& pose,
+      const boost::shared_ptr<gtsam::Cal3_S2>& calibration);
+};
 
-      /** Static projection matrix */
-      static Matrix34 transformToImage(const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
-
-      /**
-       * Project a quadric at the stored 3D pose and calibration
-       * @param quadric the 3D quadric surface to be projected
-       * @return the projected dual conic 
-       */
-      static DualConic project(const ConstrainedDualQuadric& quadric, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration, 
-        OptionalJacobian<9,9> dC_dq = boost::none, OptionalJacobian<9,6> dC_dx = boost::none);
-
-      /** Project box to planes */
-      static std::vector<Vector4> project(const AlignedBox2& box, const Pose3& pose, const boost::shared_ptr<Cal3_S2>& calibration);
-      
-  };
-
-} // namespace gtsam
+}  // namespace gtsam_quadrics

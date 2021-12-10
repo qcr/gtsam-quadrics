@@ -1,108 +1,143 @@
-# GTSAM Quadrics: quadric landmarks for GTSAM #
+# GTSAM Quadrics: quadric landmarks for GTSAM
 
 <!-- badges -->
-[![Best of ACRV Repository](https://img.shields.io/badge/collection-best--of--acrv-%23a31b2a)](https://roboticvision.org/best-of-acrv)
-[![License](https://img.shields.io/github/license/best-of-acrv/gtsam_quadrics)](./LICENSE.txt)
 
-This repository contains an extension to the popular [GTSAM](https://github.com/borglab/gtsam) factor graph optimization library. We introduce constrained dual quadrics as GTSAM variables, and support the estimation of the quadric parameters using 2-D bounding box measurements. These tools are available for both c++ and Python and are designed to be used in conjunction with GTSAM. Also provided are a number of c++ and Python examples that demonstrate how quadric landmarks can be used in the SLAM context, alongside doxygen documentation and unit tests. 
+[![Best of ACRV Repository](https://img.shields.io/badge/collection-best--of--acrv-%23a31b2a)](https://roboticvision.org/best-of-acrv)
+[![License](https://img.shields.io/github/license/best-of-acrv/gtsam-quadrics)](./LICENSE.txt)
+
+This repository contains an extension to the popular [GTSAM](https://github.com/borglab/gtsam) factor graph optimization library. We introduce constrained dual quadrics as GTSAM variables, and support the estimation of the quadric parameters using 2-D bounding box measurements. These tools are available for both C++ and Python and are designed to be used in conjunction with GTSAM. Also provided are a number of C++ and Python examples that demonstrate how quadric landmarks can be used in the SLAM context, alongside doxygen documentation and unit tests.
 
 <p align="center">
-<img alt="QuadricSLAM sample output image 1" src=https://github.com/best-of-acrv/gtsam_quadrics/raw/master/doc/quadricslam_still1.png width="400"/>
-<img alt="QuadricSLAM sample output image 1" src=https://github.com/best-of-acrv/gtsam_quadrics/raw/master/doc/quadricslam_still2.png width="400"/>
+<img alt="QuadricSLAM sample output image 1" src=https://github.com/best-of-acrv/gtsam-quadrics/raw/master/doc/quadricslam_still1.png width="400"/>
+<img alt="QuadricSLAM sample output image 1" src=https://github.com/best-of-acrv/gtsam-quadrics/raw/master/doc/quadricslam_still2.png width="400"/>
 </p>
 
-We expect this repository to be active and continually improved upon. If you have any feature requests or experience any bugs, don't hesitate to let us know. Our code is free to use, and licensed under BSD-3. We simply ask that you [cite our work](#citing-our-work) if you use QuadricSLAM in your own research. 
+We expect this repository to be active and continually improved upon. If you have any feature requests or experience any bugs, don't hesitate to let us know. Our code is free to use, and licensed under BSD-3. We simply ask that you [cite our work](#citing-our-work) if you use QuadricSLAM in your own research.
 
-[![@youtube QuadricSLAM demonstration for RA-L](https://github.com/best-of-acrv/gtsam_quadrics/raw/master/doc/quadricslam_video.png)](https://www.youtube.com/watch?v=n-j0DFDFSKU)
+[![@youtube QuadricSLAM demonstration for RA-L](https://github.com/best-of-acrv/gtsam-quadrics/raw/master/doc/quadricslam_video.png)](https://www.youtube.com/watch?v=n-j0DFDFSKU)
 
+## Installation
 
-## Installation ## 
+GTSAM Quadrics contains both C++ libraries, and Python wrappers for use in Python. We offer a number of different install methods, from single step methods to more involved depending on your desired use case.
 
-### Building and installation
+Python wrappers can be installed via one of the following options:
 
-After installing the required dependencies, build the core c++ gtsam_quadrics library:
+1. [Through our Conda package](#conda): single command installs everything including system dependencies (recommended)
+2. [Through our pip package](#pip): single command installs GTSAM and GTSAM Quadrics Python modules and Python dependences, but you take care of system dependencies
+3. [Directly from source](#from-source): allows easy editing and extension of our code, but you take care of building and all dependencies
 
-```sh
-# clone the repository 
-$ git clone https://github.com/RoboticVisionOrg/gtsam_quadrics
-$ cd gtsam_quadrics
+Or you can use the C++ libraries directly by:
 
-# create build folder 
-$ mkdir build
-$ cd build
+1. [Building with CMake](#building-with-cmake): builds the library from scratch, and allows you to install into your system library paths
 
-# (if you plan on using the python library)
-$ cmake -DBUILD_PYTHON_WRAP=ON ..
-# (otherwise, if you only want the gtsam_quadrics c++ library)
-$ cmake -DBUILD_PYTHON_WRAP=OFF ..
+Please note that for all methods except the Conda method, you must have the following system dependencies installed beforehand:
 
-# compile the library
-$ make -j8
+- A C++ compiler: e.g. `sudo apt install build-essential`
+- CMake >= 3.0: `sudo apt install cmake`
+- Boost C++ libraries >= 1.43: `sudo apt install libboost-all-dev`
+- METIS matrix library: `sudo apt install libmetis-dev` <!-- in future, automatically get from gtsam/3rdparty, required when including gtsam/Symbol.h etc, maybe we just need to update some path? -->
 
-# optional: run the c++ unit tests
-$ make check 
+### Conda
 
-# optional: install the c++ and/or python library 
-$ make install
+TODO: actually make feedstock
+
+The only requirement is that you have [Conda installed](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) on your system. We provide Conda packages through [Conda Forge](https://conda-forge.org/), which recommends adding their channel globally with strict priority:
+
+```
+conda config --add channels conda-forge
+conda config --set channel_priority strict
 ```
 
-The following table summarizes the available targets 
-| **Command**    | **Description**                                |
-| :---------     |   :-----------------------------------------   |
-| make check     | compile and run optional unit tests            | 
-| make examples  | compiles the c++ examples                      | 
-| make doc       | generates the doxygen documentation            | 
-| make doc_clean | removes the doxygen documentation              | 
-| make install   | installs the gtsam_quadrics c++/python library | 
+Once you have access to the `conda-forge` channel, GTSAM Quadrics is installed by running the following from inside a [Conda environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html):
 
-### Dependencies 
-
-Base requirements:
-
-* g++ compiler (`sudo apt-get install build-essential`)
-* cmake >= 3.0 (`sudo apt-get install cmake`) 
-* boost >= 1.43 (`sudo apt-get install libboost-all-dev`)
-* metis (`sudo apt-get install libmetis-dev`) <!-- in future, automatically get from gtsam/3rdparty, required when including gtsam/Symbol.h etc, maybe we just need to update some path? -->
-* [gtsam](https://github.com/borglab/gtsam) <= 4.0.3
-
-Requirements to build gtsam_quadrics python module:
-
-* gtsam <= 4.0.3: ensure the gtsam python library is built and on the python path
-* cython: both `sudo apt-get install cython` and `pip3 install cython` required <!-- gtsam requisite --> <!-- maybe we can use one and update our CYTHON_PATH? --> <!-- gtsam only needs apt-get version -->
-* python >= 3.0 <!-- gtsam requisite -->
-* numpy <!-- gtsam requisite --> 
-
-Optional requirements to build documentation:
-
-* Doxygen (`sudo apt-get install doxygen`)
-* epstopdf (`sudo apt-get install textlive-font-utils`)
-
-
-### Notes on installation
-**You may find gtsam does not install gtsam.pxd automatically:** in this case, add the gtsam build/cython folder to your $PYTHONPATH with the following `export PYTHONPATH=$PYTHONPATH:/path/to/gtsam/build/cython`
-
-**If using GTSAM 4.0.3 or exponential-map rotations:** gtsam 4.0.3 moved to exponential map by default to parametrize rotations. The analytical derivatives we've calculated from this library are based on the cayley transform. Please either select cayley rotations in the gtsam CMakelists or use numerical derivatives (defined in boundingboxfactor.cpp).
-
-**If you plan to use gtsam_quadrics in c++:** You can find the installed C++ headers using the cmake command `find_package(GTSAM_QUADRICS REQUIRED)` which will load `GTSAM_QUADRICS_INCLUDE_DIR`. The default header installation is `/usr/local/include/gtsam_quadrics/`, and by default library is installed to `/usr/local/lib/libgtsam_quadrics.so`. 
-
-**If you plan to use gtsam_quadrics in python:** ensure you have build location (`/build/cython/gtsam_quadrics`) or the install location (default: `/usr/local/cython/gtsam_quadrics`) on your PYTHONPATH. If you plan to make changes to the gtsam_quadrics source code, I advise adding the build location instead to avoid having to install every time you recompile the library. Assuming you have followed the instructions above, we can automatically source the installed gtsam_quadrics library by explicitly adding the following line to your ~/.bashrc file. 
-
-```sh
-# add gtsam_quadrics to PYTHONPATH
-export PYTHONPATH=$PYTHONPATH:/usr/local/cython/gtsam_quadrics
+```
+conda install gtsam_quadrics
 ```
 
-<!-- ## Using QuadricSLAM
+You can see a list of our Conda dependencies in [the feedstock recipe for GTSAM Quadrics](https://github.com/conda-forge/gtsam-quadrics-feedstock/blob/master/recipe/meta.yaml).
 
-This library can be used to incorperate quadric landmarks into existing SLAM systems, or -->
+### Pip
 
-<!-- Three types of users. 1. builds their own system from gtsam_quadrics -->
-<!-- Three types of users. 2. modifies our scripts to add their own methods -->
-<!-- Three types of users. 3. uses our scripts -->
+TODO: actually add package to PyPI
 
-## Basic Usage 
+First, install the system dependencies mentioned above have been installed. Then pre-built Python modules for both GTSAM Quadrics and GTSAM can be installed via:
+
+```
+pip install gtsam_quadrics
+```
+
+### From source
+
+Installing from source is very similar to the `pip` method above, accept we install from a local copy. Ensure the system dependencies described above are installed.
+
+Then clone the repository, and initialise the `gtsam` submodule:
+
+```
+git clone --recurse-submodules https://github.com/best-of-acrv/gtsam-quadrics
+```
+
+Enter the `gtsam_quadrics` directory, and simply install via `pip` (the build process will take a while):
+
+```
+pip install .
+```
+
+### Building with CMake
+
+This process will build the library from scratch using CMake. It is very similiar to the "from source" method above, we just use CMake directly to build instead of invoking it as part of the `pip` install process.
+
+Ensure required system dependencies are installed, then clone with the `gtsam` submodule initialised:
+
+```
+git clone --recurse-submodules https://github.com/best-of-acrv/gtsam-quadrics
+```
+
+Create an out-of-source build directory:
+
+```
+cd gtsam_quadrics
+mkdir build
+cd build
+```
+
+Run the configuration and generation CMake steps, optionally building the Python wrapper using the `BUILD_PYTHON_WRAP` variable:
+
+```
+cmake -DBUILD_PYTHON_WRAP=ON ..
+```
+
+Run the build step:
+
+```
+cmake --build . -j$(nproc)
+```
+
+Then optionally run any of the other supported targets as described below:
+
+| **Target name** | **Description**                                |
+| :-------------- | :--------------------------------------------- |
+| check           | compile and run optional unit tests            |
+| examples        | compiles the c++ examples                      |
+| doc             | generates the doxygen documentation            |
+| doc_clean       | removes the doxygen documentation              |
+| install         | installs the gtsam_quadrics c++/python library |
+
+_Note: documentation requires Doxygen (`sudo apt install doxygen`) and epstopdf (`sudo apt install texlive-font-utils`)_
+
+For example, to install the library into system paths run:
+
+```
+cmake --build . --target install
+```
+
+TODO check these all still work???
+
+## Using the GTSAM Quadrics and GTSAM Python APIs
+
+GTSAM Quadrics and GTSAM can be used like native Python packages. Below are some examples to help get you started with using GTSAM Quadrics:
 
 ```python
+# Note: at this stage you MUST import gtsam before importing gtsam_quadrics
 import gtsam
 import gtsam_quadrics
 import numpy as np
@@ -141,44 +176,39 @@ graph.add(bbf)
 quadric_estimate = gtsam_quadrics.ConstrainedDualQuadric.getFromValues(values, quadric_key)
 ```
 
-
-
 ## Planned developments
-* High-level SLAM front-end (akin to ORBSLAM2)
-* Support for GTSAM 4.1.0, pybind and expmap/logmap
-* Tools to visualize and evaluate quadric landmarks
 
-## Notes ##
+TODO check these are up-to-date
 
-### Adding Quadrics to gtsam::Values ###
-When using the python interface, ConstrainedDualQuadrics can be added or retrieved from Values using the following. Since GTSAM 4.0 the python interface for Values manually specializes each type. When supported by GTSAM, we plan to derive the gtsam::Values class and add the insert/at methods for ConstrainedDualQuadric. 
+- High-level SLAM front-end (akin to ORBSLAM2)
+- Support for expmap/logmap
+- Tools to visualize and evaluate quadric landmarks
+
+## Assorted notes and known issues
+
+**How is the GTSAM dependency handled:** This repository includes GTSAM as a submodule, so you can see precisely which version we build against (currently it is post 4.1rc due to Python wrapper changes). The GTSAM Quadrics library is then built and linked against this copy of GTSAM to ensure compatibility. The Python module is also linked against the GTSAM Python module built from our submodule.
+
+TODO need to check we handle this correctly
+**If using GTSAM 4.0.3 or exponential-map rotations:** gtsam 4.0.3 moved to exponential map by default to parametrize rotations. The analytical derivatives we've calculated from this library are based on the cayley transform. Please either select cayley rotations in the gtsam CMakelists or use numerical derivatives (defined in boundingboxfactor.cpp).
+
+**If you plan to use gtsam_quadrics in C++:** You can find the installed C++ headers using the cmake command `find_package(GTSAM_QUADRICS REQUIRED)` which will load `GTSAM_QUADRICS_INCLUDE_DIR`. The default header installation is `/usr/local/include/gtsam_quadrics/`, and by default library is installed to `/usr/local/lib/libgtsam_quadrics.so`.
+
+**Adding Quadrics to `gtsam::Values`:** When using the python interface, ConstrainedDualQuadrics can be added or retrieved from Values using the following. Since GTSAM 4.0 the python interface for Values manually specializes each type. When supported by GTSAM, we plan to derive the gtsam::Values class and add the insert/at methods for ConstrainedDualQuadric.
 
 ```Python
 quadric.addToValues(values, key)
 quadric = gtsam_quadrics.ConstrainedDualQuadric.getFromValues(values, key)
 ```
 
-
-## Common Issues ##
-
-```
-cython/gtsam_quadrics/gtsam_quadrics.pxd:1:0: 'gtsam/gtsam.pxd' not found
-```
-
-If you attempt to build gtsam_quadrics and receive the above error, ensure that gtsam is installed with the cython toolbox enabled, and that it is on the PYTHONPATH. Some versions of GTSAM do not seem to install this file, in which case you will need to add the gtsam/build/cython folder to your PYTHONPATH manually, i.e `export PYTHONPATH=$PYTHONPATH:/path/to/gtsam/build/cython`. 
-
-
-```
-AttributeError: module 'gtsam_quadrics' has no attribute 'ConstrainedDualQuadric'
-```
-
-If you import gtsam_quadrics and find it does not contain any attributes, or receive the above, ensure that gtsam_quadrics is built with BUILD_PYTHON_WRAP set ON, the correct python version is used, and that the generated gtsam_quadrics.so shared library is on your PYTHONPATH. I.e, if you have installed gtsam_quadrics, that you have the following line in your ~/.bashrc
+TODO ensure this is still relevant?
+**`AttributeError: module 'gtsam_quadrics' has no attribute 'ConstrainedDualQuadric'`:** If you import gtsam_quadrics and find it does not contain any attributes, or receive the above, ensure that gtsam_quadrics is built with BUILD_PYTHON_WRAP set ON, the correct python version is used, and that the generated gtsam_quadrics.so shared library is on your PYTHONPATH. I.e, if you have installed gtsam_quadrics, that you have the following line in your ~/.bashrc
 
 ```
 export PYTHONPATH=$PYTHONPATH:/usr/local/cython/gtsam_quadrics
 ```
 
-## Citing our work ##
+## Citing our work
+
 If you are using this library in academic work, please cite the [publication](https://ieeexplore.ieee.org/document/8440105):
 
 L. Nicholson, M. Milford and N. Sünderhauf, "QuadricSLAM: Dual Quadrics From Object Detections as Landmarks in Object-Oriented SLAM," in IEEE Robotics and Automation Letters, vol. 4, no. 1, pp. 1-8, Jan. 2019, doi: 10.1109/LRA.2018.2866205. [PDF](https://arxiv.org/abs/1804.04011).
