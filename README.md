@@ -186,7 +186,7 @@ TODO check these are up-to-date
 
 ## Assorted notes and known issues
 
-**How is the GTSAM dependency handled:** This repository includes GTSAM as a submodule, so you can see precisely which version we build against (currently it is post 4.1rc due to Python wrapper changes). The GTSAM Quadrics library is then built and linked against this copy of GTSAM to ensure compatibility. The Python module is also linked against the GTSAM Python module built from our submodule.
+**How is the GTSAM dependency handled:** This repository includes GTSAM as a submodule, so you can see precisely which version we build against (currently it is post 4.1.1 due to Python wrapper changes). The GTSAM Quadrics library is then built and linked against this copy of GTSAM to ensure compatibility. The Python module is also linked against the GTSAM Python module built from our submodule.
 
 TODO need to check we handle this correctly
 **If using GTSAM 4.0.3 or exponential-map rotations:** gtsam 4.0.3 moved to exponential map by default to parametrize rotations. The analytical derivatives we've calculated from this library are based on the cayley transform. Please either select cayley rotations in the gtsam CMakelists or use numerical derivatives (defined in boundingboxfactor.cpp).
