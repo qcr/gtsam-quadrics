@@ -34,7 +34,7 @@ Please note that for all methods except the Conda method, you must have the foll
 
 - A C++ compiler: e.g. `sudo apt install build-essential`
 - CMake >= 3.0: `sudo apt install cmake`
-- Boost C++ libraries >= 1.43: `sudo apt install libboost-all-dev`
+- Boost C++ libraries >= 1.65: `sudo apt install libboost-all-dev`
 - METIS matrix library: `sudo apt install libmetis-dev` <!-- in future, automatically get from gtsam/3rdparty, required when including gtsam/Symbol.h etc, maybe we just need to update some path? -->
 
 ### Conda
