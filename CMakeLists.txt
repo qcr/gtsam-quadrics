@@ -1,6 +1,6 @@
 project(gtsam_quadrics)
 cmake_minimum_required(VERSION 3.18)
-set(GTSAM_QUADRICS_VERSION 0.1.0)
+set(GTSAM_QUADRICS_VERSION 0.1.2)
 
 # we want to use some C++11 features
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
