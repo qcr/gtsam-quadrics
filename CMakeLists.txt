@@ -1,7 +1,10 @@
 project(gtsam_quadrics)
-cmake_minimum_required(VERSION 3.0)
-set(GTSAM_QUADRICS_VERSION 1.0.0)
+cmake_minimum_required(VERSION 3.18)
+set(GTSAM_QUADRICS_VERSION 0.1.0)
 
+set(Python3_INCLUDE_DIR "/opt/python/cp38-cp38/include/python3.8")
+set(Python3_EXECUTABLE "/opt/python/cp38-cp38/bin/python3")
+find_package(Python3 COMPONENTS Interpreter Development.Module)
 
 # we want to use some C++11 features
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
