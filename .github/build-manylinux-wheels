@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -e
+
+root="$(dirname "$0")/.."
+
+# Only works on manylinux2014+
+yum install cmake3 metis-devel boost169-devel
+export BOOST
+export BOOST_INCLUDEDIR=/usr/include/boost169
+export BOOST_LIBRARYDIR=/usr/lib64/boost169
+
+# Apply our hacks to get it to build...
+sed -i 's/ \(find_package(Python3\)/#\1/' "$root/gtsam/cmake/HandlePython.cmake"
+
+# Build each of our wheels
+for PYROOT in /opt/python/cp*; do
+  export Python3_EXECUTABLE="$PYROOT/bin/python"
+  export Python3_INCLUDE_DIR="$(find "$PYROOT/include/" \
+    -mindepth 1 -maxdepth 1 -type d)"
+  "$Python3_EXECUTABLE" -m build
+done
+
+# Undo our hacks
+sed -i 's/#\(find_package(Python3\)/ \1/' "$root/gtsam/cmake/HandlePython.cmake"
