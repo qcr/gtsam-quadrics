@@ -16,7 +16,8 @@ BOOST_VERSION_US="$(echo "$BOOST_VERSION" | tr '.' '_')"
 BOOST_DIR="/boost_$BOOST_VERSION_US"
 wget -qO- "$(printf "%s%s%s%s" \
   "https://boostorg.jfrog.io/artifactory/main/release/" \
-  "$BOOST_VERSION" "/source/boost_" "$BOOST_VERSION_US" ".tar.gz")" | tar xvz
+  "$BOOST_VERSION" "/source/boost_" "$BOOST_VERSION_US" ".tar.bz2")" | \
+  tar --bzip2 -xv
 pushd "$BOOST_DIR"
 ./bootstrap.sh --prefix="$BOOST_ROOT"
 ./b2 link=static install || true
@@ -32,6 +33,7 @@ for PYROOT in /opt/python/cp*; do
   export Python3_INCLUDE_DIR="$(find "$PYROOT/include/" \
     -mindepth 1 -maxdepth 1 -type d)"
   "$Python3_EXECUTABLE" -m build
+  exit 0
 done
 popd
 
