@@ -19,9 +19,8 @@ wget -qO- "$(printf "%s%s%s%s" \
   "$BOOST_VERSION" "/source/boost_" "$BOOST_VERSION_US" ".tar.gz")" | tar xvz
 pushd "$BOOST_DIR"
 ./bootstrap.sh --prefix="$BOOST_ROOT"
-./b2 link=static
+./b2 link=static install || true
 popd
-exit 0
 
 # Apply our hacks to get it to build...
 sed -i 's/ \(find_package(Python3\)/#\1/' "$root/gtsam/cmake/HandlePython.cmake"
