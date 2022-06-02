@@ -1,13 +1,27 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
+
+BOOST_VERSION=1.79.0
+BOOST_ROOT="/boost"
 
 root="$(dirname "$0")/.."
 
 # Only works on manylinux2014+
-yum install -y cmake3 metis-devel boost169-devel
-export BOOST_INCLUDEDIR=/usr/include/boost169
-export BOOST_LIBRARYDIR=/usr/lib64/boost169
+yum install -y cmake3 metis-devel wget
+
+# Manually build Boost so we can statically link into our GTSAM & GTSAM
+# Quadrics .so files (Boost ABI stability is garbage...)
+BOOST_VERSION_US="$(echo "$BOOST_VERSION" | tr '.' '_')"
+BOOST_DIR="/boost_$BOOST_VERSION_US"
+wget -qO- "$(printf "%s%s%s%s" \
+  "https://boostorg.jfrog.io/artifactory/main/release/" \
+  "$BOOST_VERSION" "/source/boost_" "$BOOST_VERSION_US" ".tar.gz")" | tar xvz
+pushd "$BOOST_DIR"
+./bootstrap.sh --prefix="$BOOST_ROOT"
+./b2 link=static
+popd
+exit 0
 
 # Apply our hacks to get it to build...
 sed -i 's/ \(find_package(Python3\)/#\1/' "$root/gtsam/cmake/HandlePython.cmake"
