@@ -18,7 +18,7 @@ jobs:
       - name: Make manylinux wheels
         run: |
           TARGET=manylinux2014_x86_64 && \
-          docker run --rm -e PLAT=$TARGET -v {{ github.workspace }}:/io \
+          sudo docker run --rm -e PLAT=$TARGET -v {{ github.workspace }}:/io \
           quay.io/pypa/$TARGET /io/.github/build-manylinux-wheel
       - name: Install wheel publishing deps
         run: |
