@@ -33,8 +33,12 @@ for PYROOT in /opt/python/cp*; do
     -mindepth 1 -maxdepth 1 -type d)"
   "$Python3_EXECUTABLE" -m build
 done
-exit 0
-popd
+
+# Bundle shared libraries (aka Boost) into each of our wheels to make them
+# manylinux compatible
+for w in /io/dist/*linux_x86_64.whl; do
+  auditwheel repair --plat "$PLAT" -w /io/dist/ "$w" 
+done
 
 # Undo our hacks
 sed -i 's/#\(find_package(Python3\)/ \1/' "$root/gtsam/cmake/HandlePython.cmake"
