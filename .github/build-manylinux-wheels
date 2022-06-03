@@ -17,10 +17,10 @@ BOOST_DIR="/boost_$BOOST_VERSION_US"
 wget -qO- "$(printf "%s%s%s%s" \
   "https://boostorg.jfrog.io/artifactory/main/release/" \
   "$BOOST_VERSION" "/source/boost_" "$BOOST_VERSION_US" ".tar.bz2")" | \
-  tar --bzip2 -xv
+  tar --bzip2 -x
 pushd "$BOOST_DIR"
 ./bootstrap.sh --prefix="$BOOST_ROOT"
-./b2 link=static install || true
+./b2 link=static install cxxflags=-fPIC cflags=-fPIC || true
 popd
 
 # Apply our hacks to get it to build...
