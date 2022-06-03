@@ -58,17 +58,17 @@ You can see a list of our Conda dependencies in [the feedstock recipe for GTSAM 
 
 ### Pip
 
-TODO: actually add package to PyPI
-
-First, install the system dependencies mentioned above have been installed. Then pre-built Python modules for both GTSAM Quadrics and GTSAM can be installed via:
+Pre-built Python modules for both GTSAM Quadrics and GTSAM can be installed via:
 
 ```
 pip install gtsam_quadrics
 ```
 
+We provide pre-built Python wheels, which have libraries like an appropriate version of Boost built-in. You shouldn't need to install system dependencies when installing via Pip, unless you are installing on an unsupported platform.
+
 ### From source
 
-Installing from source is very similar to the `pip` method above, accept we install from a local copy. Ensure the system dependencies described above are installed.
+Installing from source is very similar to the `pip` method above, accept we install from a local copy. This means it's important to ensure the system dependencies described above are installed.
 
 Then clone the repository, and initialise the `gtsam` submodule:
 
