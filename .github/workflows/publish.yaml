@@ -16,10 +16,13 @@ jobs:
         with:
           python-version: "3.x"
       - name: Make manylinux wheels
+        env:
+          target: manylinux2014_x86_64
         run: |
-          TARGET=manylinux2014_x86_64 && \
-          sudo docker run --rm -e PLAT=$TARGET -v {{ github.workspace }}:/io \
-          quay.io/pypa/$TARGET /io/.github/build-manylinux-wheel
+          docker run --rm -e PLAT=${{ env.target }} \
+          -v {{ github.workspace }}:/io \
+          quay.io/pypa/${{ env.target }} \
+          /io/.github/build-manylinux-wheel
       - name: Install wheel publishing deps
         run: |
           python -m pip install --upgrade pip
