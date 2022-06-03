@@ -1,0 +1,44 @@
+#!/bin/bash
+
+set -euo pipefail
+
+BOOST_VERSION=1.79.0
+BOOST_ROOT="/boost"
+
+root="$(dirname "$0")/.."
+
+# Only works on manylinux2014+
+yum install -y cmake3 metis-devel wget
+
+# Manually build Boost for easier control of versioning / linking
+BOOST_VERSION_US="$(echo "$BOOST_VERSION" | tr '.' '_')"
+BOOST_DIR="/boost_$BOOST_VERSION_US"
+wget -qO- "$(printf "%s%s%s%s" \
+  "https://boostorg.jfrog.io/artifactory/main/release/" \
+  "$BOOST_VERSION" "/source/boost_" "$BOOST_VERSION_US" ".tar.bz2")" | \
+  tar --bzip2 -x
+pushd "$BOOST_DIR"
+./bootstrap.sh --prefix="$BOOST_ROOT"
+./b2 install || true
+popd
+
+# Apply our hacks to get it to build...
+sed -i 's/ \(find_package(Python3\)/#\1/' "$root/gtsam/cmake/HandlePython.cmake"
+
+# Build each of our wheels
+pushd /io/
+for PYROOT in /opt/python/cp*; do
+  export Python3_EXECUTABLE="$PYROOT/bin/python"
+  export Python3_INCLUDE_DIR="$(find "$PYROOT/include/" \
+    -mindepth 1 -maxdepth 1 -type d)"
+  "$Python3_EXECUTABLE" -m build
+done
+
+# Bundle shared libraries (aka Boost) into each of our wheels to make them
+# manylinux compatible
+for w in /io/dist/*linux_x86_64.whl; do
+  auditwheel repair --plat "$PLAT" -w /io/dist/ "$w" 
+done
+
+# Undo our hacks
+sed -i 's/#\(find_package(Python3\)/ \1/' "$root/gtsam/cmake/HandlePython.cmake"

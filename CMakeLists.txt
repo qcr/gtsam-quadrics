@@ -1,7 +1,6 @@
 project(gtsam_quadrics)
-cmake_minimum_required(VERSION 3.0)
-set(GTSAM_QUADRICS_VERSION 1.0.0)
-
+cmake_minimum_required(VERSION 3.18)
+set(GTSAM_QUADRICS_VERSION 0.1.2)
 
 # we want to use some C++11 features
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
@@ -16,6 +15,15 @@ set(PYTHON_VERSION "3" CACHE STRING "The version of python to build the cython w
 if (BUILD_PYTHON_WRAP)
   set(GTSAM_BUILD_PYTHON ON CACHE BOOL "")
   set(GTSAM_CONFIG_TEMPLATE_PATH ${CMAKE_SOURCE_DIR}/gtsam/cmake)
+
+  # Allow overriding Python choices for environments like manylinux...
+  if (DEFINED ENV{Python3_EXECUTABLE})
+    set(Python3_EXECUTABLE "$ENV{Python3_EXECUTABLE}")
+  endif()
+  if (DEFINED ENV{Python3_INCLUDE_DIR})
+    set(Python3_INCLUDE_DIR "$ENV{Python3_INCLUDE_DIR}")
+  endif()
+  find_package(Python3 COMPONENTS Interpreter Development.Module)
 endif()
 set(GTSAM_BUILD_UNSTABLE OFF CACHE BOOL "")
 add_subdirectory(./gtsam)
