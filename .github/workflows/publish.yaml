@@ -19,10 +19,7 @@ jobs:
         env:
           target: manylinux2014_x86_64
         run: |
-          docker run --rm -e PLAT=${{ env.target }} \
-          -v {{ github.workspace }}:/io \
-          quay.io/pypa/${{ env.target }} \
-          /io/.github/build-manylinux-wheel
+          docker run -e PLAT=${{ env.target }} -v {{ github.workspace }}:/io quay.io/pypa/${{ env.target }} /io/.github/build-manylinux-wheel
       - name: Install wheel publishing deps
         run: |
           python -m pip install --upgrade pip
