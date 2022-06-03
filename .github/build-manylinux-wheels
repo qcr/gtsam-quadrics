@@ -10,8 +10,7 @@ root="$(dirname "$0")/.."
 # Only works on manylinux2014+
 yum install -y cmake3 metis-devel wget
 
-# Manually build Boost so we can statically link into our GTSAM & GTSAM
-# Quadrics .so files (Boost ABI stability is garbage...)
+# Manually build Boost for easier control of versioning / linking
 BOOST_VERSION_US="$(echo "$BOOST_VERSION" | tr '.' '_')"
 BOOST_DIR="/boost_$BOOST_VERSION_US"
 wget -qO- "$(printf "%s%s%s%s" \
@@ -20,7 +19,7 @@ wget -qO- "$(printf "%s%s%s%s" \
   tar --bzip2 -x
 pushd "$BOOST_DIR"
 ./bootstrap.sh --prefix="$BOOST_ROOT"
-./b2 link=static install cxxflags=-fPIC cflags=-fPIC || true
+./b2 install || true
 popd
 
 # Apply our hacks to get it to build...
@@ -32,9 +31,9 @@ for PYROOT in /opt/python/cp*; do
   export Python3_EXECUTABLE="$PYROOT/bin/python"
   export Python3_INCLUDE_DIR="$(find "$PYROOT/include/" \
     -mindepth 1 -maxdepth 1 -type d)"
-  "$Python3_EXECUTABLE" -m build --wheel
+  "$Python3_EXECUTABLE" -m build
 done
-"$Python3_EXECUTABLE" -m build --sdist
+exit 0
 popd
 
 # Undo our hacks

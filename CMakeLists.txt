@@ -9,7 +9,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
 # set up options
 option(BUILD_PYTHON_WRAP "Enable/Disable building of cython wrapper" ON)
 set(PYTHON_VERSION "3" CACHE STRING "The version of python to build the cython wrapper for (or Default)")
-set(Boost_USE_STATIC_LIBS "Boost ABI stability guarantees are weak, only turn this off if you want to handle having exact Boost versions available" ON)
 
 ###################################################################################
 # Explicitly include GTSAM
