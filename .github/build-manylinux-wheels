@@ -27,12 +27,14 @@ sed -i 's/ \(find_package(Python3\)/#\1/' "$root/gtsam/cmake/HandlePython.cmake"
 
 # Build each of our wheels
 pushd /io/
+GLOBIGNORE="*cp311"
 for PYROOT in /opt/python/cp*; do
   export Python3_EXECUTABLE="$PYROOT/bin/python"
   export Python3_INCLUDE_DIR="$(find "$PYROOT/include/" \
     -mindepth 1 -maxdepth 1 -type d)"
   "$Python3_EXECUTABLE" -m build
 done
+unset GLOBIGNORE
 
 # Bundle shared libraries (aka Boost) into each of our wheels to make them
 # manylinux compatible
