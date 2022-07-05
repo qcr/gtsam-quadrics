@@ -15,7 +15,7 @@ class cmake_build_ext(build_ext):
 
     def run(self):
         self.build_cmake(self.extensions)
-        super().run()
+        # super().run()
 
     def build_cmake(self, exts):
         # This code assumes 'gtsam' & 'gtsam_quadrics' extensions are specified
@@ -23,9 +23,13 @@ class cmake_build_ext(build_ext):
         gtsam_ext = exts[0]
         gtsam_quadrics_ext = exts[1]
 
+        gtsam_so = self.get_ext_filename(gtsam_ext.name)
+        gtsam_quadrics_so = self.get_ext_filename(gtsam_quadrics_ext.name)
+
         # Build our CPython shared objects
         source_dir = os.getcwd()
         build_dir = self.build_temp
+        build_lib_dir = self.build_lib
 
         self.spawn([
             'cmake', '-DBUILD_SHARED_LIBS=OFF',
@@ -34,18 +38,20 @@ class cmake_build_ext(build_ext):
         ])
         self.spawn(['cmake', '--build', build_dir])
 
-        # Move shared objects to the expected output location
-        lib_dir = os.path.dirname(self.get_ext_fullpath(gtsam_ext.name))
-        os.makedirs(lib_dir, exist_ok=True)
+        # Move shared objects to the build lib location
+        # TODO probably should just output them there from CMake... but eh
+        shutil.copy(
+            os.path.join(build_dir, 'gtsam', 'python', 'gtsam', gtsam_so),
+            os.path.join(build_lib_dir, gtsam_so))
+        shutil.copy(os.path.join(build_dir, gtsam_quadrics_so),
+                    os.path.join(build_lib_dir, gtsam_quadrics_so))
 
-        shutil.copy(
-            os.path.join(build_dir, 'gtsam', 'python', 'gtsam',
-                         self.get_ext_filename(gtsam_ext.name)),
-            self.get_ext_fullpath(gtsam_ext.name))
-        shutil.copy(
-            os.path.join(build_dir,
-                         self.get_ext_filename(gtsam_quadrics_ext.name)),
-            self.get_ext_fullpath(gtsam_quadrics_ext.name))
+        # Move shared objects to the shared source location
+        # TODO probably should be behind an '--inplace' flag or something...
+        shutil.copy(os.path.join(build_lib_dir, gtsam_so),
+                    os.path.join(source_dir, gtsam_so))
+        shutil.copy(os.path.join(build_lib_dir, gtsam_quadrics_so),
+                    os.path.join(source_dir, gtsam_quadrics_so))
 
 
 with open("README.md", 'r') as f:
