@@ -32,7 +32,7 @@ class cmake_build_ext(build_ext):
         build_lib_dir = self.build_lib
 
         self.spawn([
-            'cmake', '-DBUILD_SHARED_LIBS=OFF',
+            'cmake', '-DBUILD_SHARED_LIBS=OFF', '-UCMAKE_MAKE_PROGRAM',
             '-DCMAKE_POSITION_INDEPENDENT_CODE=ON', '-G', 'Ninja', '-B',
             build_dir, '-S', source_dir
         ])
