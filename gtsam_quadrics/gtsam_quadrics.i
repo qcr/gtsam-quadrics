@@ -42,7 +42,6 @@
 
 namespace gtsam_quadrics {
 
-#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_quadrics/base/Utilities.h>
 namespace utils {
 gtsam::Pose3 interpolate(const gtsam::Pose3& p1, const gtsam::Pose3& p2,
@@ -81,7 +80,7 @@ class ConstrainedDualQuadric {
 };
 
 #include <gtsam_quadrics/geometry/BoundingBoxFactor.h>
-virtual class BoundingBoxFactor : gtsam::NoiseModelFactor {
+virtual class BoundingBoxFactor {
   BoundingBoxFactor();
   BoundingBoxFactor(const gtsam_quadrics::AlignedBox2& measured,
                     const gtsam::Cal3_S2* calibration, const size_t& poseKey,
@@ -109,14 +108,13 @@ virtual class BoundingBoxFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam_quadrics/geometry/QuadricAngleFactor.h>
-virtual class QuadricAngleFactor : gtsam::NoiseModelFactor {
+virtual class QuadricAngleFactor {
   QuadricAngleFactor(const size_t& quadricKey, const gtsam::Rot3& measured,
                      const gtsam::noiseModel::Base* model);
   Vector evaluateError(
       const gtsam_quadrics::ConstrainedDualQuadric& quadric) const;
 };
 
-#include <gtsam/nonlinear/PriorFactor.h>
 // TODO need to figure out how to get this to import...
 // template <T = {gtsam_quadrics::ConstrainedDualQuadric}>
 // virtual class gtsam::PriorFactor : gtsam::NoiseModelFactor {
