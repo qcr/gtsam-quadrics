@@ -40,16 +40,29 @@ class cmake_build_ext(build_ext):
 
         # Move shared objects to the build lib location
         # TODO probably should just output them there from CMake... but eh
+        print("MAKING %s" % build_lib_dir)
+        os.makedirs(build_lib_dir, exist_ok=True)
+        print("MOVING %s -> %s" %
+              (os.path.join(build_dir, 'gtsam', 'python', 'gtsam',
+                            gtsam_so), os.path.join(build_lib_dir, gtsam_so)))
         shutil.copy(
             os.path.join(build_dir, 'gtsam', 'python', 'gtsam', gtsam_so),
             os.path.join(build_lib_dir, gtsam_so))
+        print("MOVING %s -> %s" %
+              (os.path.join(build_dir, gtsam_quadrics_so),
+               os.path.join(build_lib_dir, gtsam_quadrics_so)))
         shutil.copy(os.path.join(build_dir, gtsam_quadrics_so),
                     os.path.join(build_lib_dir, gtsam_quadrics_so))
 
         # Move shared objects to the shared source location
         # TODO probably should be behind an '--inplace' flag or something...
+        print("MOVING %s -> %s" % (os.path.join(
+            build_lib_dir, gtsam_so), os.path.join(source_dir, gtsam_so)))
         shutil.copy(os.path.join(build_lib_dir, gtsam_so),
                     os.path.join(source_dir, gtsam_so))
+        print("MOVING %s -> %s" %
+              (os.path.join(build_lib_dir, gtsam_quadrics_so),
+               os.path.join(source_dir, gtsam_quadrics_so)))
         shutil.copy(os.path.join(build_lib_dir, gtsam_quadrics_so),
                     os.path.join(source_dir, gtsam_quadrics_so))
 
