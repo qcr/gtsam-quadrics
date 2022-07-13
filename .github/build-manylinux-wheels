@@ -32,6 +32,7 @@ for PYROOT in /opt/python/cp*; do
   export Python3_EXECUTABLE="$PYROOT/bin/python"
   export Python3_INCLUDE_DIR="$(find "$PYROOT/include/" \
     -mindepth 1 -maxdepth 1 -type d)"
+  # "$Python3_EXECUTABLE" -m pip wheel /io/ --no-clean -w /io/dist/
   "$Python3_EXECUTABLE" -m build
 done
 unset GLOBIGNORE
