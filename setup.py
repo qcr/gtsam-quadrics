@@ -1,7 +1,8 @@
 import os
+import shutil
+
 from setuptools import find_packages, setup, Extension
 from setuptools.command.build_ext import build_ext
-import shutil
 
 
 class CMakeExtension(Extension):
@@ -42,12 +43,11 @@ class cmake_build_ext(build_ext):
         # TODO probably should just output them there from CMake... but eh
         print("MAKING %s" % build_lib_dir)
         os.makedirs(build_lib_dir, exist_ok=True)
-        print("MOVING %s -> %s" %
-              (os.path.join(build_dir, 'gtsam', 'python', 'gtsam',
-                            gtsam_so), os.path.join(build_lib_dir, gtsam_so)))
-        shutil.copy(
-            os.path.join(build_dir, 'gtsam', 'python', 'gtsam', gtsam_so),
-            os.path.join(build_lib_dir, gtsam_so))
+        print("MOVING %s -> %s" % (os.path.join(build_dir, 'gtsam', 'python',
+                                                'gtsam'), build_lib_dir))
+        shutil.rmtree(os.path.join(build_lib_dir, 'gtsam'), ignore_errors=True)
+        shutil.copytree(os.path.join(build_dir, 'gtsam', 'python', 'gtsam'),
+                        os.path.join(build_lib_dir, 'gtsam'))
         print("MOVING %s -> %s" %
               (os.path.join(build_dir, gtsam_quadrics_so),
                os.path.join(build_lib_dir, gtsam_quadrics_so)))
@@ -56,9 +56,10 @@ class cmake_build_ext(build_ext):
 
         # Move shared objects to the shared source location
         # TODO probably should be behind an '--inplace' flag or something...
-        print("MOVING %s -> %s" % (os.path.join(
-            build_lib_dir, gtsam_so), os.path.join(source_dir, gtsam_so)))
-        shutil.copy(os.path.join(build_lib_dir, gtsam_so),
+        print("MOVING %s -> %s" %
+              (os.path.join(build_lib_dir, "gtsam",
+                            gtsam_so), os.path.join(source_dir, gtsam_so)))
+        shutil.copy(os.path.join(build_lib_dir, "gtsam", gtsam_so),
                     os.path.join(source_dir, gtsam_so))
         print("MOVING %s -> %s" %
               (os.path.join(build_lib_dir, gtsam_quadrics_so),
