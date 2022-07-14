@@ -72,7 +72,7 @@ with open("README.md", 'r') as f:
     long_description = f.read()
 
 setup(name='gtsam_quadrics',
-      version='0.2.1',
+      version='0.2.2',
       author='Lachlan Nicholson',
       author_email='lachlan.nicholson@hdr.qut.edu.au',
       maintainer='Ben Talbot',
