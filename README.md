@@ -1,11 +1,16 @@
-<p align=center><strong>~ Please see our <a href="https://github.com/qcr/quadricslam">QuadricSLAM repository</a> for examples of full systems~</strong></p>
+<p align=center><strong>~ Please see our <a href="https://github.com/qcr/quadricslam">QuadricSLAM repository</a> for examples of full SLAM systems~</strong></p>
 
 # GTSAM Quadrics: quadric landmarks for GTSAM
 
-<!-- badges -->
-
+[![QUT Centre for Robotics Open Source](https://github.com/qcr/qcr.github.io/raw/master/misc/badge.svg)](https://qcr.github.io)
 [![Best of ACRV Repository](https://img.shields.io/badge/collection-best--of--acrv-%23a31b2a)](https://roboticvision.org/best-of-acrv)
-[![License](https://img.shields.io/github/license/best-of-acrv/gtsam-quadrics)](./LICENSE.txt)
+![Primary language](https://img.shields.io/github/languages/top/qcr/gtsam-quadrics)
+[![PyPI package](https://img.shields.io/pypi/pyversions/gtsam-quadrics)](https://pypi.org/project/gtsam-quadrics/)
+[![License](https://img.shields.io/github/license/qcr/gtsam-quadrics)](./LICENSE.txt)
+
+<!-- [![Conda Version](https://img.shields.io/conda/vn/conda-forge/gtsam-quadrics.svg)](https://anaconda.org/conda-forge/gtsam-quadrics) -->
+<!-- [![Conda Recipe](https://img.shields.io/badge/recipe-gtsam-quadrics-green.svg)](https://anaconda.org/conda-forge/gtsam-quadrics) -->
+<!-- [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/gtsam-quadrics.svg)](https://anaconda.org/conda-forge/gtsam-quadrics) -->
 
 This repository contains an extension to the popular [GTSAM](https://github.com/borglab/gtsam) factor graph optimization library. We introduce constrained dual quadrics as GTSAM variables, and support the estimation of the quadric parameters using 2-D bounding box measurements. These tools are available for both C++ and Python and are designed to be used in conjunction with GTSAM. Also provided are a number of C++ and Python examples that demonstrate how quadric landmarks can be used in the SLAM context, alongside doxygen documentation and unit tests.
 
