@@ -1,3 +1,5 @@
+<p align=center><strong>~ Please see our <a href="https://github.com/qcr/quadricslam">QuadricSLAM repository</a> for examples of full systems~</strong></p>
+
 # GTSAM Quadrics: quadric landmarks for GTSAM
 
 <!-- badges -->
