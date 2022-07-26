@@ -80,7 +80,7 @@ class ConstrainedDualQuadric {
 };
 
 #include <gtsam_quadrics/geometry/BoundingBoxFactor.h>
-virtual class BoundingBoxFactor {
+virtual class BoundingBoxFactor : gtsam::NonlinearFactor {
   BoundingBoxFactor();
   BoundingBoxFactor(const gtsam_quadrics::AlignedBox2& measured,
                     const gtsam::Cal3_S2* calibration, const size_t& poseKey,
