@@ -10,10 +10,7 @@
 
 This repository contains an extension to the popular [Georgia Tech Smoothing and Mapping (GTSAM)](https://github.com/borglab/gtsam) factor graph optimisation library. We introduce constrained dual quadrics as GTSAM variables, and support the estimation of the quadric parameters using 2-D bounding box measurements. These tools are available in both C++ and Python, and are designed to be used in conjunction with GTSAM. The extensions power our [QuadricSLAM library](https://github.com/qcr/quadricslam), where we use quadrics for simultaneous localisation and mapping (SLAM) problems.
 
-<p align="center">
-<img alt="QuadricSLAM sample output image 1" src=https://github.com/best-of-acrv/gtsam-quadrics/raw/master/doc/quadricslam_still1.png width="400"/>
-<img alt="QuadricSLAM sample output image 1" src=https://github.com/best-of-acrv/gtsam-quadrics/raw/master/doc/quadricslam_still2.png width="400"/>
-</p>
+![Demonstrations of GTSAM Quadrics in action](/doc/gtsam_quadrics.png)
 
 We expect this repository to be active and continually improved upon. If you have any feature requests or experience any bugs, don't hesitate to let us know. Our code is free to use, and licensed under BSD-3. We simply ask that you [cite our work](#citing-our-work) if you use QuadricSLAM in your own research.
 
