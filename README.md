@@ -16,6 +16,8 @@ We expect this repository to be active and continually improved upon. If you hav
 
 ## Installation
 
+_Note: we are aware of [some issues](https://github.com/qcr/gtsam-quadrics/issues/24) with the wheels. If you encounter issues, we recommend the "Install from source via Pip" steps below_
+
 Pre-build wheels of this library are [available on PyPI](https://pypi.org/project/gtsam-quadrics/) for most Linux systems, as well as source distributions. Install the library with:
 
 ```
@@ -31,7 +33,7 @@ You can build from source if you want closer access to the C++ libraries, or are
 All building from source methods expect the following system dependencies to be available:
 
 - A C++ compiler
-- CMake >= 3.0
+- CMake >= 3.18
 - Boost C++ libraries >= 1.65
 - METIS matrix library
 
@@ -39,6 +41,16 @@ Instructions for installing these dependencies vary across Linux systems, but th
 
 ```
 sudo apt install build-essential cmake libboost-all-dev libmetis-dev
+```
+
+If your distribution's CMake version is too old, it can easily be upgrade following Kitware's instructions [here](https://apt.kitware.com/).
+
+**Install from source via Pip**
+
+Simply request the `sdist` instead of binary wheel:
+
+```
+pip install gtsam_quadrics --no-binary :all:
 ```
 
 **Building the Python package from source**
